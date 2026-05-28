@@ -55,7 +55,12 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
             RoleClaimType = AppClaims.Role,
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthPolicies.Agency, p => p.RequireClaim(AppClaims.PrincipalType, "Agency"));
+    options.AddPolicy(AuthPolicies.Client, p => p.RequireClaim(AppClaims.PrincipalType, "Client"));
+    options.AddPolicy(AuthPolicies.AgencyOrClient, p => p.RequireClaim(AppClaims.PrincipalType, "Agency", "Client"));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
