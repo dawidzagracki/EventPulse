@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EventPulse.Api/EventPulse.Api.csproj" />
+    <Project Path="src/EventPulse.Infrastructure/EventPulse.Infrastructure.csproj" />
+    <Project Path="src/EventPulse.Modules.Events/EventPulse.Modules.Events.csproj" />
+    <Project Path="src/EventPulse.Shared/EventPulse.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EventPulse.ArchitectureTests/EventPulse.ArchitectureTests.csproj" />
+    <Project Path="tests/EventPulse.IntegrationTests/EventPulse.IntegrationTests.csproj" />
+    <Project Path="tests/EventPulse.UnitTests/EventPulse.UnitTests.csproj" />
+  </Folder>
+</Solution>

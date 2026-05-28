@@ -1,0 +1,102 @@
+# EventPulse — local development stack (full parity with OVH production).
+# Cloud services have local equivalents: Postgres, Redis, MinIO (S3), Mailhog (SMTP).
+# Usage: cp .env.example .env && docker compose up --build
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eventpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eventpulse_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-eventpulse}
+    ports:
+      - "5433:5432"   # host:container — 5433 avoids clashing with a local Postgres on 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eventpulse}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${Storage__AccessKey:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${Storage__SecretKey:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Creates the bucket on startup so the app has somewhere to write.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${Storage__AccessKey:-minioadmin} ${Storage__SecretKey:-minioadmin} &&
+      mc mb --ignore-existing local/${Storage__Bucket:-eventpulse} &&
+      mc anonymous set download local/${Storage__Bucket:-eventpulse} &&
+      echo 'bucket ready';
+      "
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  miniodata:
