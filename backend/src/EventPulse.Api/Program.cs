@@ -27,6 +27,7 @@ var moduleAssemblies = new[]
     typeof(EventPulse.Modules.Identity.DependencyInjection).Assembly,
     typeof(EventPulse.Modules.Events.Domain.Event).Assembly,
     typeof(EventPulse.Modules.Participants.Domain.Participant).Assembly,
+    typeof(EventPulse.Modules.Agenda.Domain.AgendaItem).Assembly,
 };
 
 builder.Services.AddMediatR(cfg =>

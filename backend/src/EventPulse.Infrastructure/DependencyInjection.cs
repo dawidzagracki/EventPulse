@@ -1,3 +1,4 @@
+using EventPulse.Infrastructure.Outbox;
 using EventPulse.Infrastructure.Persistence;
 using EventPulse.Shared.Multitenancy;
 using EventPulse.Shared.Persistence;
@@ -19,6 +20,9 @@ public static class DependencyInjection
                 npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+        services.AddScoped<IOutboxDispatcher, OutboxDispatcher>();
+        services.AddHostedService<OutboxProcessor>();
 
         return services;
     }

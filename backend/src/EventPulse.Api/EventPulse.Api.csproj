@@ -24,6 +24,7 @@
     <ProjectReference Include="..\EventPulse.Modules.Events\EventPulse.Modules.Events.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Identity\EventPulse.Modules.Identity.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Participants\EventPulse.Modules.Participants.csproj" />
+    <ProjectReference Include="..\EventPulse.Modules.Agenda\EventPulse.Modules.Agenda.csproj" />
   </ItemGroup>
 
 </Project>

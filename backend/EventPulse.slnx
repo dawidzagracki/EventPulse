@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/EventPulse.Api/EventPulse.Api.csproj" />
     <Project Path="src/EventPulse.Infrastructure/EventPulse.Infrastructure.csproj" />
+    <Project Path="src/EventPulse.Modules.Agenda/EventPulse.Modules.Agenda.csproj" />
     <Project Path="src/EventPulse.Modules.Events/EventPulse.Modules.Events.csproj" />
     <Project Path="src/EventPulse.Modules.Identity/EventPulse.Modules.Identity.csproj" />
     <Project Path="src/EventPulse.Modules.Participants/EventPulse.Modules.Participants.csproj" />

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Participants.Application.Me;
 using MediatR;
@@ -33,6 +34,13 @@ public sealed class ParticipantMeController : ControllerBase
         => Ok(await _mediator.Send(new UpdateMyPreferencesCommand(
             ParticipantId, body.Language, body.DietaryPreferences, body.ShirtSize, body.Wishes,
             body.AirportTransfer, body.ArrivalTime, body.FlightNumber), ct));
+
+    [HttpGet("agenda")]
+    public async Task<ActionResult<IReadOnlyList<AgendaItemDto>>> Agenda(CancellationToken ct)
+    {
+        var me = await _mediator.Send(new GetMyProfileQuery(ParticipantId), ct);
+        return Ok(await _mediator.Send(new ParticipantAgendaQuery(me.EventId, me.GroupName), ct));
+    }
 
     public sealed record ConsentsBody(bool RodoAccepted, bool PhotoConsent, bool NetworkingConsent);
 

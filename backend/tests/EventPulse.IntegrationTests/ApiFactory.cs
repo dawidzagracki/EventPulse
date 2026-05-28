@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using EventPulse.Infrastructure.Outbox;
 using EventPulse.Infrastructure.Persistence;
 using EventPulse.Shared.Notifications;
 using Microsoft.AspNetCore.Hosting;
@@ -53,6 +54,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<IEmailSender>(new FakeEmailSender(SentEmails));
+
+            // Disable the background outbox loop; tests drain it deterministically via IOutboxDispatcher.
+            var processor = services.FirstOrDefault(d => d.ImplementationType == typeof(OutboxProcessor));
+            if (processor is not null)
+            {
+                services.Remove(processor);
+            }
         });
     }
 

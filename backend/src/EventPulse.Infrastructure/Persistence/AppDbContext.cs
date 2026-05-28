@@ -56,13 +56,40 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     public override int SaveChanges()
     {
         ApplyTenantStampAndAudit();
+        WriteOutboxMessages();
         return base.SaveChanges();
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         ApplyTenantStampAndAudit();
+        WriteOutboxMessages();
         return base.SaveChangesAsync(cancellationToken);
+    }
+
+    // Persists raised domain events as outbox rows in the same transaction as the change.
+    private void WriteOutboxMessages()
+    {
+        var aggregates = ChangeTracker.Entries<AggregateRoot>()
+            .Where(e => e.Entity.DomainEvents.Count > 0)
+            .Select(e => e.Entity)
+            .ToList();
+
+        foreach (var aggregate in aggregates)
+        {
+            foreach (var domainEvent in aggregate.DomainEvents)
+            {
+                var type = domainEvent.GetType();
+                Set<Outbox.OutboxMessage>().Add(new Outbox.OutboxMessage
+                {
+                    Type = type.AssemblyQualifiedName!,
+                    Content = System.Text.Json.JsonSerializer.Serialize(domainEvent, type),
+                    OccurredAt = DateTimeOffset.UtcNow,
+                });
+            }
+
+            aggregate.ClearDomainEvents();
+        }
     }
 
     private void ApplyTenantStampAndAudit()
