@@ -4,6 +4,7 @@
     <Project Path="src/EventPulse.Infrastructure/EventPulse.Infrastructure.csproj" />
     <Project Path="src/EventPulse.Modules.Events/EventPulse.Modules.Events.csproj" />
     <Project Path="src/EventPulse.Modules.Identity/EventPulse.Modules.Identity.csproj" />
+    <Project Path="src/EventPulse.Modules.Participants/EventPulse.Modules.Participants.csproj" />
     <Project Path="src/EventPulse.Shared/EventPulse.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">

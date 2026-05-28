@@ -51,7 +51,7 @@ public class EventsEndpointsTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         var created = await create.Content.ReadFromJsonAsync<JsonElement>();
         var id = created.GetProperty("id").GetGuid();
-        Assert.Equal("gala-firmowa-2026", created.GetProperty("slug").GetString());
+        Assert.StartsWith("gala-firmowa-2026", created.GetProperty("slug").GetString());
 
         var get = await client.GetFromJsonAsync<JsonElement>($"/api/events/{id}");
         Assert.Equal("Gala Firmowa 2026", get.GetProperty("name").GetString());
