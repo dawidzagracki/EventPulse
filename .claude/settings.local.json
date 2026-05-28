@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version)",
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(docker --version)",
+      "Bash(dotnet --list-sdks)",
+      "Bash(winget search *)",
+      "Bash(winget install *)",
+      "Bash(git init *)",
+      "Bash(git symbolic-ref *)",
+      "Bash(git add *)",
+      "Bash(git -c user.email=dev@eventpulse.local -c user.name=EventPulse commit -q -m \"chore: repo scaffolding \\(gitignore, editorconfig, env template, readme\\)\")"
+    ]
+  }
+}
