@@ -9,5 +9,6 @@ public interface ITokenService
         PrincipalType principalType,
         Guid tenantId,
         string email,
-        string? role);
+        string? role,
+        Guid? eventId = null);
 }

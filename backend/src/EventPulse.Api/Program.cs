@@ -2,6 +2,7 @@ using System.Text;
 using EventPulse.Api.Infrastructure;
 using EventPulse.Api.Middleware;
 using EventPulse.Infrastructure;
+using EventPulse.Infrastructure.Email;
 using EventPulse.Infrastructure.Persistence;
 using EventPulse.Modules.Identity;
 using EventPulse.Modules.Identity.Auth;
@@ -17,6 +18,7 @@ var connectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Missing connection string 'ConnectionStrings:Postgres'.");
 
 builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddEmail(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
 
 // Module assemblies that contain MediatR handlers and FluentValidation validators.
@@ -60,6 +62,7 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(AuthPolicies.Agency, p => p.RequireClaim(AppClaims.PrincipalType, "Agency"));
     options.AddPolicy(AuthPolicies.Client, p => p.RequireClaim(AppClaims.PrincipalType, "Client"));
+    options.AddPolicy(AuthPolicies.Participant, p => p.RequireClaim(AppClaims.PrincipalType, "Participant"));
     options.AddPolicy(AuthPolicies.AgencyOrClient, p => p.RequireClaim(AppClaims.PrincipalType, "Agency", "Client"));
 });
 

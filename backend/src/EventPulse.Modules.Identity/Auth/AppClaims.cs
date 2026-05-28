@@ -6,4 +6,5 @@ public static class AppClaims
     public const string TenantId = "tenant_id";
     public const string PrincipalType = "principal_type";
     public const string Role = "role";
+    public const string EventId = "event_id";
 }

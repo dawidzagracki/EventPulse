@@ -3,6 +3,7 @@ using EventPulse.Modules.Identity.Application;
 using EventPulse.Modules.Identity.Application.Login;
 using EventPulse.Modules.Identity.Application.Refresh;
 using EventPulse.Modules.Identity.Auth;
+using EventPulse.Modules.Participants.Application.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,11 @@ public sealed class AuthController : ControllerBase
     [HttpPost("refresh")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResult>> Refresh(RefreshCommand command, CancellationToken ct)
+        => Ok(await _mediator.Send(command, ct));
+
+    [HttpPost("participant")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ParticipantLoginResult>> ParticipantLogin(ParticipantLoginCommand command, CancellationToken ct)
         => Ok(await _mediator.Send(command, ct));
 
     [HttpGet("me")]

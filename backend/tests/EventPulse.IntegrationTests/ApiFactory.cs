@@ -1,10 +1,13 @@
+using System.Collections.Concurrent;
 using EventPulse.Infrastructure.Persistence;
+using EventPulse.Shared.Notifications;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Testcontainers.PostgreSql;
 
@@ -18,6 +21,9 @@ namespace EventPulse.IntegrationTests;
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+
+    /// <summary>Emails "sent" during a test, captured by the fake sender.</summary>
+    public ConcurrentQueue<EmailMessage> SentEmails { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -44,7 +50,19 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(_postgres.GetConnectionString()));
+
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton<IEmailSender>(new FakeEmailSender(SentEmails));
         });
+    }
+
+    private sealed class FakeEmailSender(ConcurrentQueue<EmailMessage> sent) : IEmailSender
+    {
+        public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+        {
+            sent.Enqueue(message);
+            return Task.CompletedTask;
+        }
     }
 
     async Task IAsyncLifetime.InitializeAsync() => await _postgres.StartAsync();

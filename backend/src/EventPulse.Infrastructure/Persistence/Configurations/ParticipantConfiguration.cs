@@ -24,8 +24,12 @@ public sealed class ParticipantConfiguration : IEntityTypeConfiguration<Particip
         builder.Property(p => p.ArrivalTime).HasMaxLength(20);
         builder.Property(p => p.FlightNumber).HasMaxLength(20);
         builder.Property(p => p.DietaryPreferences).HasMaxLength(1000);
+        builder.Property(p => p.ShirtSize).HasMaxLength(20);
+        builder.Property(p => p.Wishes).HasMaxLength(2000);
         builder.Property(p => p.Notes).HasMaxLength(2000);
+        builder.Property(p => p.RodoVersion).HasMaxLength(20);
         builder.Property(p => p.Status).HasConversion<int>();
+        builder.Ignore(p => p.HasAcceptedRodo);
 
         builder.HasIndex(p => new { p.EventId, p.Email }).IsUnique();
         builder.HasIndex(p => p.TenantId);

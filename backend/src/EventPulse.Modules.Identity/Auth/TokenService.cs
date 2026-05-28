@@ -18,10 +18,13 @@ public sealed class TokenService : ITokenService
         PrincipalType principalType,
         Guid tenantId,
         string email,
-        string? role)
+        string? role,
+        Guid? eventId = null)
     {
         var now = DateTimeOffset.UtcNow;
-        var expiresAt = now.AddMinutes(_options.AccessTokenMinutes);
+        var expiresAt = principalType == PrincipalType.Participant
+            ? now.AddHours(_options.ParticipantTokenHours)
+            : now.AddMinutes(_options.AccessTokenMinutes);
 
         var claims = new List<Claim>
         {
@@ -35,6 +38,11 @@ public sealed class TokenService : ITokenService
         if (!string.IsNullOrWhiteSpace(role))
         {
             claims.Add(new Claim(AppClaims.Role, role));
+        }
+
+        if (eventId is { } evId)
+        {
+            claims.Add(new Claim(AppClaims.EventId, evId.ToString()));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));

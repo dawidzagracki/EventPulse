@@ -1,8 +1,10 @@
+using EventPulse.Modules.Events.Application;
 using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Participants.Application;
 using EventPulse.Modules.Participants.Application.Commands;
 using EventPulse.Modules.Participants.Application.Import;
+using EventPulse.Modules.Participants.Application.Invitations;
 using EventPulse.Modules.Participants.Application.Qr;
 using EventPulse.Modules.Participants.Application.Queries;
 using EventPulse.Modules.Participants.Domain;
@@ -85,13 +87,27 @@ public sealed class ParticipantsController : ControllerBase
     public async Task<IActionResult> Qr(Guid eventId, Guid id, CancellationToken ct)
     {
         await EnsureEventInTenantAsync(eventId, ct);
-        var baseUrl = _configuration["App:ParticipantLinkBaseUrl"] ?? "http://localhost:5173/p";
-        var png = await _mediator.Send(new GetParticipantQrQuery(id, baseUrl), ct);
+        var png = await _mediator.Send(new GetParticipantQrQuery(id, ParticipantLinkBaseUrl), ct);
         return File(png, "image/png");
     }
 
+    [HttpPost("invitations")]
+    public async Task<ActionResult<SendInvitationsResult>> SendInvitations(
+        Guid eventId,
+        [FromQuery] bool onlyNotInvited,
+        CancellationToken ct)
+    {
+        var ev = await EnsureEventInTenantAsync(eventId, ct);
+        var result = await _mediator.Send(
+            new SendInvitationsCommand(eventId, ev.Name, ParticipantLinkBaseUrl, onlyNotInvited), ct);
+        return Ok(result);
+    }
+
+    private string ParticipantLinkBaseUrl =>
+        _configuration["App:ParticipantLinkBaseUrl"] ?? "http://localhost:5173/p";
+
     // Throws NotFound (tenant-filtered) if the event isn't owned by the caller's tenant.
-    private Task EnsureEventInTenantAsync(Guid eventId, CancellationToken ct)
+    private Task<EventDto> EnsureEventInTenantAsync(Guid eventId, CancellationToken ct)
         => _mediator.Send(new GetEventByIdQuery(eventId), ct);
 
     public sealed record AddParticipantBody(
