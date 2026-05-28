@@ -28,6 +28,7 @@ var moduleAssemblies = new[]
     typeof(EventPulse.Modules.Events.Domain.Event).Assembly,
     typeof(EventPulse.Modules.Participants.Domain.Participant).Assembly,
     typeof(EventPulse.Modules.Agenda.Domain.AgendaItem).Assembly,
+    typeof(EventPulse.Modules.Content.Domain.EventPage).Assembly,
 };
 
 builder.Services.AddMediatR(cfg =>

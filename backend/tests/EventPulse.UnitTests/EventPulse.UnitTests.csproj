@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\EventPulse.Shared\EventPulse.Shared.csproj" />
     <ProjectReference Include="..\..\src\EventPulse.Modules.Events\EventPulse.Modules.Events.csproj" />
     <ProjectReference Include="..\..\src\EventPulse.Modules.Participants\EventPulse.Modules.Participants.csproj" />
+    <ProjectReference Include="..\..\src\EventPulse.Modules.Content\EventPulse.Modules.Content.csproj" />
   </ItemGroup>
 
 </Project>
