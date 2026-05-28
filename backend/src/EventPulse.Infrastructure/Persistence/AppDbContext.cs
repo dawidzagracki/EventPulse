@@ -2,11 +2,12 @@ using System.Linq.Expressions;
 using EventPulse.Modules.Events.Domain;
 using EventPulse.Shared.Domain;
 using EventPulse.Shared.Multitenancy;
+using EventPulse.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventPulse.Infrastructure.Persistence;
 
-public sealed class AppDbContext : DbContext
+public sealed class AppDbContext : DbContext, IAppDbContext
 {
     private readonly ITenantContext _tenant;
 

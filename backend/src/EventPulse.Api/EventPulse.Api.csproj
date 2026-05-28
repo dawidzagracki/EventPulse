@@ -7,6 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
@@ -19,6 +22,7 @@
     <ProjectReference Include="..\EventPulse.Infrastructure\EventPulse.Infrastructure.csproj" />
     <ProjectReference Include="..\EventPulse.Shared\EventPulse.Shared.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Events\EventPulse.Modules.Events.csproj" />
+    <ProjectReference Include="..\EventPulse.Modules.Identity\EventPulse.Modules.Identity.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventPulse.Shared\EventPulse.Shared.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Events\EventPulse.Modules.Events.csproj" />
+    <ProjectReference Include="..\EventPulse.Modules.Identity\EventPulse.Modules.Identity.csproj" />
   </ItemGroup>
 
   <ItemGroup>
