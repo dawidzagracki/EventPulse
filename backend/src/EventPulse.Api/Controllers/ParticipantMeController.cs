@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
+using EventPulse.Modules.Engagement;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Logistics;
 using EventPulse.Modules.Participants.Application.Feedback;
@@ -55,6 +56,31 @@ public sealed class ParticipantMeController : ControllerBase
         await _mediator.Send(new SubmitFeedbackCommand(ParticipantId, EventId, body.Rating, body.Comment), ct);
         return NoContent();
     }
+
+    [HttpGet("quizzes")]
+    public async Task<ActionResult<IReadOnlyList<QuizDto>>> Quizzes(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListQuizzesQuery(EventId), ct));
+
+    [HttpGet("quizzes/{quizId:guid}")]
+    public async Task<ActionResult<QuizTakeDto>> Quiz(Guid quizId, CancellationToken ct)
+        => Ok(await _mediator.Send(new GetQuizTakeQuery(quizId), ct));
+
+    [HttpPost("quizzes/{quizId:guid}/submit")]
+    public async Task<ActionResult<object>> SubmitQuiz(Guid quizId, Dictionary<Guid, int> answers, CancellationToken ct)
+    {
+        var score = await _mediator.Send(new SubmitQuizCommand(quizId, ParticipantId, answers), ct);
+        return Ok(new { score });
+    }
+
+    [HttpGet("networking")]
+    public async Task<ActionResult<IReadOnlyList<ContactDto>>> Contacts(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListMyContactsQuery(ParticipantId), ct));
+
+    [HttpPost("networking")]
+    public async Task<ActionResult<ContactDto>> AddContact(AddContactBody body, CancellationToken ct)
+        => Ok(await _mediator.Send(new AddNetworkingContactCommand(ParticipantId, body.TargetToken), ct));
+
+    public sealed record AddContactBody(Guid TargetToken);
 
     public sealed record FeedbackBody(int Rating, string? Comment);
 

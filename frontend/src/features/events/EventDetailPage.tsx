@@ -7,10 +7,11 @@ import { AgendaTab } from '../agenda/AgendaTab'
 import { PageBuilderTab } from '../content/PageBuilderTab'
 import { DashboardTab } from '../dashboard/DashboardTab'
 import { LogisticsTab } from '../logistics/LogisticsTab'
+import { EngagementTab } from '../engagement/EngagementTab'
 import { Button, Card } from '../../components/ui'
 import { EventStatusName } from '../../types/api'
 
-type Tab = 'overview' | 'participants' | 'agenda' | 'page' | 'logistics' | 'dashboard'
+type Tab = 'overview' | 'participants' | 'agenda' | 'page' | 'logistics' | 'engagement' | 'dashboard'
 
 export function EventDetailPage() {
   const { eventId = '' } = useParams()
@@ -27,6 +28,7 @@ export function EventDetailPage() {
     { id: 'agenda', label: t('agenda.title') },
     { id: 'page', label: t('page.title') },
     { id: 'logistics', label: t('logistics.title') },
+    { id: 'engagement', label: t('engagement.title') },
     { id: 'dashboard', label: t('dashboard.title') },
   ]
 
@@ -83,6 +85,7 @@ export function EventDetailPage() {
       {tab === 'agenda' && <AgendaTab eventId={eventId} />}
       {tab === 'page' && <PageBuilderTab eventId={eventId} />}
       {tab === 'logistics' && <LogisticsTab eventId={eventId} />}
+      {tab === 'engagement' && <EngagementTab eventId={eventId} />}
       {tab === 'dashboard' && <DashboardTab eventId={eventId} />}
     </div>
   )

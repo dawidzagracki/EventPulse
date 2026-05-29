@@ -144,6 +144,28 @@
     "room": "Pokój",
     "reception": "Recepcja"
   },
+  "engagement": {
+    "title": "Aktywności",
+    "contests": "Konkursy",
+    "quizzes": "Quizy",
+    "name": "Nazwa",
+    "points": "Punkty",
+    "time": "Czas",
+    "ranking": "Ranking",
+    "addQuestion": "Dodaj pytanie",
+    "question": "Pytanie",
+    "optionsHint": "Opcje (oddziel | )",
+    "correctIndex": "Indeks poprawnej (od 0)",
+    "quizTitle": "Tytuł quizu",
+    "takeQuiz": "Rozwiąż",
+    "yourScore": "Twój wynik",
+    "submitQuiz": "Wyślij odpowiedzi",
+    "networking": "Networking",
+    "scanToken": "Token / link uczestnika",
+    "addContact": "Dodaj kontakt",
+    "contactError": "Nie udało się dodać kontaktu (brak zgody?)",
+    "noContacts": "Brak kontaktów"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

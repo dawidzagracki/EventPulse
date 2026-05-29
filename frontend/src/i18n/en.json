@@ -144,6 +144,28 @@
     "room": "Room",
     "reception": "Reception"
   },
+  "engagement": {
+    "title": "Engagement",
+    "contests": "Contests",
+    "quizzes": "Quizzes",
+    "name": "Name",
+    "points": "Points",
+    "time": "Time",
+    "ranking": "Ranking",
+    "addQuestion": "Add question",
+    "question": "Question",
+    "optionsHint": "Options (separate with | )",
+    "correctIndex": "Correct index (from 0)",
+    "quizTitle": "Quiz title",
+    "takeQuiz": "Take",
+    "yourScore": "Your score",
+    "submitQuiz": "Submit answers",
+    "networking": "Networking",
+    "scanToken": "Participant token / link",
+    "addContact": "Add contact",
+    "contactError": "Could not add contact (no consent?)",
+    "noContacts": "No contacts"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",

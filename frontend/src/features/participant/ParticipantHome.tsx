@@ -12,7 +12,8 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
-import { AgendaItemTypeName, type MyProfileDto } from '../../types/api'
+import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
+import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 
 export function ParticipantHome() {
   const { t } = useTranslation()
@@ -52,6 +53,8 @@ export function ParticipantHome() {
                 <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
                 <LogisticsSection profile={profile} />
                 <AgendaSection />
+                <QuizzesSection />
+                <NetworkingSection />
                 <FeedbackSection />
               </>
             )}
@@ -220,6 +223,113 @@ function LogisticsSection({ profile }: { profile: MyProfileDto }) {
           ))}
         </ul>
       )}
+    </Card>
+  )
+}
+
+function QuizzesSection() {
+  const { t } = useTranslation()
+  const { data: quizzes } = useMyQuizzes()
+  const [take, setTake] = useState<QuizTakeDto | null>(null)
+  const [answers, setAnswers] = useState<Record<string, number>>({})
+  const [score, setScore] = useState<number | null>(null)
+
+  if (!quizzes || quizzes.length === 0) return null
+
+  async function open(quizId: string) {
+    setScore(null)
+    setAnswers({})
+    setTake(await getQuizTake(quizId))
+  }
+
+  async function send() {
+    if (!take) return
+    const result = await submitQuiz(take.quizId, answers)
+    setScore(result.score)
+  }
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-semibold">{t('engagement.quizzes')}</h2>
+      {!take ? (
+        <ul className="space-y-1 text-sm">
+          {quizzes.map((q) => (
+            <li key={q.id} className="flex items-center justify-between">
+              <span>{q.title}</span>
+              <Button variant="ghost" onClick={() => open(q.id)}>
+                {t('engagement.takeQuiz')}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : score !== null ? (
+        <div className="space-y-2">
+          <p className="font-medium">
+            {t('engagement.yourScore')}: {score} / {take.questions.length}
+          </p>
+          <Button variant="ghost" onClick={() => setTake(null)}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="font-semibold">{take.title}</p>
+          {take.questions.map((q) => (
+            <div key={q.id}>
+              <p className="text-sm font-medium">{q.text}</p>
+              {q.options.map((opt, i) => (
+                <label key={i} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name={q.id}
+                    checked={answers[q.id] === i}
+                    onChange={() => setAnswers((a) => ({ ...a, [q.id]: i }))}
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
+          ))}
+          <Button onClick={send}>{t('engagement.submitQuiz')}</Button>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+function NetworkingSection() {
+  const { t } = useTranslation()
+  const { data: contacts } = useMyContacts()
+  const add = useAddContact()
+  const [token, setToken] = useState('')
+
+  async function addContact(e: React.FormEvent) {
+    e.preventDefault()
+    const match = token.trim().match(/[0-9a-f-]{36}/i)
+    if (!match) return
+    await add.mutateAsync(match[0])
+    setToken('')
+  }
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-semibold">{t('engagement.networking')}</h2>
+      <form onSubmit={addContact} className="mb-3 flex gap-2">
+        <Input value={token} onChange={(e) => setToken(e.target.value)} placeholder={t('engagement.scanToken')} />
+        <Button type="submit" disabled={add.isPending}>
+          {t('engagement.addContact')}
+        </Button>
+      </form>
+      {add.isError && <p className="mb-2 text-sm text-red-600">{t('engagement.contactError')}</p>}
+      <ul className="space-y-1 text-sm">
+        {(contacts ?? []).map((c, i) => (
+          <li key={i} className="flex justify-between">
+            <span>{c.name}</span>
+            <span className="text-slate-500">{c.email}</span>
+          </li>
+        ))}
+        {(contacts ?? []).length === 0 && <li className="text-slate-500">{t('engagement.noContacts')}</li>}
+      </ul>
     </Card>
   )
 }

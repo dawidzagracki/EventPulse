@@ -255,3 +255,39 @@ export interface BatchScanResult {
   notFound: number
   items: { clientId: string; status: string }[]
 }
+
+export interface ContestDto {
+  id: string
+  eventId: string
+  name: string
+  mode: number
+}
+
+export interface QuizDto {
+  id: string
+  eventId: string
+  title: string
+}
+
+export interface RankingEntry {
+  rank: number
+  name: string
+  score: number
+}
+
+export interface QuizQuestionDto {
+  id: string
+  text: string
+  options: string[]
+}
+
+export interface QuizTakeDto {
+  quizId: string
+  title: string
+  questions: QuizQuestionDto[]
+}
+
+export interface ContactDto {
+  name: string
+  email: string | null
+}
