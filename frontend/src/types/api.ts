@@ -50,3 +50,94 @@ export interface CreateEventRequest {
   defaultLanguage?: string | null
   clientEmail?: string | null
 }
+
+export const ParticipantStatusName: Record<number, string> = {
+  0: 'Invited',
+  1: 'Activated',
+  2: 'Confirmed',
+  3: 'Declined',
+  4: 'CheckedIn',
+  5: 'CheckedOut',
+  6: 'NoShow',
+}
+
+export interface ParticipantDto {
+  id: string
+  eventId: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
+  company: string | null
+  position: string | null
+  language: string
+  groupName: string | null
+  tableName: string | null
+  roomNumber: string | null
+  airportTransfer: boolean
+  dietaryPreferences: string | null
+  status: number
+}
+
+export interface ImportResult {
+  totalRows: number
+  validRows: number
+  importedCount: number
+  errors: { rowNumber: number; message: string }[]
+  duplicateEmails: string[]
+  committed: boolean
+}
+
+export interface SendInvitationsResult {
+  sentCount: number
+  failedCount: number
+}
+
+export const AgendaItemTypeName: Record<number, string> = {
+  0: 'Talk',
+  1: 'Meal',
+  2: 'Attraction',
+  3: 'Transport',
+  4: 'Networking',
+  5: 'Other',
+}
+
+export interface AgendaItemDto {
+  id: string
+  eventId: string
+  startsAt: string
+  endsAt: string
+  titlePl: string
+  titleEn: string
+  descriptionPl: string | null
+  descriptionEn: string | null
+  type: number
+  locationName: string | null
+  locationMapUrl: string | null
+  speakerName: string | null
+  speakerPhone: string | null
+  speakerPhotoUrl: string | null
+  menu: string | null
+  requiresCheckIn: boolean
+  dressCode: string | null
+  groupName: string | null
+}
+
+export interface AgendaItemInput {
+  startsAt: string
+  endsAt: string
+  titlePl: string
+  titleEn: string
+  descriptionPl?: string | null
+  descriptionEn?: string | null
+  type: number
+  locationName?: string | null
+  locationMapUrl?: string | null
+  speakerName?: string | null
+  speakerPhone?: string | null
+  speakerPhotoUrl?: string | null
+  menu?: string | null
+  requiresCheckIn: boolean
+  dressCode?: string | null
+  groupName?: string | null
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCreateEvent, useEvents } from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
@@ -81,17 +82,19 @@ export function EventsListPage() {
       ) : (
         <div className="grid gap-3">
           {events.map((ev) => (
-            <Card key={ev.id} className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold">{ev.name}</p>
-                <p className="text-sm text-slate-500">
-                  {new Date(ev.startsAt).toLocaleString()} · /{ev.slug}
-                </p>
-              </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                {t(`status.${ev.status}`)} ({EventStatusName[ev.status]})
-              </span>
-            </Card>
+            <Link key={ev.id} to={`/events/${ev.id}`}>
+              <Card className="flex items-center justify-between transition hover:border-indigo-300 hover:shadow">
+                <div>
+                  <p className="font-semibold">{ev.name}</p>
+                  <p className="text-sm text-slate-500">
+                    {new Date(ev.startsAt).toLocaleString()} · /{ev.slug}
+                  </p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                  {t(`status.${ev.status}`)} ({EventStatusName[ev.status]})
+                </span>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

@@ -27,6 +27,38 @@
     "empty": "No events yet. Create the first one.",
     "created": "Event created"
   },
+  "eventDetail": {
+    "overview": "Overview"
+  },
+  "participants": {
+    "title": "Participants",
+    "import": "Excel import",
+    "template": "Download template",
+    "invite": "Send invitations",
+    "invited": "Invitations sent: {{count}}",
+    "preview": "Preview",
+    "doImport": "Import",
+    "rows": "Rows",
+    "valid": "Valid",
+    "importedCount": "Imported",
+    "row": "Row",
+    "duplicates": "Duplicates",
+    "add": "Add participant",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "name": "Participant",
+    "empty": "No participants"
+  },
+  "agenda": {
+    "title": "Agenda",
+    "add": "Add agenda item",
+    "titlePl": "Title (PL)",
+    "titleEn": "Title (EN)",
+    "type": "Type",
+    "requiresCheckIn": "Requires QR check-in",
+    "delete": "Delete",
+    "empty": "No agenda items"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",

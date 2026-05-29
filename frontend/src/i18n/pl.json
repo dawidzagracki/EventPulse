@@ -27,6 +27,38 @@
     "empty": "Brak wydarzeń. Utwórz pierwsze.",
     "created": "Wydarzenie utworzone"
   },
+  "eventDetail": {
+    "overview": "Przegląd"
+  },
+  "participants": {
+    "title": "Uczestnicy",
+    "import": "Import z Excela",
+    "template": "Pobierz szablon",
+    "invite": "Wyślij zaproszenia",
+    "invited": "Wysłano zaproszenia: {{count}}",
+    "preview": "Podgląd",
+    "doImport": "Importuj",
+    "rows": "Wiersze",
+    "valid": "Poprawne",
+    "importedCount": "Zaimportowano",
+    "row": "Wiersz",
+    "duplicates": "Duplikaty",
+    "add": "Dodaj uczestnika",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "name": "Uczestnik",
+    "empty": "Brak uczestników"
+  },
+  "agenda": {
+    "title": "Agenda",
+    "add": "Dodaj punkt agendy",
+    "titlePl": "Tytuł (PL)",
+    "titleEn": "Tytuł (EN)",
+    "type": "Typ",
+    "requiresCheckIn": "Wymaga skanu QR",
+    "delete": "Usuń",
+    "empty": "Brak punktów agendy"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

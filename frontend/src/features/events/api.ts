@@ -18,6 +18,13 @@ export function useEvents() {
   return useQuery({ queryKey: KEY, queryFn: listEvents })
 }
 
+export function useEvent(eventId: string) {
+  return useQuery({
+    queryKey: ['events', eventId],
+    queryFn: async () => (await api.get<EventDto>(`/api/events/${eventId}`)).data,
+  })
+}
+
 export function useCreateEvent() {
   const qc = useQueryClient()
   return useMutation({
