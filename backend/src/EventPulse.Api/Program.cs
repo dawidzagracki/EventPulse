@@ -1,4 +1,5 @@
 using System.Text;
+using EventPulse.Api.Hubs;
 using EventPulse.Api.Infrastructure;
 using EventPulse.Api.Middleware;
 using EventPulse.Infrastructure;
@@ -7,6 +8,7 @@ using EventPulse.Infrastructure.Persistence;
 using EventPulse.Modules.Identity;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Shared.Application;
+using EventPulse.Shared.Notifications;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -29,6 +31,7 @@ var moduleAssemblies = new[]
     typeof(EventPulse.Modules.Participants.Domain.Participant).Assembly,
     typeof(EventPulse.Modules.Agenda.Domain.AgendaItem).Assembly,
     typeof(EventPulse.Modules.Content.Domain.EventPage).Assembly,
+    typeof(EventPulse.Modules.Scanning.Domain.ScanEvent).Assembly,
 };
 
 builder.Services.AddMediatR(cfg =>
@@ -59,6 +62,21 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
             NameClaimType = "sub",
             RoleClaimType = AppClaims.Role,
         };
+
+        // SignalR WebSockets can't set the Authorization header — read the token from the query string.
+        bearer.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
+        };
     });
 builder.Services.AddAuthorization(options =>
 {
@@ -74,6 +92,15 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
         .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
         .AllowAnyHeader()
         .AllowAnyMethod()));
+
+var signalr = builder.Services.AddSignalR();
+var redis = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrWhiteSpace(redis))
+{
+    signalr.AddStackExchangeRedis(redis); // backplane for horizontal scaling
+}
+
+builder.Services.AddScoped<IEventNotifier, SignalREventNotifier>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -98,6 +125,7 @@ app.UseMiddleware<TenantResolutionMiddleware>(); // after auth: principal is pop
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<EventHub>("/hubs/event");
 
 app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
 {

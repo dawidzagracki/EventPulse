@@ -40,6 +40,9 @@ public sealed class Participant : TenantEntity
 
     public ParticipantStatus Status { get; set; } = ParticipantStatus.Invited;
 
+    public DateTimeOffset? CheckedInAt { get; set; }
+    public DateTimeOffset? CheckedOutAt { get; set; }
+
     public bool HasAcceptedRodo => RodoAcceptedAt is not null;
 
     /// <summary>Opaque token embedded in the QR code and the email login link.</summary>

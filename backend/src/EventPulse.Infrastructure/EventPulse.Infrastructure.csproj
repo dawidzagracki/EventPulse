@@ -7,6 +7,7 @@
     <ProjectReference Include="..\EventPulse.Modules.Participants\EventPulse.Modules.Participants.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Agenda\EventPulse.Modules.Agenda.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Content\EventPulse.Modules.Content.csproj" />
+    <ProjectReference Include="..\EventPulse.Modules.Scanning\EventPulse.Modules.Scanning.csproj" />
   </ItemGroup>
 
   <ItemGroup>
