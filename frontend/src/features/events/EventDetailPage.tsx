@@ -9,6 +9,7 @@ import { DashboardTab } from '../dashboard/DashboardTab'
 import { LogisticsTab } from '../logistics/LogisticsTab'
 import { EngagementTab } from '../engagement/EngagementTab'
 import { GalleryTab } from '../gallery/GalleryTab'
+import { AuditTab } from '../audit/AuditTab'
 import { Button, Card } from '../../components/ui'
 import { EventStatusName } from '../../types/api'
 
@@ -20,6 +21,7 @@ type Tab =
   | 'logistics'
   | 'engagement'
   | 'gallery'
+  | 'audit'
   | 'dashboard'
 
 export function EventDetailPage() {
@@ -40,6 +42,7 @@ export function EventDetailPage() {
     { id: 'engagement', label: t('engagement.title') },
     { id: 'gallery', label: t('gallery.title') },
     { id: 'dashboard', label: t('dashboard.title') },
+    { id: 'audit', label: t('audit.title') },
   ]
 
   return (
@@ -98,6 +101,7 @@ export function EventDetailPage() {
       {tab === 'engagement' && <EngagementTab eventId={eventId} />}
       {tab === 'gallery' && <GalleryTab eventId={eventId} />}
       {tab === 'dashboard' && <DashboardTab eventId={eventId} />}
+      {tab === 'audit' && <AuditTab />}
     </div>
   )
 }

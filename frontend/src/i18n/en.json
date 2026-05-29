@@ -170,6 +170,18 @@
     "title": "Gallery",
     "empty": "No photos"
   },
+  "ai": {
+    "title": "Assistant",
+    "placeholder": "Ask about agenda, room, transfer...",
+    "send": "Ask"
+  },
+  "audit": {
+    "title": "Audit",
+    "when": "When",
+    "who": "Who",
+    "action": "Action",
+    "empty": "No entries"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",

@@ -170,6 +170,18 @@
     "title": "Galeria",
     "empty": "Brak zdjęć"
   },
+  "ai": {
+    "title": "Asystent",
+    "placeholder": "Zapytaj o agendę, pokój, transfer...",
+    "send": "Zapytaj"
+  },
+  "audit": {
+    "title": "Audyt",
+    "when": "Czas",
+    "who": "Kto",
+    "action": "Akcja",
+    "empty": "Brak wpisów"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
+using EventPulse.Modules.Ai;
 using EventPulse.Modules.Engagement;
 using EventPulse.Modules.Gallery;
 using EventPulse.Modules.Identity.Auth;
@@ -82,6 +83,15 @@ public sealed class ParticipantMeController : ControllerBase
         => Ok(await _mediator.Send(new AddNetworkingContactCommand(ParticipantId, body.TargetToken), ct));
 
     public sealed record AddContactBody(Guid TargetToken);
+
+    [HttpPost("ai/chat")]
+    public async Task<ActionResult<object>> AiChat(AiChatBody body, CancellationToken ct)
+    {
+        var reply = await _mediator.Send(new ChatCommand(ParticipantId, EventId, body.Message), ct);
+        return Ok(new { reply });
+    }
+
+    public sealed record AiChatBody(string Message);
 
     [HttpGet("gallery")]
     public async Task<ActionResult<IReadOnlyList<PhotoDto>>> Gallery(CancellationToken ct)

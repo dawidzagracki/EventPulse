@@ -16,6 +16,7 @@ import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../t
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { useMyGallery } from '../gallery/api'
 import { Thumb } from '../gallery/Thumb'
+import { AiAssistantSection } from '../ai/AiAssistantSection'
 
 export function ParticipantHome() {
   const { t } = useTranslation()
@@ -58,6 +59,7 @@ export function ParticipantHome() {
                 <QuizzesSection />
                 <NetworkingSection />
                 <GallerySection />
+                <AiAssistantSection />
                 <FeedbackSection />
               </>
             )}

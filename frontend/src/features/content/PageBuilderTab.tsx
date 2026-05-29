@@ -181,26 +181,33 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
                   <div className="mb-2 flex items-center gap-2">
                     <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium uppercase">{block.type}</span>
                     <div className="ml-auto flex gap-1">
-                      <button onClick={() => move(block.id, -1)} disabled={i === 0} className="px-1 disabled:opacity-30">
+                      <button
+                        onClick={() => move(block.id, -1)}
+                        disabled={i === 0}
+                        className="px-1 disabled:opacity-30"
+                        aria-label="Move block up"
+                      >
                         ↑
                       </button>
                       <button
                         onClick={() => move(block.id, 1)}
                         disabled={i === blocks.length - 1}
                         className="px-1 disabled:opacity-30"
+                        aria-label="Move block down"
                       >
                         ↓
                       </button>
                       <button
                         onClick={() => patchBlock(block.id, (b) => ({ ...b, visible: !b.visible }))}
                         className="px-1"
-                        title={t('page.toggleVisible')}
+                        aria-label={t('page.toggleVisible')}
                       >
                         {block.visible ? '👁' : '🚫'}
                       </button>
                       <button
                         onClick={() => setBlocks((prev) => prev.filter((b) => b.id !== block.id))}
                         className="px-1 text-red-600"
+                        aria-label={t('agenda.delete')}
                       >
                         ✕
                       </button>

@@ -7,6 +7,7 @@ using EventPulse.Infrastructure;
 using EventPulse.Infrastructure.Email;
 using EventPulse.Infrastructure.Persistence;
 using EventPulse.Infrastructure.Storage;
+using EventPulse.Modules.Ai;
 using EventPulse.Modules.Identity;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Shared.Application;
@@ -27,6 +28,7 @@ builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddEmail(builder.Configuration);
 builder.Services.AddStorage(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddAiModule(builder.Configuration);
 
 // Module assemblies that contain MediatR handlers and FluentValidation validators.
 var moduleAssemblies = new[]
@@ -40,12 +42,17 @@ var moduleAssemblies = new[]
     typeof(EventPulse.Modules.Logistics.Transfer).Assembly,
     typeof(EventPulse.Modules.Engagement.Contest).Assembly,
     typeof(EventPulse.Modules.Gallery.Photo).Assembly,
+    typeof(EventPulse.Modules.Ai.ChatCommand).Assembly,
 };
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblies(moduleAssemblies);
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    cfg.AddOpenBehavior(typeof(AuditLoggingBehavior<,>));
 });
 builder.Services.AddValidatorsFromAssemblies(moduleAssemblies);
 

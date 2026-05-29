@@ -1,0 +1,18 @@
+using EventPulse.Modules.Identity.Auth;
+using EventPulse.Shared.Application;
+
+namespace EventPulse.Api.Infrastructure;
+
+public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor) : ICurrentUser
+{
+    public Guid? UserId
+    {
+        get
+        {
+            var sub = accessor.HttpContext?.User?.FindFirst("sub")?.Value;
+            return Guid.TryParse(sub, out var id) ? id : null;
+        }
+    }
+
+    public string? PrincipalType => accessor.HttpContext?.User?.FindFirst(AppClaims.PrincipalType)?.Value;
+}
