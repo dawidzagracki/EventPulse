@@ -6,6 +6,7 @@ using EventPulse.Api.Middleware;
 using EventPulse.Infrastructure;
 using EventPulse.Infrastructure.Email;
 using EventPulse.Infrastructure.Persistence;
+using EventPulse.Infrastructure.Storage;
 using EventPulse.Modules.Identity;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Shared.Application;
@@ -22,6 +23,7 @@ var connectionString = builder.Configuration.GetConnectionString("Postgres")
 
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddEmail(builder.Configuration);
+builder.Services.AddStorage(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
 
 // Module assemblies that contain MediatR handlers and FluentValidation validators.

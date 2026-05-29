@@ -31,7 +31,7 @@ public sealed class SmtpEmailSender : IEmailSender
 
         if (!string.IsNullOrEmpty(_options.Smtp.User))
         {
-            await client.AuthenticateAsync(_options.Smtp.User, _options.Smtp.Password, cancellationToken);
+            await client.AuthenticateAsync(_options.Smtp.User, _options.Smtp.Password ?? string.Empty, cancellationToken);
         }
 
         await client.SendAsync(mime, cancellationToken);
