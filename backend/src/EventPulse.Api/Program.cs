@@ -39,6 +39,7 @@ var moduleAssemblies = new[]
     typeof(EventPulse.Modules.Scanning.Domain.ScanEvent).Assembly,
     typeof(EventPulse.Modules.Logistics.Transfer).Assembly,
     typeof(EventPulse.Modules.Engagement.Contest).Assembly,
+    typeof(EventPulse.Modules.Gallery.Photo).Assembly,
 };
 
 builder.Services.AddMediatR(cfg =>

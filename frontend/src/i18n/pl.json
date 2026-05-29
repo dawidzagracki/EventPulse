@@ -166,6 +166,10 @@
     "contactError": "Nie udało się dodać kontaktu (brak zgody?)",
     "noContacts": "Brak kontaktów"
   },
+  "gallery": {
+    "title": "Galeria",
+    "empty": "Brak zdjęć"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

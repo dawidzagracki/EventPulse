@@ -14,6 +14,8 @@ import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
 import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
+import { useMyGallery } from '../gallery/api'
+import { Thumb } from '../gallery/Thumb'
 
 export function ParticipantHome() {
   const { t } = useTranslation()
@@ -55,6 +57,7 @@ export function ParticipantHome() {
                 <AgendaSection />
                 <QuizzesSection />
                 <NetworkingSection />
+                <GallerySection />
                 <FeedbackSection />
               </>
             )}
@@ -330,6 +333,24 @@ function NetworkingSection() {
         ))}
         {(contacts ?? []).length === 0 && <li className="text-slate-500">{t('engagement.noContacts')}</li>}
       </ul>
+    </Card>
+  )
+}
+
+function GallerySection() {
+  const { t } = useTranslation()
+  const { data: photos } = useMyGallery()
+
+  if (!photos || photos.length === 0) return null
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-semibold">{t('gallery.title')}</h2>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {photos.map((p) => (
+          <Thumb key={p.id} path={`/api/me/gallery/${p.id}/file`} alt={p.fileName} />
+        ))}
+      </div>
     </Card>
   )
 }

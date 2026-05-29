@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using EventPulse.Infrastructure.Outbox;
 using EventPulse.Infrastructure.Persistence;
 using EventPulse.Shared.Notifications;
+using EventPulse.Shared.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -55,6 +56,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<IEmailSender>(new FakeEmailSender(SentEmails));
 
+            services.RemoveAll<IFileStorage>();
+            services.AddSingleton<IFileStorage, InMemoryFileStorage>();
+
             // Disable the background outbox loop; tests drain it deterministically via IOutboxDispatcher.
             var processor = services.FirstOrDefault(d => d.ImplementationType == typeof(OutboxProcessor));
             if (processor is not null)
@@ -69,6 +73,31 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
         {
             sent.Enqueue(message);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class InMemoryFileStorage : IFileStorage
+    {
+        private readonly ConcurrentDictionary<string, (byte[] Bytes, string ContentType)> _files = new();
+
+        public Task UploadAsync(string key, Stream content, string contentType, CancellationToken cancellationToken = default)
+        {
+            using var ms = new MemoryStream();
+            content.CopyTo(ms);
+            _files[key] = (ms.ToArray(), contentType);
+            return Task.CompletedTask;
+        }
+
+        public Task<StoredFile> DownloadAsync(string key, CancellationToken cancellationToken = default)
+        {
+            var (bytes, contentType) = _files[key];
+            return Task.FromResult(new StoredFile(new MemoryStream(bytes), contentType));
+        }
+
+        public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
+        {
+            _files.TryRemove(key, out _);
             return Task.CompletedTask;
         }
     }

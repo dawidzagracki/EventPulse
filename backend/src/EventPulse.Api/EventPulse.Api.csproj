@@ -31,6 +31,7 @@
     <ProjectReference Include="..\EventPulse.Modules.Scanning\EventPulse.Modules.Scanning.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Logistics\EventPulse.Modules.Logistics.csproj" />
     <ProjectReference Include="..\EventPulse.Modules.Engagement\EventPulse.Modules.Engagement.csproj" />
+    <ProjectReference Include="..\EventPulse.Modules.Gallery\EventPulse.Modules.Gallery.csproj" />
   </ItemGroup>
 
 </Project>

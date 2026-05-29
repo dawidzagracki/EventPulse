@@ -166,6 +166,10 @@
     "contactError": "Could not add contact (no consent?)",
     "noContacts": "No contacts"
   },
+  "gallery": {
+    "title": "Gallery",
+    "empty": "No photos"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Engagement;
+using EventPulse.Modules.Gallery;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Logistics;
 using EventPulse.Modules.Participants.Application.Feedback;
@@ -81,6 +82,17 @@ public sealed class ParticipantMeController : ControllerBase
         => Ok(await _mediator.Send(new AddNetworkingContactCommand(ParticipantId, body.TargetToken), ct));
 
     public sealed record AddContactBody(Guid TargetToken);
+
+    [HttpGet("gallery")]
+    public async Task<ActionResult<IReadOnlyList<PhotoDto>>> Gallery(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListPhotosQuery(EventId, OnlyPublished: true), ct));
+
+    [HttpGet("gallery/{id:guid}/file")]
+    public async Task<IActionResult> GalleryFile(Guid id, CancellationToken ct)
+    {
+        var stored = await _mediator.Send(new GetPhotoFileQuery(id, RequirePublished: true), ct);
+        return File(stored.Content, stored.ContentType);
+    }
 
     public sealed record FeedbackBody(int Rating, string? Comment);
 
