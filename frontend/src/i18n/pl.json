@@ -99,6 +99,31 @@
     "restore": "Przywróć",
     "preview": "Podgląd"
   },
+  "scanner": {
+    "title": "Skaner QR",
+    "online": "Online",
+    "offline": "Offline",
+    "pending": "W kolejce",
+    "checkIn": "Wejście",
+    "checkOut": "Wyjście",
+    "manual": "Wpisz token ręcznie",
+    "scan": "Skanuj",
+    "queued": "Dodano do kolejki",
+    "badCode": "Nieprawidłowy kod",
+    "cameraUnsupported": "Kamera/QR niedostępne — użyj wpisywania ręcznego",
+    "cameraDenied": "Brak dostępu do kamery — użyj wpisywania ręcznego"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "total": "Wszyscy",
+    "checkedIn": "Obecni",
+    "attendance": "Frekwencja",
+    "confirmed": "Potwierdzeni",
+    "checkedOut": "Wyszli",
+    "noShow": "Nieobecni",
+    "recent": "Ostatnie wejścia",
+    "noCheckIns": "Brak wejść"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

@@ -217,3 +217,29 @@ export interface PageVersionDto {
   version: number
   publishedAt: string
 }
+
+export const ScanKind = { CheckIn: 0, CheckOut: 1, Station: 2 } as const
+export type ScanKind = (typeof ScanKind)[keyof typeof ScanKind]
+
+export interface RecentCheckIn {
+  name: string
+  at: string
+}
+
+export interface DashboardData {
+  total: number
+  invited: number
+  confirmed: number
+  checkedIn: number
+  checkedOut: number
+  noShow: number
+  attendancePct: number
+  recentCheckIns: RecentCheckIn[]
+}
+
+export interface BatchScanResult {
+  accepted: number
+  duplicates: number
+  notFound: number
+  items: { clientId: string; status: string }[]
+}

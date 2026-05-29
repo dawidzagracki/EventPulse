@@ -5,10 +5,11 @@ import { useEvent } from './api'
 import { ParticipantsTab } from '../participants/ParticipantsTab'
 import { AgendaTab } from '../agenda/AgendaTab'
 import { PageBuilderTab } from '../content/PageBuilderTab'
-import { Card } from '../../components/ui'
+import { DashboardTab } from '../dashboard/DashboardTab'
+import { Button, Card } from '../../components/ui'
 import { EventStatusName } from '../../types/api'
 
-type Tab = 'overview' | 'participants' | 'agenda' | 'page'
+type Tab = 'overview' | 'participants' | 'agenda' | 'page' | 'dashboard'
 
 export function EventDetailPage() {
   const { eventId = '' } = useParams()
@@ -24,18 +25,24 @@ export function EventDetailPage() {
     { id: 'participants', label: t('participants.title') },
     { id: 'agenda', label: t('agenda.title') },
     { id: 'page', label: t('page.title') },
+    { id: 'dashboard', label: t('dashboard.title') },
   ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link to="/events" className="text-sm text-indigo-600 hover:underline">
-          ← {t('events.title')}
+      <div className="flex items-start justify-between">
+        <div>
+          <Link to="/events" className="text-sm text-indigo-600 hover:underline">
+            ← {t('events.title')}
+          </Link>
+          <h1 className="mt-1 text-2xl font-bold">{event.name}</h1>
+          <p className="text-sm text-slate-500">
+            /{event.slug} · {EventStatusName[event.status]}
+          </p>
+        </div>
+        <Link to={`/events/${eventId}/scanner`}>
+          <Button variant="ghost">{t('scanner.title')}</Button>
         </Link>
-        <h1 className="mt-1 text-2xl font-bold">{event.name}</h1>
-        <p className="text-sm text-slate-500">
-          /{event.slug} · {EventStatusName[event.status]}
-        </p>
       </div>
 
       <div className="flex gap-1 border-b border-slate-200">
@@ -73,6 +80,7 @@ export function EventDetailPage() {
       {tab === 'participants' && <ParticipantsTab eventId={eventId} />}
       {tab === 'agenda' && <AgendaTab eventId={eventId} />}
       {tab === 'page' && <PageBuilderTab eventId={eventId} />}
+      {tab === 'dashboard' && <DashboardTab eventId={eventId} />}
     </div>
   )
 }

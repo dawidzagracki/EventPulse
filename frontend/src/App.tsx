@@ -6,10 +6,19 @@ import { EventsListPage } from './features/events/EventsListPage'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { ParticipantTokenPage } from './features/participant/ParticipantTokenPage'
 import { ParticipantHome } from './features/participant/ParticipantHome'
+import { ScannerPage } from './features/scanner/ScannerPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/p/:token', element: <ParticipantTokenPage /> },
+  {
+    path: '/events/:eventId/scanner',
+    element: (
+      <ProtectedRoute allow={['Agency', 'Client']}>
+        <ScannerPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/me',
     element: (

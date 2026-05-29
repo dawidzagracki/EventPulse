@@ -99,6 +99,31 @@
     "restore": "Restore",
     "preview": "Preview"
   },
+  "scanner": {
+    "title": "QR scanner",
+    "online": "Online",
+    "offline": "Offline",
+    "pending": "Queued",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "manual": "Enter token manually",
+    "scan": "Scan",
+    "queued": "Added to queue",
+    "badCode": "Invalid code",
+    "cameraUnsupported": "Camera/QR unavailable — use manual entry",
+    "cameraDenied": "Camera access denied — use manual entry"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "total": "Total",
+    "checkedIn": "Checked in",
+    "attendance": "Attendance",
+    "confirmed": "Confirmed",
+    "checkedOut": "Checked out",
+    "noShow": "No-shows",
+    "recent": "Recent check-ins",
+    "noCheckIns": "No check-ins yet"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",
