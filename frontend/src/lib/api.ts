@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../stores/authStore'
-import type { AuthResult } from '../types/api'
+import type { AuthResult, ParticipantLoginResult } from '../types/api'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -18,15 +18,26 @@ api.interceptors.request.use((config) => {
 let refreshing: Promise<string | null> | null = null
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = useAuthStore.getState().refreshToken
-  if (!refreshToken) {
-    return null
-  }
+  const { refreshToken, participantToken } = useAuthStore.getState()
 
   try {
-    const { data } = await axios.post<AuthResult>(`${baseURL}/api/auth/refresh`, { refreshToken })
-    useAuthStore.getState().setAuth(data)
-    return data.accessToken
+    // Agency/client: rotate refresh token.
+    if (refreshToken) {
+      const { data } = await axios.post<AuthResult>(`${baseURL}/api/auth/refresh`, { refreshToken })
+      useAuthStore.getState().setAuth(data)
+      return data.accessToken
+    }
+
+    // Participant: re-exchange the long-lived token from the invitation link.
+    if (participantToken) {
+      const { data } = await axios.post<ParticipantLoginResult>(`${baseURL}/api/auth/participant`, {
+        token: participantToken,
+      })
+      useAuthStore.getState().setParticipant(data, participantToken)
+      return data.accessToken
+    }
+
+    return null
   } catch {
     useAuthStore.getState().logout()
     return null

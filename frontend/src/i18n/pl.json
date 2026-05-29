@@ -59,6 +59,22 @@
     "delete": "Usuń",
     "empty": "Brak punktów agendy"
   },
+  "participant": {
+    "invalidLink": "Nieprawidłowy lub wygasły link.",
+    "hello": "Cześć, {{name}}!",
+    "consents": "Zgody",
+    "rodo": "Wyrażam zgodę na przetwarzanie moich danych (RODO)",
+    "photo": "Zgoda na publikację mojego wizerunku (zdjęcia)",
+    "networking": "Chcę być widoczny dla innych uczestników (networking)",
+    "preferences": "Preferencje",
+    "language": "Język",
+    "dietary": "Preferencje żywieniowe",
+    "shirt": "Rozmiar koszulki",
+    "transfer": "Transfer z lotniska",
+    "arrival": "Godzina przylotu",
+    "flight": "Numer lotu",
+    "wishes": "Uwagi / życzenia"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

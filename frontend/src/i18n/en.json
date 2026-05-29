@@ -59,6 +59,22 @@
     "delete": "Delete",
     "empty": "No agenda items"
   },
+  "participant": {
+    "invalidLink": "Invalid or expired link.",
+    "hello": "Hello, {{name}}!",
+    "consents": "Consents",
+    "rodo": "I consent to the processing of my personal data (GDPR)",
+    "photo": "I consent to publishing my image (photos)",
+    "networking": "Make me visible to other participants (networking)",
+    "preferences": "Preferences",
+    "language": "Language",
+    "dietary": "Dietary preferences",
+    "shirt": "Shirt size",
+    "transfer": "Airport transfer",
+    "arrival": "Arrival time",
+    "flight": "Flight number",
+    "wishes": "Notes / wishes"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",

@@ -8,6 +8,38 @@ export interface AuthResult {
   role: string | null
 }
 
+export interface ParticipantLoginResult {
+  accessToken: string
+  accessExpiresAt: string
+  participantId: string
+  eventId: string
+  firstName: string
+  lastName: string
+  language: string
+}
+
+export interface MyProfileDto {
+  id: string
+  eventId: string
+  firstName: string
+  lastName: string
+  email: string
+  language: string
+  status: number
+  hasAcceptedRodo: boolean
+  photoConsent: boolean
+  networkingConsent: boolean
+  dietaryPreferences: string | null
+  shirtSize: string | null
+  wishes: string | null
+  airportTransfer: boolean
+  arrivalTime: string | null
+  flightNumber: string | null
+  tableName: string | null
+  roomNumber: string | null
+  groupName: string | null
+}
+
 export const EventStatus = {
   Draft: 0,
   Published: 1,
