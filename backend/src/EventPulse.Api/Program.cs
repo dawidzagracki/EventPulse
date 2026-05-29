@@ -68,6 +68,13 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthPolicies.AgencyOrClient, p => p.RequireClaim(AppClaims.PrincipalType, "Agency", "Client"));
 });
 
+const string CorsPolicy = "frontend";
+builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
+    policy
+        .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -83,6 +90,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseCors(CorsPolicy);
 
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>(); // after auth: principal is populated

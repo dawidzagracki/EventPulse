@@ -1,0 +1,37 @@
+{
+  "app": { "name": "EventPulse" },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "logout": "Log out",
+    "error": "Something went wrong"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "login": "Sign in",
+    "invalid": "Invalid email or password"
+  },
+  "events": {
+    "title": "Events",
+    "new": "New event",
+    "name": "Name",
+    "starts": "Starts",
+    "ends": "Ends",
+    "location": "Location",
+    "clientEmail": "Client email",
+    "status": "Status",
+    "empty": "No events yet. Create the first one.",
+    "created": "Event created"
+  },
+  "status": {
+    "0": "Draft",
+    "1": "Published",
+    "2": "Live",
+    "3": "Completed",
+    "4": "Archived"
+  }
+}

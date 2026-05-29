@@ -1,0 +1,37 @@
+{
+  "app": { "name": "EventPulse" },
+  "common": {
+    "loading": "Ładowanie...",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "create": "Utwórz",
+    "logout": "Wyloguj",
+    "error": "Coś poszło nie tak"
+  },
+  "auth": {
+    "loginTitle": "Zaloguj się",
+    "email": "E-mail",
+    "password": "Hasło",
+    "login": "Zaloguj",
+    "invalid": "Nieprawidłowy e-mail lub hasło"
+  },
+  "events": {
+    "title": "Wydarzenia",
+    "new": "Nowe wydarzenie",
+    "name": "Nazwa",
+    "starts": "Początek",
+    "ends": "Koniec",
+    "location": "Lokalizacja",
+    "clientEmail": "E-mail klienta",
+    "status": "Status",
+    "empty": "Brak wydarzeń. Utwórz pierwsze.",
+    "created": "Wydarzenie utworzone"
+  },
+  "status": {
+    "0": "Szkic",
+    "1": "Opublikowane",
+    "2": "Na żywo",
+    "3": "Zakończone",
+    "4": "Zarchiwizowane"
+  }
+}
