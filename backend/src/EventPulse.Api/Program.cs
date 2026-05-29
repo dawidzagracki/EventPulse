@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using EventPulse.Api.Hubs;
 using EventPulse.Api.Infrastructure;
 using EventPulse.Api.Middleware;
@@ -102,6 +103,23 @@ if (!string.IsNullOrWhiteSpace(redis))
 
 builder.Services.AddScoped<IEventNotifier, SignalREventNotifier>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Per-IP global cap.
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1) }));
+
+    // Stricter limiter for auth endpoints (anti brute-force).
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+});
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -113,12 +131,27 @@ await DevDataSeeder.MigrateAndSeedAsync(app.Services, seedDevData: app.Environme
 
 app.UseExceptionHandler();
 
+// Security headers (HSTS/TLS terminate at the reverse proxy in production).
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["X-XSS-Protection"] = "0";
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseCors(CorsPolicy);
+if (!app.Environment.IsDevelopment())
+{
+    app.UseRateLimiter(); // enforced in staging/prod; off locally and in tests
+}
 
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>(); // after auth: principal is populated

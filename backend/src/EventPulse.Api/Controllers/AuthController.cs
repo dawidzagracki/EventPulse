@@ -7,11 +7,13 @@ using EventPulse.Modules.Participants.Application.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventPulse.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting("auth")]
 public sealed class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
