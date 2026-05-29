@@ -122,7 +122,15 @@
     "checkedOut": "Wyszli",
     "noShow": "Nieobecni",
     "recent": "Ostatnie wejścia",
-    "noCheckIns": "Brak wejść"
+    "noCheckIns": "Brak wejść",
+    "report": "Pobierz raport PDF"
+  },
+  "feedback": {
+    "title": "Oceń wydarzenie",
+    "comment": "Komentarz (opcjonalnie)",
+    "send": "Wyślij ocenę",
+    "thanks": "Dziękujemy za opinię!",
+    "average": "Średnia ocena"
   },
   "status": {
     "0": "Szkic",

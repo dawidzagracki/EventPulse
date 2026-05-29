@@ -122,7 +122,15 @@
     "checkedOut": "Checked out",
     "noShow": "No-shows",
     "recent": "Recent check-ins",
-    "noCheckIns": "No check-ins yet"
+    "noCheckIns": "No check-ins yet",
+    "report": "Download PDF report"
+  },
+  "feedback": {
+    "title": "Rate the event",
+    "comment": "Comment (optional)",
+    "send": "Send rating",
+    "thanks": "Thanks for your feedback!",
+    "average": "Average rating"
   },
   "status": {
     "0": "Draft",

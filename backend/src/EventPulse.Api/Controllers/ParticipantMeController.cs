@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Identity.Auth;
+using EventPulse.Modules.Participants.Application.Feedback;
 using EventPulse.Modules.Participants.Application.Me;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -19,6 +20,7 @@ public sealed class ParticipantMeController : ControllerBase
     public ParticipantMeController(IMediator mediator) => _mediator = mediator;
 
     private Guid ParticipantId => Guid.Parse(User.FindFirstValue("sub")!);
+    private Guid EventId => Guid.Parse(User.FindFirstValue(AppClaims.EventId)!);
 
     [HttpGet]
     public async Task<ActionResult<MyProfileDto>> Profile(CancellationToken ct)
@@ -41,6 +43,15 @@ public sealed class ParticipantMeController : ControllerBase
         var me = await _mediator.Send(new GetMyProfileQuery(ParticipantId), ct);
         return Ok(await _mediator.Send(new ParticipantAgendaQuery(me.EventId, me.GroupName), ct));
     }
+
+    [HttpPost("feedback")]
+    public async Task<IActionResult> Feedback(FeedbackBody body, CancellationToken ct)
+    {
+        await _mediator.Send(new SubmitFeedbackCommand(ParticipantId, EventId, body.Rating, body.Comment), ct);
+        return NoContent();
+    }
+
+    public sealed record FeedbackBody(int Rating, string? Comment);
 
     public sealed record ConsentsBody(bool RodoAccepted, bool PhotoConsent, bool NetworkingConsent);
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMyAgenda, useMyProfile, useUpdateConsents, useUpdatePreferences } from './api'
+import { useMyAgenda, useMyProfile, useSubmitFeedback, useUpdateConsents, useUpdatePreferences } from './api'
 import { useAuthStore } from '../../stores/authStore'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
@@ -44,6 +44,7 @@ export function ParticipantHome() {
               <>
                 <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
                 <AgendaSection />
+                <FeedbackSection />
               </>
             )}
           </>
@@ -166,6 +167,48 @@ function PreferencesSection({ profile }: { profile: MyProfileDto }) {
           </Button>
         </div>
       </form>
+    </Card>
+  )
+}
+
+function FeedbackSection() {
+  const { t } = useTranslation()
+  const submit = useSubmitFeedback()
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+
+  async function send(e: React.FormEvent) {
+    e.preventDefault()
+    if (rating < 1) return
+    await submit.mutateAsync({ rating, comment: comment || null })
+  }
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-semibold">{t('feedback.title')}</h2>
+      {submit.isSuccess ? (
+        <p className="text-sm text-emerald-700">{t('feedback.thanks')}</p>
+      ) : (
+        <form onSubmit={send} className="space-y-3">
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                className={`text-2xl ${n <= rating ? 'text-amber-400' : 'text-slate-300'}`}
+                aria-label={`${n}`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t('feedback.comment')} />
+          <Button type="submit" disabled={rating < 1 || submit.isPending}>
+            {t('feedback.send')}
+          </Button>
+        </form>
+      )}
     </Card>
   )
 }

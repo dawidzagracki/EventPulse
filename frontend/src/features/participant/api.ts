@@ -52,3 +52,11 @@ export function useMyAgenda() {
     queryFn: async () => (await api.get<AgendaItemDto[]>('/api/me/agenda')).data,
   })
 }
+
+export function useSubmitFeedback() {
+  return useMutation({
+    mutationFn: async (body: { rating: number; comment: string | null }) => {
+      await api.post('/api/me/feedback', body)
+    },
+  })
+}
