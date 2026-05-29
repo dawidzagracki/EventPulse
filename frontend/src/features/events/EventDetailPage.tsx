@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { useEvent } from './api'
 import { ParticipantsTab } from '../participants/ParticipantsTab'
 import { AgendaTab } from '../agenda/AgendaTab'
+import { PageBuilderTab } from '../content/PageBuilderTab'
 import { Card } from '../../components/ui'
 import { EventStatusName } from '../../types/api'
 
-type Tab = 'overview' | 'participants' | 'agenda'
+type Tab = 'overview' | 'participants' | 'agenda' | 'page'
 
 export function EventDetailPage() {
   const { eventId = '' } = useParams()
@@ -22,6 +23,7 @@ export function EventDetailPage() {
     { id: 'overview', label: t('eventDetail.overview') },
     { id: 'participants', label: t('participants.title') },
     { id: 'agenda', label: t('agenda.title') },
+    { id: 'page', label: t('page.title') },
   ]
 
   return (
@@ -70,6 +72,7 @@ export function EventDetailPage() {
       )}
       {tab === 'participants' && <ParticipantsTab eventId={eventId} />}
       {tab === 'agenda' && <AgendaTab eventId={eventId} />}
+      {tab === 'page' && <PageBuilderTab eventId={eventId} />}
     </div>
   )
 }

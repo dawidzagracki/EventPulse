@@ -173,3 +173,47 @@ export interface AgendaItemInput {
   dressCode?: string | null
   groupName?: string | null
 }
+
+export interface PageBlock {
+  id: string
+  type: string
+  order: number
+  visible: boolean
+  settings: Record<string, unknown>
+  content: { pl: Record<string, string>; en: Record<string, string> }
+  styles: Record<string, unknown>
+}
+
+export interface PageContentDoc {
+  blocks: PageBlock[]
+}
+
+export interface BrandingDto {
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  fontFamily: string
+  logoUrl: string | null
+  faviconUrl: string | null
+  backgroundColor: string | null
+}
+
+export interface SeoDto {
+  title: string | null
+  description: string | null
+  ogImageUrl: string | null
+}
+
+export interface PageDto {
+  eventId: string
+  content: PageContentDoc
+  branding: BrandingDto
+  seo: SeoDto
+  publishedVersion: number
+  hasPublished: boolean
+}
+
+export interface PageVersionDto {
+  version: number
+  publishedAt: string
+}
