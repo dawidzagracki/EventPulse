@@ -21,12 +21,16 @@ public sealed record MyProfileDto(
     string? FlightNumber,
     string? TableName,
     string? RoomNumber,
-    string? GroupName)
+    string? GroupName,
+    string? HotelName,
+    string? HotelAddress,
+    string? HotelPhone)
 {
     public static MyProfileDto From(Participant p) => new(
         p.Id, p.EventId, p.FirstName, p.LastName, p.Email, p.Language, p.Status,
         p.HasAcceptedRodo, p.PhotoConsent, p.NetworkingConsent,
         p.DietaryPreferences, p.ShirtSize, p.Wishes,
         p.AirportTransfer, p.ArrivalTime, p.FlightNumber,
-        p.TableName, p.RoomNumber, p.GroupName);
+        p.TableName, p.RoomNumber, p.GroupName,
+        p.HotelName, p.HotelAddress, p.HotelPhone);
 }

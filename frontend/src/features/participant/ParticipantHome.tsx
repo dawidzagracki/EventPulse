@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMyAgenda, useMyProfile, useSubmitFeedback, useUpdateConsents, useUpdatePreferences } from './api'
+import {
+  useMyAgenda,
+  useMyProfile,
+  useMyTransfers,
+  useSubmitFeedback,
+  useUpdateConsents,
+  useUpdatePreferences,
+} from './api'
 import { useAuthStore } from '../../stores/authStore'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
@@ -43,6 +50,7 @@ export function ParticipantHome() {
             {profile.hasAcceptedRodo && (
               <>
                 <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
+                <LogisticsSection profile={profile} />
                 <AgendaSection />
                 <FeedbackSection />
               </>
@@ -167,6 +175,51 @@ function PreferencesSection({ profile }: { profile: MyProfileDto }) {
           </Button>
         </div>
       </form>
+    </Card>
+  )
+}
+
+function LogisticsSection({ profile }: { profile: MyProfileDto }) {
+  const { t } = useTranslation()
+  const { data: transfers } = useMyTransfers()
+
+  const hasInfo = profile.tableName || profile.roomNumber || profile.hotelName
+  if (!hasInfo && (!transfers || transfers.length === 0)) {
+    return null
+  }
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-semibold">{t('logistics.title')}</h2>
+      <div className="space-y-1 text-sm">
+        {profile.tableName && (
+          <p>
+            <span className="text-slate-500">{t('logistics.table')}:</span> {profile.tableName}
+          </p>
+        )}
+        {profile.roomNumber && (
+          <p>
+            <span className="text-slate-500">{t('logistics.room')}:</span> {profile.roomNumber}
+            {profile.hotelName ? ` · ${profile.hotelName}` : ''}
+            {profile.hotelAddress ? ` · ${profile.hotelAddress}` : ''}
+          </p>
+        )}
+        {profile.hotelPhone && (
+          <p>
+            <span className="text-slate-500">{t('logistics.reception')}:</span> {profile.hotelPhone}
+          </p>
+        )}
+      </div>
+      {transfers && transfers.length > 0 && (
+        <ul className="mt-3 space-y-1 text-sm">
+          {transfers.map((tr) => (
+            <li key={tr.id} className="rounded-lg border border-slate-100 p-2">
+              <span className="font-medium">{tr.name}</span> · {new Date(tr.departureTime).toLocaleString()} ·{' '}
+              {tr.meetingPoint}
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   )
 }

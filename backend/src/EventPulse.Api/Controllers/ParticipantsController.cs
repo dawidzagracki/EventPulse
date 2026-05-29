@@ -119,5 +119,21 @@ public sealed class ParticipantsController : ControllerBase
         string? Position,
         string? Language);
 
+    [HttpPost("{id:guid}/logistics")]
+    public async Task<ActionResult<ParticipantDto>> Logistics(Guid eventId, Guid id, LogisticsBody body, CancellationToken ct)
+    {
+        await EnsureEventInTenantAsync(eventId, ct);
+        return Ok(await _mediator.Send(new UpdateParticipantLogisticsCommand(
+            id, body.GroupName, body.TableName, body.RoomNumber, body.HotelName, body.HotelAddress, body.HotelPhone), ct));
+    }
+
     public sealed record ChangeStatusBody(ParticipantStatus Status);
+
+    public sealed record LogisticsBody(
+        string? GroupName,
+        string? TableName,
+        string? RoomNumber,
+        string? HotelName,
+        string? HotelAddress,
+        string? HotelPhone);
 }

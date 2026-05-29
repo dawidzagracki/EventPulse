@@ -38,6 +38,18 @@ export interface MyProfileDto {
   tableName: string | null
   roomNumber: string | null
   groupName: string | null
+  hotelName: string | null
+  hotelAddress: string | null
+  hotelPhone: string | null
+}
+
+export interface TransferDto {
+  id: string
+  eventId: string
+  name: string
+  departureTime: string
+  meetingPoint: string
+  note: string | null
 }
 
 export const EventStatus = {

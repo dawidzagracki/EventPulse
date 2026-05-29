@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Identity.Auth;
+using EventPulse.Modules.Logistics;
 using EventPulse.Modules.Participants.Application.Feedback;
 using EventPulse.Modules.Participants.Application.Me;
 using MediatR;
@@ -43,6 +44,10 @@ public sealed class ParticipantMeController : ControllerBase
         var me = await _mediator.Send(new GetMyProfileQuery(ParticipantId), ct);
         return Ok(await _mediator.Send(new ParticipantAgendaQuery(me.EventId, me.GroupName), ct));
     }
+
+    [HttpGet("transfers")]
+    public async Task<ActionResult<IReadOnlyList<TransferDto>>> Transfers(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListTransfersQuery(EventId), ct));
 
     [HttpPost("feedback")]
     public async Task<IActionResult> Feedback(FeedbackBody body, CancellationToken ct)

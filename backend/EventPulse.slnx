@@ -6,6 +6,7 @@
     <Project Path="src/EventPulse.Modules.Content/EventPulse.Modules.Content.csproj" />
     <Project Path="src/EventPulse.Modules.Events/EventPulse.Modules.Events.csproj" />
     <Project Path="src/EventPulse.Modules.Identity/EventPulse.Modules.Identity.csproj" />
+    <Project Path="src/EventPulse.Modules.Logistics/EventPulse.Modules.Logistics.csproj" />
     <Project Path="src/EventPulse.Modules.Participants/EventPulse.Modules.Participants.csproj" />
     <Project Path="src/EventPulse.Modules.Scanning/EventPulse.Modules.Scanning.csproj" />
     <Project Path="src/EventPulse.Shared/EventPulse.Shared.csproj" />

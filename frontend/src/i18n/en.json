@@ -132,6 +132,18 @@
     "thanks": "Thanks for your feedback!",
     "average": "Average rating"
   },
+  "logistics": {
+    "title": "Logistics",
+    "addTransfer": "Add transfer",
+    "transferName": "Transfer name",
+    "departure": "Departure",
+    "meetingPoint": "Meeting point",
+    "note": "Note",
+    "empty": "No transfers",
+    "table": "Table",
+    "room": "Room",
+    "reception": "Reception"
+  },
   "status": {
     "0": "Draft",
     "1": "Published",

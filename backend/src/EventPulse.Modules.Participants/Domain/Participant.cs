@@ -20,6 +20,9 @@ public sealed class Participant : TenantEntity
     public string? GroupName { get; set; }
     public string? TableName { get; set; }
     public string? RoomNumber { get; set; }
+    public string? HotelName { get; set; }
+    public string? HotelAddress { get; set; }
+    public string? HotelPhone { get; set; }
 
     public bool AirportTransfer { get; set; }
     public string? ArrivalTime { get; set; }

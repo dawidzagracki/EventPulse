@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import type { AgendaItemDto, MyProfileDto, ParticipantLoginResult } from '../../types/api'
+import type { AgendaItemDto, MyProfileDto, ParticipantLoginResult, TransferDto } from '../../types/api'
 
 export async function exchangeToken(token: string): Promise<ParticipantLoginResult> {
   const { data } = await api.post<ParticipantLoginResult>('/api/auth/participant', { token })
@@ -50,6 +50,13 @@ export function useMyAgenda() {
   return useQuery({
     queryKey: ['me', 'agenda'],
     queryFn: async () => (await api.get<AgendaItemDto[]>('/api/me/agenda')).data,
+  })
+}
+
+export function useMyTransfers() {
+  return useQuery({
+    queryKey: ['me', 'transfers'],
+    queryFn: async () => (await api.get<TransferDto[]>('/api/me/transfers')).data,
   })
 }
 

@@ -132,6 +132,18 @@
     "thanks": "Dziękujemy za opinię!",
     "average": "Średnia ocena"
   },
+  "logistics": {
+    "title": "Logistyka",
+    "addTransfer": "Dodaj transfer",
+    "transferName": "Nazwa transferu",
+    "departure": "Odjazd",
+    "meetingPoint": "Miejsce zbiórki",
+    "note": "Uwagi",
+    "empty": "Brak transferów",
+    "table": "Stolik",
+    "room": "Pokój",
+    "reception": "Recepcja"
+  },
   "status": {
     "0": "Szkic",
     "1": "Opublikowane",

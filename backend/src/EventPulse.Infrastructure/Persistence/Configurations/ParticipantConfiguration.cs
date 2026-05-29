@@ -21,6 +21,9 @@ public sealed class ParticipantConfiguration : IEntityTypeConfiguration<Particip
         builder.Property(p => p.GroupName).HasMaxLength(200);
         builder.Property(p => p.TableName).HasMaxLength(100);
         builder.Property(p => p.RoomNumber).HasMaxLength(100);
+        builder.Property(p => p.HotelName).HasMaxLength(200);
+        builder.Property(p => p.HotelAddress).HasMaxLength(300);
+        builder.Property(p => p.HotelPhone).HasMaxLength(50);
         builder.Property(p => p.ArrivalTime).HasMaxLength(20);
         builder.Property(p => p.FlightNumber).HasMaxLength(20);
         builder.Property(p => p.DietaryPreferences).HasMaxLength(1000);
