@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api } from '../../lib/api'
 import { createEventConnection } from '../../lib/signalr'
-import { Button, Card } from '../../components/ui'
+import { Badge, Button, Card, ProgressBar, Stat } from '../../components/ui'
+import { Icon } from '../../components/Icon'
 import type { DashboardData } from '../../types/api'
 
 interface FeedbackSummary {
@@ -11,6 +12,15 @@ interface FeedbackSummary {
   average: number
   items: { rating: number; comment: string | null }[]
 }
+
+const STATION_GRADIENTS = [
+  'from-violet-500 to-fuchsia-500',
+  'from-indigo-500 to-sky-500',
+  'from-emerald-500 to-teal-500',
+  'from-amber-500 to-orange-500',
+  'from-pink-500 to-rose-500',
+  'from-cyan-500 to-blue-500',
+]
 
 function useDashboard(eventId: string) {
   return useQuery({
@@ -69,50 +79,116 @@ export function DashboardTab({ eventId }: { eventId: string }) {
     return <p className="text-slate-500">{t('common.loading')}</p>
   }
 
-  const stats: { label: string; value: string | number; accent?: boolean }[] = [
-    { label: t('dashboard.total'), value: data.total },
-    { label: t('dashboard.checkedIn'), value: data.checkedIn, accent: true },
-    { label: t('dashboard.attendance'), value: `${data.attendancePct}%`, accent: true },
-    { label: t('dashboard.confirmed'), value: data.confirmed },
-    { label: t('dashboard.checkedOut'), value: data.checkedOut },
-    { label: t('dashboard.noShow'), value: data.noShow },
-  ]
+  const maxStation = data.stations.reduce((m, s) => Math.max(m, s.count), 0)
+  const attendanceTarget = 75
+  const aboveTarget = data.attendancePct >= attendanceTarget
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          {t('feedback.average')}: {feedback ? `${feedback.average} / 5 (${feedback.count})` : '—'}
-        </p>
-        <Button variant="ghost" onClick={() => downloadReport(eventId)}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Badge tone="success">● {t('dashboard.live')}</Badge>
+        <Button variant="subtle" onClick={() => downloadReport(eventId)}>
           {t('dashboard.report')}
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {stats.map((s) => (
-          <Card key={s.label} className="text-center">
-            <p className={`text-3xl font-bold ${s.accent ? 'text-indigo-600' : 'text-slate-800'}`}>{s.value}</p>
-            <p className="text-xs uppercase text-slate-500">{s.label}</p>
-          </Card>
-        ))}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat
+          label={t('dashboard.checkedIn')}
+          value={data.checkedIn}
+          hint={t('dashboard.outOf', { total: data.total })}
+          icon={<Icon name="users" className="h-5 w-5 text-violet-300" />}
+          accent="violet"
+        />
+        <Stat
+          label={t('dashboard.attendance')}
+          value={`${data.attendancePct}%`}
+          hint={t('dashboard.target', { value: attendanceTarget })}
+          badge={aboveTarget ? { text: `≥ ${attendanceTarget}%`, tone: 'success' } : undefined}
+          icon={<Icon name="bolt" className="h-5 w-5 text-indigo-300" />}
+          accent="indigo"
+        />
+        <Stat
+          label={t('dashboard.total')}
+          value={data.total}
+          icon={<Icon name="calendar" className="h-5 w-5 text-sky-300" />}
+          accent="sky"
+        />
+        <Stat
+          label={t('dashboard.noShow')}
+          value={data.noShow}
+          icon={<Icon name="shield" className="h-5 w-5 text-amber-300" />}
+          accent="amber"
+        />
       </div>
 
-      <Card>
-        <h3 className="mb-3 font-semibold">{t('dashboard.recent')}</h3>
-        {data.recentCheckIns.length === 0 ? (
-          <p className="text-slate-500">{t('dashboard.noCheckIns')}</p>
-        ) : (
-          <ul className="space-y-1 text-sm">
-            {data.recentCheckIns.map((c, i) => (
-              <li key={i} className="flex justify-between">
-                <span>{c.name}</span>
-                <span className="text-slate-500">{new Date(c.at).toLocaleTimeString()}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-semibold text-white">{t('dashboard.stations')}</h3>
+            <Badge tone="info">{data.stations.length}</Badge>
+          </div>
+          {data.stations.length === 0 ? (
+            <p className="text-sm text-slate-500">{t('dashboard.noStations')}</p>
+          ) : (
+            <ul className="space-y-3">
+              {data.stations.map((s, i) => (
+                <li key={s.code}>
+                  <div className="mb-1.5 flex items-center justify-between text-sm">
+                    <span className="text-slate-300">{s.code}</span>
+                    <span className="text-slate-400">{s.count} {t('dashboard.scans')}</span>
+                  </div>
+                  <ProgressBar
+                    value={s.count}
+                    max={maxStation}
+                    gradient={STATION_GRADIENTS[i % STATION_GRADIENTS.length]}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-semibold text-white">{t('dashboard.recent')}</h3>
+            <Badge tone="accent">{data.recentCheckIns.length}</Badge>
+          </div>
+          {data.recentCheckIns.length === 0 ? (
+            <p className="text-sm text-slate-500">{t('dashboard.noCheckIns')}</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {data.recentCheckIns.map((c, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800/40 px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
+                      ✓
+                    </span>
+                    <span className="truncate text-slate-100">{c.name}</span>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(c.at).toLocaleTimeString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      {feedback && feedback.count > 0 && (
+        <Card>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="font-semibold text-white">{t('feedback.title')}</h3>
+            <span className="text-sm text-slate-400">
+              {feedback.average} / 5 · {feedback.count}
+            </span>
+          </div>
+          <ProgressBar
+            value={feedback.average}
+            max={5}
+            gradient="from-amber-400 to-amber-500"
+          />
+        </Card>
+      )}
     </div>
   )
 }

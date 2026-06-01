@@ -1,4 +1,5 @@
 using EventPulse.Modules.Participants.Domain;
+using EventPulse.Modules.Scanning.Domain;
 using EventPulse.Shared.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace EventPulse.Modules.Scanning.Application;
 
 public sealed record RecentCheckIn(string Name, DateTimeOffset At);
+
+public sealed record StationActivity(string Code, int Count);
 
 public sealed record DashboardDto(
     int Total,
@@ -15,7 +18,8 @@ public sealed record DashboardDto(
     int CheckedOut,
     int NoShow,
     double AttendancePct,
-    IReadOnlyList<RecentCheckIn> RecentCheckIns);
+    IReadOnlyList<RecentCheckIn> RecentCheckIns,
+    IReadOnlyList<StationActivity> Stations);
 
 public sealed record DashboardQuery(Guid EventId) : IRequest<DashboardDto>;
 
@@ -38,6 +42,15 @@ public sealed class DashboardHandler(IAppDbContext db) : IRequestHandler<Dashboa
             .Select(p => new RecentCheckIn($"{p.FirstName} {p.LastName}", p.CheckedInAt!.Value))
             .ToList();
 
+        var stationRows = await db.Set<ScanEvent>().AsNoTracking()
+            .Where(s => s.EventId == request.EventId && s.StationCode != null)
+            .GroupBy(s => s.StationCode!)
+            .Select(g => new { Code = g.Key, Count = g.Count() })
+            .OrderByDescending(s => s.Count)
+            .Take(6)
+            .ToListAsync(cancellationToken);
+        var stations = stationRows.Select(r => new StationActivity(r.Code, r.Count)).ToList();
+
         return new DashboardDto(
             Total: total,
             Invited: participants.Count(p => p.Status == ParticipantStatus.Invited),
@@ -46,6 +59,7 @@ public sealed class DashboardHandler(IAppDbContext db) : IRequestHandler<Dashboa
             CheckedOut: participants.Count(p => p.Status == ParticipantStatus.CheckedOut),
             NoShow: participants.Count(p => p.Status == ParticipantStatus.NoShow),
             AttendancePct: total == 0 ? 0 : Math.Round(checkedIn * 100.0 / total, 1),
-            RecentCheckIns: recent);
+            RecentCheckIns: recent,
+            Stations: stations);
     }
 }

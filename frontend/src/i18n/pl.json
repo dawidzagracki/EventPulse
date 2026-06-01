@@ -1,5 +1,5 @@
 {
-  "app": { "name": "EventPulse" },
+  "app": { "name": "EventPulse", "menu": "Menu" },
   "common": {
     "loading": "Ładowanie...",
     "save": "Zapisz",
@@ -13,7 +13,8 @@
     "email": "E-mail",
     "password": "Hasło",
     "login": "Zaloguj",
-    "invalid": "Nieprawidłowy e-mail lub hasło"
+    "invalid": "Nieprawidłowy e-mail lub hasło",
+    "subtitle": "Zaloguj się do panelu organizatora"
   },
   "events": {
     "title": "Wydarzenia",
@@ -25,7 +26,8 @@
     "clientEmail": "E-mail klienta",
     "status": "Status",
     "empty": "Brak wydarzeń. Utwórz pierwsze.",
-    "created": "Wydarzenie utworzone"
+    "created": "Wydarzenie utworzone",
+    "subtitle": "Twoje wydarzenia"
   },
   "eventDetail": {
     "overview": "Przegląd"
@@ -123,7 +125,13 @@
     "noShow": "Nieobecni",
     "recent": "Ostatnie wejścia",
     "noCheckIns": "Brak wejść",
-    "report": "Pobierz raport PDF"
+    "report": "Pobierz raport PDF",
+    "live": "Na żywo",
+    "outOf": "z {{total}} zaproszonych",
+    "target": "cel: {{value}}%",
+    "stations": "Aktywność na stanowiskach",
+    "noStations": "Brak skanów stanowisk",
+    "scans": "skanów"
   },
   "feedback": {
     "title": "Oceń wydarzenie",

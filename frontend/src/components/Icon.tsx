@@ -1,0 +1,48 @@
+type IconName =
+  | 'dashboard'
+  | 'users'
+  | 'calendar'
+  | 'document'
+  | 'truck'
+  | 'bolt'
+  | 'image'
+  | 'shield'
+  | 'qr'
+  | 'logout'
+  | 'sparkles'
+  | 'chevronLeft'
+
+const paths: Record<IconName, string> = {
+  dashboard:
+    'M3 3h7v9H3V3zm11 0h7v5h-7V3zM3 14h7v7H3v-7zm11-3h7v10h-7V11z',
+  users:
+    'M16 14a4 4 0 100-8 4 4 0 000 8zm-8 0a4 4 0 100-8 4 4 0 000 8zm0 2c-2.67 0-8 1.34-8 4v2h11.5c-.31-.93-.5-1.94-.5-3 0-1.06.19-2.07.5-3-1.06-.6-2.36-1-3.5-1zm8 0c-1.14 0-2.44.4-3.5 1 .31.93.5 1.94.5 3v2H24v-2c0-2.66-5.33-4-8-4z',
+  calendar:
+    'M7 2v3H4a2 2 0 00-2 2v13a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2h-3V2h-2v3H9V2H7zm-3 8h16v10H4V10z',
+  document:
+    'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 7V3.5L18.5 9H13z',
+  truck:
+    'M3 4h13v3h3l3 4v6h-2a3 3 0 11-6 0H9a3 3 0 11-6 0H1v-2h2V4zm14 6h4l-2-3h-2v3zM5 17a1 1 0 102 0 1 1 0 00-2 0zm12 0a1 1 0 102 0 1 1 0 00-2 0z',
+  bolt: 'M13 2L3 14h7l-1 8 11-14h-7l1-6z',
+  image:
+    'M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm0 2v9.59l4-4 3 3 5-5 4 4V7H4zm5 4a1.5 1.5 0 110-3 1.5 1.5 0 010 3z',
+  shield:
+    'M12 2l9 4v6c0 5-3.84 9.74-9 10-5.16-.26-9-5-9-10V6l9-4z',
+  qr:
+    'M3 3h7v7H3V3zm2 2v3h3V5H5zm6-2h7v7h-7V3zm2 2v3h3V5h-3zm-2 8h3v2h-3v-2zm5 0h2v2h-2v-2zm-7 4h2v2H9v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM3 13h7v7H3v-7zm2 2v3h3v-3H5z',
+  logout:
+    'M10 17l-1.4-1.4 2.6-2.6H4v-2h7.2l-2.6-2.6L10 7l5 5-5 5zm10-13v16a2 2 0 01-2 2h-8v-2h8V4h-8V2h8a2 2 0 012 2z',
+  sparkles:
+    'M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2zm7 9l.9 2.6L22 14.5l-2.1.9L19 18l-.9-2.6L16 14.5l2.1-.9L19 11zM5 14l.6 1.7L7.5 16l-1.9.6L5 18l-.6-1.4L2.5 16l2-.3L5 14z',
+  chevronLeft: 'M14 7l-5 5 5 5V7z',
+}
+
+export function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d={paths[name]} />
+    </svg>
+  )
+}
+
+export type { IconName }

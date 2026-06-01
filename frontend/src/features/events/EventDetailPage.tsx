@@ -10,10 +10,13 @@ import { LogisticsTab } from '../logistics/LogisticsTab'
 import { EngagementTab } from '../engagement/EngagementTab'
 import { GalleryTab } from '../gallery/GalleryTab'
 import { AuditTab } from '../audit/AuditTab'
-import { Button, Card } from '../../components/ui'
-import { EventStatusName } from '../../types/api'
+import { AppShell, type NavItem } from '../../components/AppShell'
+import { Badge, Card } from '../../components/ui'
+import { Icon } from '../../components/Icon'
+import { EventStatus, EventStatusName } from '../../types/api'
 
 type Tab =
+  | 'dashboard'
   | 'overview'
   | 'participants'
   | 'agenda'
@@ -22,86 +25,99 @@ type Tab =
   | 'engagement'
   | 'gallery'
   | 'audit'
-  | 'dashboard'
+
+function statusTone(status: number) {
+  switch (status) {
+    case EventStatus.Live:
+      return 'success' as const
+    case EventStatus.Published:
+      return 'info' as const
+    case EventStatus.Completed:
+      return 'accent' as const
+    case EventStatus.Archived:
+      return 'default' as const
+    default:
+      return 'warning' as const
+  }
+}
 
 export function EventDetailPage() {
   const { eventId = '' } = useParams()
   const { t } = useTranslation()
   const { data: event, isLoading } = useEvent(eventId)
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useState<Tab>('dashboard')
 
-  if (isLoading) return <p className="text-slate-500">{t('common.loading')}</p>
-  if (!event) return <p className="text-slate-500">{t('common.error')}</p>
+  const nav: NavItem[] = (
+    [
+      { id: 'dashboard', label: t('dashboard.title'), icon: 'dashboard' },
+      { id: 'overview', label: t('eventDetail.overview'), icon: 'document' },
+      { id: 'participants', label: t('participants.title'), icon: 'users' },
+      { id: 'agenda', label: t('agenda.title'), icon: 'calendar' },
+      { id: 'page', label: t('page.title'), icon: 'document' },
+      { id: 'logistics', label: t('logistics.title'), icon: 'truck' },
+      { id: 'engagement', label: t('engagement.title'), icon: 'bolt' },
+      { id: 'gallery', label: t('gallery.title'), icon: 'image' },
+      { id: 'audit', label: t('audit.title'), icon: 'shield' },
+    ] as { id: Tab; label: string; icon: NavItem['icon'] }[]
+  ).map((item) => ({ ...item, active: tab === item.id, onClick: () => setTab(item.id) }))
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'overview', label: t('eventDetail.overview') },
-    { id: 'participants', label: t('participants.title') },
-    { id: 'agenda', label: t('agenda.title') },
-    { id: 'page', label: t('page.title') },
-    { id: 'logistics', label: t('logistics.title') },
-    { id: 'engagement', label: t('engagement.title') },
-    { id: 'gallery', label: t('gallery.title') },
-    { id: 'dashboard', label: t('dashboard.title') },
-    { id: 'audit', label: t('audit.title') },
-  ]
+  const actions = event ? (
+    <>
+      <Badge tone={statusTone(event.status)}>
+        {t(`status.${event.status}`)} · {EventStatusName[event.status]}
+      </Badge>
+      <Link
+        to={`/events/${eventId}/scanner`}
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+      >
+        <Icon name="qr" className="h-4 w-4" />
+        {t('scanner.title')}
+      </Link>
+    </>
+  ) : null
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <Link to="/events" className="text-sm text-indigo-600 hover:underline">
-            ← {t('events.title')}
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold">{event.name}</h1>
-          <p className="text-sm text-slate-500">
-            /{event.slug} · {EventStatusName[event.status]}
-          </p>
-        </div>
-        <Link to={`/events/${eventId}/scanner`}>
-          <Button variant="ghost">{t('scanner.title')}</Button>
-        </Link>
-      </div>
-
-      <div className="flex gap-1 border-b border-slate-200">
-        {tabs.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            onClick={() => setTab(tabItem.id)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              tab === tabItem.id
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {tabItem.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' && (
-        <Card className="space-y-1 text-sm">
-          <p>
-            <span className="text-slate-500">{t('events.starts')}:</span> {new Date(event.startsAt).toLocaleString()}
-          </p>
-          <p>
-            <span className="text-slate-500">{t('events.ends')}:</span> {new Date(event.endsAt).toLocaleString()}
-          </p>
-          <p>
-            <span className="text-slate-500">{t('events.location')}:</span> {event.location ?? '—'}
-          </p>
-          <p>
-            <span className="text-slate-500">{t('events.clientEmail')}:</span> {event.clientEmail ?? '—'}
-          </p>
-        </Card>
+    <AppShell
+      nav={nav}
+      back={{ to: '/events', label: t('events.title') }}
+      title={event?.name ?? t('common.loading')}
+      subtitle={event ? `/${event.slug}` : undefined}
+      actions={actions}
+    >
+      {isLoading || !event ? (
+        <p className="text-slate-500">{t('common.loading')}</p>
+      ) : (
+        <>
+          {tab === 'overview' && (
+            <Card className="grid gap-3 text-sm sm:grid-cols-2">
+              <p>
+                <span className="text-slate-500">{t('events.starts')}:</span>{' '}
+                <span className="text-slate-100">{new Date(event.startsAt).toLocaleString()}</span>
+              </p>
+              <p>
+                <span className="text-slate-500">{t('events.ends')}:</span>{' '}
+                <span className="text-slate-100">{new Date(event.endsAt).toLocaleString()}</span>
+              </p>
+              <p>
+                <span className="text-slate-500">{t('events.location')}:</span>{' '}
+                <span className="text-slate-100">{event.location ?? '—'}</span>
+              </p>
+              <p>
+                <span className="text-slate-500">{t('events.clientEmail')}:</span>{' '}
+                <span className="text-slate-100">{event.clientEmail ?? '—'}</span>
+              </p>
+            </Card>
+          )}
+          {tab === 'participants' && <ParticipantsTab eventId={eventId} />}
+          {tab === 'agenda' && <AgendaTab eventId={eventId} />}
+          {tab === 'page' && <PageBuilderTab eventId={eventId} />}
+          {tab === 'logistics' && <LogisticsTab eventId={eventId} />}
+          {tab === 'engagement' && <EngagementTab eventId={eventId} />}
+          {tab === 'gallery' && <GalleryTab eventId={eventId} />}
+          {tab === 'dashboard' && <DashboardTab eventId={eventId} />}
+          {tab === 'audit' && <AuditTab />}
+        </>
       )}
-      {tab === 'participants' && <ParticipantsTab eventId={eventId} />}
-      {tab === 'agenda' && <AgendaTab eventId={eventId} />}
-      {tab === 'page' && <PageBuilderTab eventId={eventId} />}
-      {tab === 'logistics' && <LogisticsTab eventId={eventId} />}
-      {tab === 'engagement' && <EngagementTab eventId={eventId} />}
-      {tab === 'gallery' && <GalleryTab eventId={eventId} />}
-      {tab === 'dashboard' && <DashboardTab eventId={eventId} />}
-      {tab === 'audit' && <AuditTab />}
-    </div>
+    </AppShell>
   )
 }

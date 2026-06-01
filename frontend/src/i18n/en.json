@@ -1,5 +1,5 @@
 {
-  "app": { "name": "EventPulse" },
+  "app": { "name": "EventPulse", "menu": "Menu" },
   "common": {
     "loading": "Loading...",
     "save": "Save",
@@ -13,7 +13,8 @@
     "email": "Email",
     "password": "Password",
     "login": "Sign in",
-    "invalid": "Invalid email or password"
+    "invalid": "Invalid email or password",
+    "subtitle": "Sign in to the organizer panel"
   },
   "events": {
     "title": "Events",
@@ -25,7 +26,8 @@
     "clientEmail": "Client email",
     "status": "Status",
     "empty": "No events yet. Create the first one.",
-    "created": "Event created"
+    "created": "Event created",
+    "subtitle": "Your events"
   },
   "eventDetail": {
     "overview": "Overview"
@@ -123,7 +125,13 @@
     "noShow": "No-shows",
     "recent": "Recent check-ins",
     "noCheckIns": "No check-ins yet",
-    "report": "Download PDF report"
+    "report": "Download PDF report",
+    "live": "Live",
+    "outOf": "of {{total}} invited",
+    "target": "target: {{value}}%",
+    "stations": "Station activity",
+    "noStations": "No station scans yet",
+    "scans": "scans"
   },
   "feedback": {
     "title": "Rate the event",

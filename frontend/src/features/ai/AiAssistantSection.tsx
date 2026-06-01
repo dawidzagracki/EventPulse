@@ -35,7 +35,11 @@ export function AiAssistantSection() {
           {busy ? t('common.loading') : t('ai.send')}
         </Button>
       </form>
-      {reply && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm">{reply}</p>}
+      {reply && (
+        <p className="mt-3 whitespace-pre-wrap rounded-lg border border-slate-800/80 bg-slate-900/60 p-3 text-sm text-slate-200">
+          {reply}
+        </p>
+      )}
     </Card>
   )
 }

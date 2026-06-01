@@ -31,10 +31,15 @@ export function ParticipantHome() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <span className="text-lg font-bold text-indigo-600">{t('app.name')}</span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white">
+              EP
+            </div>
+            <span className="text-sm font-semibold text-white">{t('app.name')}</span>
+          </div>
+          <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <Button variant="ghost" onClick={handleLogout}>
               {t('common.logout')}
@@ -43,12 +48,17 @@ export function ParticipantHome() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <main className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {isLoading || !profile ? (
           <p className="text-slate-500">{t('common.loading')}</p>
         ) : (
           <>
-            <h1 className="text-2xl font-bold">{t('participant.hello', { name: profile.firstName })}</h1>
+            <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-violet-500/20 via-indigo-500/10 to-transparent p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-violet-300/80">{t('dashboard.live')}</p>
+              <h1 className="mt-1 text-2xl font-bold text-white">
+                {t('participant.hello', { name: profile.firstName })}
+              </h1>
+            </div>
             {/* key forces a fresh form when the profile identity changes */}
             <ConsentsSection key={`consents-${profile.id}`} profile={profile} />
             {profile.hasAcceptedRodo && (

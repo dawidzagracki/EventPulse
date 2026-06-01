@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from './features/auth/LoginPage'
-import { AppLayout } from './components/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { EventsListPage } from './features/events/EventsListPage'
 import { EventDetailPage } from './features/events/EventDetailPage'
@@ -8,17 +7,13 @@ import { ParticipantTokenPage } from './features/participant/ParticipantTokenPag
 import { ParticipantHome } from './features/participant/ParticipantHome'
 import { ScannerPage } from './features/scanner/ScannerPage'
 
+const adminGuard = (element: React.ReactNode) => (
+  <ProtectedRoute allow={['Agency', 'Client']}>{element}</ProtectedRoute>
+)
+
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/p/:token', element: <ParticipantTokenPage /> },
-  {
-    path: '/events/:eventId/scanner',
-    element: (
-      <ProtectedRoute allow={['Agency', 'Client']}>
-        <ScannerPage />
-      </ProtectedRoute>
-    ),
-  },
   {
     path: '/me',
     element: (
@@ -27,18 +22,9 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: '/',
-    element: (
-      <ProtectedRoute allow={['Agency', 'Client']}>
-        <AppLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <Navigate to="/events" replace /> },
-      { path: 'events', element: <EventsListPage /> },
-      { path: 'events/:eventId', element: <EventDetailPage /> },
-    ],
-  },
+  { path: '/events/:eventId/scanner', element: adminGuard(<ScannerPage />) },
+  { path: '/events/:eventId', element: adminGuard(<EventDetailPage />) },
+  { path: '/events', element: adminGuard(<EventsListPage />) },
+  { path: '/', element: <Navigate to="/events" replace /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ])

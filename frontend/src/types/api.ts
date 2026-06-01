@@ -238,6 +238,11 @@ export interface RecentCheckIn {
   at: string
 }
 
+export interface StationActivity {
+  code: string
+  count: number
+}
+
 export interface DashboardData {
   total: number
   invited: number
@@ -247,6 +252,7 @@ export interface DashboardData {
   noShow: number
   attendancePct: number
   recentCheckIns: RecentCheckIn[]
+  stations: StationActivity[]
 }
 
 export interface BatchScanResult {

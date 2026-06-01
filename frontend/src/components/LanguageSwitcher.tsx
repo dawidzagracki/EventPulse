@@ -5,14 +5,15 @@ export function LanguageSwitcher() {
   const current = i18n.resolvedLanguage ?? 'pl'
 
   return (
-    <div className="flex gap-1 text-xs">
+    <div className="inline-flex overflow-hidden rounded-md border border-slate-700/60 bg-slate-900/60 text-[11px]">
       {(['pl', 'en'] as const).map((lng) => (
         <button
           key={lng}
           onClick={() => i18n.changeLanguage(lng)}
-          className={`rounded px-2 py-1 uppercase ${
-            current === lng ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'
+          className={`px-2 py-1 uppercase tracking-wide transition ${
+            current === lng ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
           }`}
+          aria-pressed={current === lng}
         >
           {lng}
         </button>

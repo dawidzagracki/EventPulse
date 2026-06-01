@@ -2,8 +2,24 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCreateEvent, useEvents } from './api'
-import { Button, Card, Field, Input } from '../../components/ui'
-import { EventStatusName } from '../../types/api'
+import { AppShell, type NavItem } from '../../components/AppShell'
+import { Badge, Button, Card, Field, Input } from '../../components/ui'
+import { EventStatus, EventStatusName } from '../../types/api'
+
+function statusTone(status: number) {
+  switch (status) {
+    case EventStatus.Live:
+      return 'success' as const
+    case EventStatus.Published:
+      return 'info' as const
+    case EventStatus.Completed:
+      return 'accent' as const
+    case EventStatus.Archived:
+      return 'default' as const
+    default:
+      return 'warning' as const
+  }
+}
 
 export function EventsListPage() {
   const { t } = useTranslation()
@@ -34,15 +50,19 @@ export function EventsListPage() {
     setClientEmail('')
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('events.title')}</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{t('events.new')}</Button>
-      </div>
+  const nav: NavItem[] = [
+    { id: 'events', label: t('events.title'), icon: 'calendar', to: '/events', active: true },
+  ]
 
+  return (
+    <AppShell
+      nav={nav}
+      title={t('events.title')}
+      subtitle={t('events.subtitle')}
+      actions={<Button onClick={() => setShowForm((v) => !v)}>+ {t('events.new')}</Button>}
+    >
       {showForm && (
-        <Card>
+        <Card glow className="mb-6">
           <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Field label={t('events.name')}>
@@ -61,7 +81,7 @@ export function EventsListPage() {
             <Field label={t('events.clientEmail')}>
               <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
             </Field>
-            <div className="sm:col-span-2 flex gap-2">
+            <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" disabled={createEvent.isPending}>
                 {t('common.create')}
               </Button>
@@ -77,27 +97,29 @@ export function EventsListPage() {
         <p className="text-slate-500">{t('common.loading')}</p>
       ) : !events || events.length === 0 ? (
         <Card>
-          <p className="text-slate-500">{t('events.empty')}</p>
+          <p className="text-slate-400">{t('events.empty')}</p>
         </Card>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {events.map((ev) => (
-            <Link key={ev.id} to={`/events/${ev.id}`}>
-              <Card className="flex items-center justify-between transition hover:border-indigo-300 hover:shadow">
-                <div>
-                  <p className="font-semibold">{ev.name}</p>
-                  <p className="text-sm text-slate-500">
-                    {new Date(ev.startsAt).toLocaleString()} · /{ev.slug}
-                  </p>
+            <Link key={ev.id} to={`/events/${ev.id}`} className="group">
+              <Card className="transition group-hover:border-indigo-400/40 group-hover:bg-slate-900/70">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">{ev.name}</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {new Date(ev.startsAt).toLocaleString()} · <span className="text-slate-500">/{ev.slug}</span>
+                    </p>
+                  </div>
+                  <Badge tone={statusTone(ev.status)}>
+                    {t(`status.${ev.status}`)} · {EventStatusName[ev.status]}
+                  </Badge>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {t(`status.${ev.status}`)} ({EventStatusName[ev.status]})
-                </span>
               </Card>
             </Link>
           ))}
         </div>
       )}
-    </div>
+    </AppShell>
   )
 }
