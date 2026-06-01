@@ -99,7 +99,13 @@
     "saveBranding": "Zapisz branding",
     "versions": "Wersje",
     "restore": "Przywróć",
-    "preview": "Podgląd"
+    "preview": "Podgląd",
+    "openPublic": "Otwórz publiczną stronę"
+  },
+  "public": {
+    "notPublished": "Strona jeszcze niepublikowana",
+    "notPublishedHint": "Organizator wkrótce ją opublikuje.",
+    "empty": "Strona jest pusta."
   },
   "scanner": {
     "title": "Skaner QR",

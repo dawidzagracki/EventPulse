@@ -99,7 +99,13 @@
     "saveBranding": "Save branding",
     "versions": "Versions",
     "restore": "Restore",
-    "preview": "Preview"
+    "preview": "Preview",
+    "openPublic": "Open public page"
+  },
+  "public": {
+    "notPublished": "Page not published yet",
+    "notPublishedHint": "The organizer will publish it shortly.",
+    "empty": "This page is empty."
   },
   "scanner": {
     "title": "QR scanner",

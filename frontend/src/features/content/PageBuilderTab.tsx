@@ -148,6 +148,16 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
           <Button onClick={handlePublish} disabled={publish.isPending || save.isPending}>
             {t('page.publish')}
           </Button>
+          {page.hasPublished && (
+            <a
+              href={`/public/events/${eventId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            >
+              {t('page.openPublic')}
+            </a>
+          )}
         </div>
         {message && <p className="mt-2 text-sm text-emerald-700">{message}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-2">

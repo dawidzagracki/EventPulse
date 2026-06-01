@@ -6,6 +6,7 @@ import { EventDetailPage } from './features/events/EventDetailPage'
 import { ParticipantTokenPage } from './features/participant/ParticipantTokenPage'
 import { ParticipantHome } from './features/participant/ParticipantHome'
 import { ScannerPage } from './features/scanner/ScannerPage'
+import { PublicEventPage } from './features/public/PublicEventPage'
 
 const adminGuard = (element: React.ReactNode) => (
   <ProtectedRoute allow={['Agency', 'Client']}>{element}</ProtectedRoute>
@@ -14,6 +15,7 @@ const adminGuard = (element: React.ReactNode) => (
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/p/:token', element: <ParticipantTokenPage /> },
+  { path: '/public/events/:eventId', element: <PublicEventPage /> },
   {
     path: '/me',
     element: (
