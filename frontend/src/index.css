@@ -30,3 +30,21 @@ body {
   scrollbar-color: #334155 transparent;
   scrollbar-width: thin;
 }
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.9;  transform: scale(1.08); }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 7s ease-in-out infinite;
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: floatY 6s ease-in-out infinite;
+}

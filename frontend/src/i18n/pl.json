@@ -14,7 +14,16 @@
     "password": "Hasło",
     "login": "Zaloguj",
     "invalid": "Nieprawidłowy e-mail lub hasło",
-    "subtitle": "Zaloguj się do panelu organizatora"
+    "subtitle": "Zaloguj się do panelu organizatora",
+    "heroTitle": "Cały event w jednym miejscu",
+    "heroLead": "Zaproszenia, agenda, check-in z QR, galeria, live dashboard. EventPulse zastępuje 10 narzędzi i działa w przeglądarce.",
+    "feature1": "Multi-tenant: jedno konto, wiele wydarzeń",
+    "feature2": "Page builder w stylu Elementora",
+    "feature3": "Skaner QR i live dashboard frekwencji",
+    "feature4": "RODO-friendly galeria zdjęć",
+    "trustedBy": "Zaufały nam zespoły eventowe w Polsce",
+    "needHelp": "Pierwszy raz tutaj?",
+    "contactSupport": "Skontaktuj się z opiekunem konta"
   },
   "events": {
     "title": "Wydarzenia",

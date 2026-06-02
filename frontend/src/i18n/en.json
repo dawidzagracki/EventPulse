@@ -14,7 +14,16 @@
     "password": "Password",
     "login": "Sign in",
     "invalid": "Invalid email or password",
-    "subtitle": "Sign in to the organizer panel"
+    "subtitle": "Sign in to the organizer panel",
+    "heroTitle": "Your entire event, in one place",
+    "heroLead": "Invites, agenda, QR check-in, gallery, live dashboard. EventPulse replaces 10 tools and runs in your browser.",
+    "feature1": "Multi-tenant: one account, many events",
+    "feature2": "Elementor-style page builder",
+    "feature3": "QR scanner + live attendance dashboard",
+    "feature4": "RODO-friendly photo gallery",
+    "trustedBy": "Trusted by event teams across Poland",
+    "needHelp": "First time here?",
+    "contactSupport": "Contact your account manager"
   },
   "events": {
     "title": "Events",
