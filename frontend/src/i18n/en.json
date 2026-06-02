@@ -27,7 +27,18 @@
     "status": "Status",
     "empty": "No events yet. Create the first one.",
     "created": "Event created",
-    "subtitle": "Your events"
+    "subtitle": "Your events",
+    "search": "Search events…",
+    "filterAll": "All",
+    "statTotal": "Total",
+    "statDraft": "Drafts",
+    "statPublished": "Published",
+    "statLive": "Live",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "open": "Open",
+    "preview": "Public preview",
+    "noMatch": "No events match your filters."
   },
   "eventDetail": {
     "overview": "Overview"

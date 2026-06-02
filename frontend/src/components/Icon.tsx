@@ -11,6 +11,12 @@ type IconName =
   | 'logout'
   | 'sparkles'
   | 'chevronLeft'
+  | 'mapPin'
+  | 'clock'
+  | 'search'
+  | 'plus'
+  | 'externalLink'
+  | 'check'
 
 const paths: Record<IconName, string> = {
   dashboard:
@@ -35,6 +41,16 @@ const paths: Record<IconName, string> = {
   sparkles:
     'M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2zm7 9l.9 2.6L22 14.5l-2.1.9L19 18l-.9-2.6L16 14.5l2.1-.9L19 11zM5 14l.6 1.7L7.5 16l-1.9.6L5 18l-.6-1.4L2.5 16l2-.3L5 14z',
   chevronLeft: 'M14 7l-5 5 5 5V7z',
+  mapPin:
+    'M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z',
+  clock:
+    'M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5 3 .75-1.23-4.25-2.52V7z',
+  search:
+    'M10 2a8 8 0 105.3 14.05l4.32 4.33 1.42-1.42-4.33-4.32A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z',
+  plus: 'M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z',
+  externalLink:
+    'M14 3v2h3.59l-9.3 9.29 1.42 1.42L19 6.41V10h2V3h-7zM5 5h6V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-6h-2v6H5V5z',
+  check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z',
 }
 
 export function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {

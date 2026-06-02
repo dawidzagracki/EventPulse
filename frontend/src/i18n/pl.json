@@ -27,7 +27,18 @@
     "status": "Status",
     "empty": "Brak wydarzeń. Utwórz pierwsze.",
     "created": "Wydarzenie utworzone",
-    "subtitle": "Twoje wydarzenia"
+    "subtitle": "Twoje wydarzenia",
+    "search": "Szukaj wydarzenia…",
+    "filterAll": "Wszystkie",
+    "statTotal": "Wszystkie",
+    "statDraft": "Szkice",
+    "statPublished": "Opublikowane",
+    "statLive": "Na żywo",
+    "upcoming": "Nadchodzące",
+    "past": "Zakończone",
+    "open": "Otwórz",
+    "preview": "Podgląd publiczny",
+    "noMatch": "Brak wydarzeń pasujących do filtrów."
   },
   "eventDetail": {
     "overview": "Przegląd"
