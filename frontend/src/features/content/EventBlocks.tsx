@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { AgendaItemDto, BrandingDto, PageBlock } from '../../types/api'
 import { AgendaItemTypeName } from '../../types/api'
+import { getBlockStyle } from './blockStyles'
 
 export interface EditMode {
   onTextChange: (blockId: string, key: string, value: string) => void
@@ -64,17 +65,17 @@ function E({
 function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const c = pick(block, ctx.lang)
   const bg = c.bgImageUrl
-  const primary = ctx.branding.primaryColor
+  const stl = getBlockStyle(block)
+  const primary = stl.accentColor ?? ctx.branding.primaryColor
   const accent = ctx.branding.accentColor
+  const defaultBg = bg
+    ? `linear-gradient(180deg, rgba(15,18,32,0.35), rgba(15,18,32,0.7)), url('${bg}') center/cover`
+    : `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`
   return (
     <section
       id={`block-${block.id}`}
-      className="relative overflow-hidden rounded-3xl"
-      style={{
-        background: bg
-          ? `linear-gradient(180deg, rgba(15,18,32,0.35), rgba(15,18,32,0.7)), url('${bg}') center/cover`
-          : `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`,
-      }}
+      className={`relative overflow-hidden rounded-3xl ${stl.className}`}
+      style={{ background: defaultBg, ...stl.style }}
     >
       <div className="px-6 py-20 text-center text-white sm:px-12 sm:py-32">
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/85">
@@ -97,12 +98,20 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
 }
 
 function DescriptionBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
+  const stl = getBlockStyle(block)
   return (
-    <section id={`block-${block.id}`} className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14">
-      <h2 className="text-balance text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
+      <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>
         <E block={block} k="title" ctx={ctx} placeholder="Tytuł sekcji" />
       </h2>
-      <div className="mt-6 max-w-3xl whitespace-pre-wrap text-lg leading-relaxed text-slate-600">
+      <div
+        className="mt-6 max-w-3xl whitespace-pre-wrap text-lg leading-relaxed"
+        style={{ color: stl.textColor ?? '#475569' }}
+      >
         <E block={block} k="body" ctx={ctx} placeholder="Opisz tu swoje wydarzenie..." />
       </div>
     </section>
@@ -111,9 +120,14 @@ function DescriptionBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext 
 
 function AgendaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const items = ctx.agenda ?? []
-  const primary = ctx.branding.primaryColor
+  const stl = getBlockStyle(block)
+  const primary = stl.accentColor ?? ctx.branding.primaryColor
   return (
-    <section id={`block-${block.id}`} className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14">
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Agenda" />
       </h2>
@@ -153,10 +167,12 @@ function MapBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const c = pick(block, ctx.lang)
   const address = c.address
   const src = address ? `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed` : null
+  const stl = getBlockStyle(block)
   return (
     <section
       id={`block-${block.id}`}
-      className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200"
+      className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${stl.className}`}
+      style={stl.style}
     >
       <div className="p-10 sm:p-14">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -179,8 +195,13 @@ function MapBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
 
 function GalleryBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const photos = ctx.galleryUrls ?? []
+  const stl = getBlockStyle(block)
   return (
-    <section id={`block-${block.id}`} className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14">
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Galeria" />
       </h2>
@@ -222,12 +243,15 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
     { v: minutes, l: 'min' },
     { v: seconds, l: ctx.lang === 'en' ? 'sec' : 'sek' },
   ]
+  const stl = getBlockStyle(block)
+  const primary = stl.accentColor ?? ctx.branding.primaryColor
   return (
     <section
       id={`block-${block.id}`}
-      className="overflow-hidden rounded-3xl p-12 text-center text-white"
+      className={`overflow-hidden rounded-3xl p-12 text-center text-white ${stl.className}`}
       style={{
-        background: `linear-gradient(135deg, ${ctx.branding.primaryColor}, ${ctx.branding.accentColor})`,
+        background: `linear-gradient(135deg, ${primary}, ${ctx.branding.accentColor})`,
+        ...stl.style,
       }}
     >
       <h2 className="text-2xl font-bold sm:text-3xl">
@@ -248,8 +272,13 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
 function FaqBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const settings = pickSettings(block)
   const items = (settings.items as { q: string; a: string }[] | undefined) ?? []
+  const stl = getBlockStyle(block)
   return (
-    <section id={`block-${block.id}`} className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14">
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Najczęstsze pytania" />
       </h2>
@@ -280,8 +309,13 @@ function FaqBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
 function TeamBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const settings = pickSettings(block)
   const members = (settings.members as { name: string; role?: string; avatarUrl?: string }[] | undefined) ?? []
+  const stl = getBlockStyle(block)
   return (
-    <section id={`block-${block.id}`} className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14">
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Zespół" />
       </h2>
@@ -308,10 +342,12 @@ function VideoBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const c = pick(block, ctx.lang)
   const url = c.youtubeUrl
   const id = url?.match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/)?.[1]
+  const stl = getBlockStyle(block)
   return (
     <section
       id={`block-${block.id}`}
-      className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200"
+      className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${stl.className}`}
+      style={stl.style}
     >
       <div className="p-10 sm:p-14">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -337,8 +373,13 @@ function VideoBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
 function SponsorsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const settings = pickSettings(block)
   const logos = (settings.logos as { name: string; logoUrl?: string; url?: string }[] | undefined) ?? []
+  const stl = getBlockStyle(block)
   return (
-    <section id={`block-${block.id}`} className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14">
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
       <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
         <E block={block} k="title" ctx={ctx} placeholder="Partnerzy" />
       </h2>
@@ -364,12 +405,15 @@ function SponsorsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
 }
 
 function CtaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
+  const stl = getBlockStyle(block)
+  const primary = stl.accentColor ?? ctx.branding.primaryColor
   return (
     <section
       id={`block-${block.id}`}
-      className="overflow-hidden rounded-3xl p-12 text-center text-white sm:p-16"
+      className={`overflow-hidden rounded-3xl p-12 text-center text-white sm:p-16 ${stl.className}`}
       style={{
-        background: `linear-gradient(135deg, ${ctx.branding.primaryColor}, ${ctx.branding.accentColor})`,
+        background: `linear-gradient(135deg, ${primary}, ${ctx.branding.accentColor})`,
+        ...stl.style,
       }}
     >
       <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
