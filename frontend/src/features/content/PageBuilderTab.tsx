@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useApplyTemplate,
@@ -9,27 +9,50 @@ import {
   useUpdateBranding,
   useVersions,
 } from './api'
-import { Button, Card, Field, Input } from '../../components/ui'
+import { useEvent } from '../events/api'
+import { RenderBlock, type BlockContext } from './EventBlocks'
+import { ALL_BLOCK_TYPES, blockIcon, blockLabel } from './blockMeta'
+import { Badge, Button, Card, Field, Input, Select } from '../../components/ui'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
-
-const BLOCK_TYPES = [
-  'hero',
-  'description',
-  'agenda',
-  'map',
-  'gallery',
-  'sponsors',
-  'countdown',
-  'faq',
-  'team',
-  'video',
-  'cta',
-  'spacer',
-]
 
 const TEMPLATES = ['gala', 'konferencja', 'integracja', 'premiera', 'blank']
 
-const TEXTABLE = new Set(['hero', 'description', 'cta'])
+const FIELDS: Record<string, { key: string; label: string; multiline?: boolean; placeholder?: string }[]> = {
+  hero: [
+    { key: 'subtitle', label: 'Nadtytuł (mały tekst nad nazwą)' },
+    { key: 'title', label: 'Tytuł główny' },
+    { key: 'dateLabel', label: 'Data / etykieta' },
+    { key: 'location', label: 'Miejsce' },
+    { key: 'ctaLabel', label: 'Tekst przycisku' },
+    { key: 'ctaUrl', label: 'Link przycisku' },
+    { key: 'bgImageUrl', label: 'URL obrazu w tle (opcjonalnie)' },
+  ],
+  description: [
+    { key: 'title', label: 'Tytuł sekcji' },
+    { key: 'body', label: 'Treść', multiline: true },
+  ],
+  agenda: [{ key: 'title', label: 'Tytuł sekcji' }],
+  gallery: [{ key: 'title', label: 'Tytuł sekcji' }],
+  countdown: [{ key: 'title', label: 'Tytuł nad licznikiem' }],
+  map: [
+    { key: 'title', label: 'Tytuł sekcji' },
+    { key: 'address', label: 'Adres (Google Maps)' },
+  ],
+  video: [
+    { key: 'title', label: 'Tytuł sekcji' },
+    { key: 'youtubeUrl', label: 'Link YouTube' },
+  ],
+  cta: [
+    { key: 'title', label: 'Nagłówek' },
+    { key: 'body', label: 'Opis', multiline: true },
+    { key: 'buttonLabel', label: 'Tekst przycisku' },
+    { key: 'buttonUrl', label: 'Link przycisku' },
+  ],
+  sponsors: [{ key: 'title', label: 'Tytuł sekcji' }],
+  faq: [{ key: 'title', label: 'Tytuł sekcji' }],
+  team: [{ key: 'title', label: 'Tytuł sekcji' }],
+  spacer: [],
+}
 
 export function PageBuilderTab({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
@@ -50,44 +73,62 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   const publish = usePublish(eventId)
   const restore = useRestoreVersion(eventId)
   const { data: versions } = useVersions(eventId)
+  const { data: event } = useEvent(eventId)
 
   const [blocks, setBlocks] = useState<PageBlock[]>(page.content.blocks ?? [])
   const [branding, setBranding] = useState<BrandingDto>(page.branding)
   const [lang, setLang] = useState<'pl' | 'en'>('pl')
+  const [selectedId, setSelectedId] = useState<string | null>(blocks[0]?.id ?? null)
+  const [showPalette, setShowPalette] = useState(false)
+  const [showBranding, setShowBranding] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
 
-  function patchBlock(id: string, patch: (b: PageBlock) => PageBlock) {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? patch(b) : b)))
+  const selected = blocks.find((b) => b.id === selectedId) ?? null
+  const visibleBlocks = useMemo(() => blocks.filter((b) => b.visible !== false), [blocks])
+
+  function patchBlock(id: string, fn: (b: PageBlock) => PageBlock) {
+    setBlocks((prev) => prev.map((b) => (b.id === id ? fn(b) : b)))
   }
 
   function addBlock(type: string) {
+    const id = crypto.randomUUID()
     setBlocks((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id,
         type,
         order: prev.length,
         visible: true,
-        settings: {},
+        settings: type === 'spacer' ? { height: 32 } : {},
         content: { pl: {}, en: {} },
         styles: {},
       },
     ])
+    setSelectedId(id)
+    setShowPalette(false)
   }
 
-  function move(id: string, dir: -1 | 1) {
+  function setText(id: string, key: string, value: string) {
+    patchBlock(id, (b) => ({
+      ...b,
+      content: { ...b.content, [lang]: { ...(b.content[lang] ?? {}), [key]: value } },
+    }))
+  }
+
+  function reorder(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return
     setBlocks((prev) => {
-      const i = prev.findIndex((b) => b.id === id)
-      const j = i + dir
-      if (i < 0 || j < 0 || j >= prev.length) return prev
       const next = [...prev]
-      ;[next[i], next[j]] = [next[j], next[i]]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
       return next
     })
   }
 
-  function setText(id: string, key: string, value: string) {
-    patchBlock(id, (b) => ({ ...b, content: { ...b.content, [lang]: { ...b.content[lang], [key]: value } } }))
+  function deleteBlock(id: string) {
+    setBlocks((prev) => prev.filter((b) => b.id !== id))
+    if (selectedId === id) setSelectedId(null)
   }
 
   function reindexed() {
@@ -109,6 +150,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
     const result = await applyTemplate.mutateAsync(key)
     setBlocks(result.content.blocks ?? [])
     setBranding(result.branding)
+    setSelectedId(result.content.blocks?.[0]?.id ?? null)
     setMessage(null)
   }
 
@@ -124,25 +166,54 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
     setMessage(t('page.saved'))
   }
 
+  const ctx: BlockContext = {
+    eventId,
+    branding,
+    lang,
+    agenda: [],
+    galleryUrls: [],
+    startsAt: event?.startsAt,
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* TOOLBAR */}
       <Card>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-auto text-sm text-slate-500">
-            {page.hasPublished ? t('page.publishedVersion', { version: page.publishedVersion }) : t('page.notPublished')}
-          </span>
-          <div className="flex overflow-hidden rounded-lg border border-slate-300">
-            {(['pl', 'en'] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`px-3 py-1 text-xs uppercase ${lang === l ? 'bg-slate-900 text-white' : 'text-slate-600'}`}
-              >
-                {l}
-              </button>
-            ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="mr-auto flex items-center gap-2">
+            <Badge tone={page.hasPublished ? 'success' : 'warning'}>
+              {page.hasPublished
+                ? t('page.publishedVersion', { version: page.publishedVersion })
+                : t('page.notPublished')}
+            </Badge>
+            {message && <span className="text-sm text-emerald-300">{message}</span>}
           </div>
-          <Button variant="ghost" onClick={handleSave} disabled={save.isPending}>
+
+          <Select value={lang} onChange={(e) => setLang(e.target.value as 'pl' | 'en')} className="w-24">
+            <option value="pl">PL</option>
+            <option value="en">EN</option>
+          </Select>
+
+          <Select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) void handleTemplate(e.target.value)
+              e.currentTarget.value = ''
+            }}
+            className="w-44"
+          >
+            <option value="">{t('page.template')}…</option>
+            {TEMPLATES.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </Select>
+
+          <Button variant="subtle" onClick={() => setShowBranding((v) => !v)}>
+            {t('page.branding')}
+          </Button>
+          <Button variant="subtle" onClick={handleSave} disabled={save.isPending}>
             {t('page.saveDraft')}
           </Button>
           <Button onClick={handlePublish} disabled={publish.isPending || save.isPending}>
@@ -159,128 +230,201 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             </a>
           )}
         </div>
-        {message && <p className="mt-2 text-sm text-emerald-700">{message}</p>}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-slate-500">{t('page.template')}:</span>
-          {TEMPLATES.map((key) => (
-            <Button key={key} variant="ghost" onClick={() => handleTemplate(key)}>
-              {key}
-            </Button>
-          ))}
-        </div>
+
+        {showBranding && (
+          <div className="mt-4 grid gap-3 border-t border-slate-800 pt-4 sm:grid-cols-3">
+            <Field label={t('page.primaryColor')}>
+              <Input
+                type="color"
+                value={branding.primaryColor}
+                onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+              />
+            </Field>
+            <Field label={t('page.accentColor')}>
+              <Input
+                type="color"
+                value={branding.accentColor}
+                onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
+              />
+            </Field>
+            <Field label={t('page.logoUrl')}>
+              <Input
+                value={branding.logoUrl ?? ''}
+                onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value || null })}
+              />
+            </Field>
+            <div className="sm:col-span-3">
+              <Button variant="subtle" onClick={handleBranding} disabled={updateBranding.isPending}>
+                {t('page.saveBranding')}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* MAIN: block list + selected fields + live preview */}
+      <div className="grid gap-4 xl:grid-cols-[400px_1fr]">
         <div className="space-y-4">
           <Card>
-            <h3 className="mb-3 font-semibold">{t('page.blocks')}</h3>
-            <div className="mb-3 flex flex-wrap gap-1">
-              {BLOCK_TYPES.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => addBlock(type)}
-                  className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100"
-                >
-                  + {type}
-                </button>
-              ))}
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white">{t('page.blocks')}</h3>
+              <Button variant="subtle" onClick={() => setShowPalette((v) => !v)}>
+                + {t('page.addBlock')}
+              </Button>
             </div>
-            <div className="space-y-3">
-              {blocks.map((block, i) => (
-                <div key={block.id} className="rounded-lg border border-slate-200 p-3">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium uppercase">{block.type}</span>
-                    <div className="ml-auto flex gap-1">
-                      <button
-                        onClick={() => move(block.id, -1)}
-                        disabled={i === 0}
-                        className="px-1 disabled:opacity-30"
-                        aria-label="Move block up"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => move(block.id, 1)}
-                        disabled={i === blocks.length - 1}
-                        className="px-1 disabled:opacity-30"
-                        aria-label="Move block down"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => patchBlock(block.id, (b) => ({ ...b, visible: !b.visible }))}
-                        className="px-1"
-                        aria-label={t('page.toggleVisible')}
-                      >
-                        {block.visible ? '👁' : '🚫'}
-                      </button>
-                      <button
-                        onClick={() => setBlocks((prev) => prev.filter((b) => b.id !== block.id))}
-                        className="px-1 text-red-600"
-                        aria-label={t('agenda.delete')}
-                      >
-                        ✕
-                      </button>
+
+            {showPalette && (
+              <div className="mb-3 grid grid-cols-3 gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+                {ALL_BLOCK_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => addBlock(type)}
+                    className="flex flex-col items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2 py-3 text-xs text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-800"
+                  >
+                    <span className="text-xl">{blockIcon(type)}</span>
+                    <span className="text-center leading-tight">{blockLabel(type, lang)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <ul className="space-y-1.5">
+              {blocks.map((block, i) => {
+                const isSel = selectedId === block.id
+                const isDragOver = dragOverId === block.id
+                return (
+                  <li
+                    key={block.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', String(i))
+                      e.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setDragOverId(block.id)
+                    }}
+                    onDragLeave={() => setDragOverId(null)}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setDragOverId(null)
+                      const from = Number(e.dataTransfer.getData('text/plain'))
+                      if (!Number.isNaN(from)) reorder(from, i)
+                    }}
+                    onClick={() => setSelectedId(block.id)}
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition ${
+                      isSel
+                        ? 'border-indigo-400/50 bg-indigo-500/10'
+                        : isDragOver
+                          ? 'border-indigo-400/60 bg-indigo-500/5'
+                          : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900'
+                    } ${block.visible === false ? 'opacity-50' : ''}`}
+                  >
+                    <span className="cursor-grab select-none text-slate-500" title="Przeciągnij" aria-hidden>
+                      ⋮⋮
+                    </span>
+                    <span className="text-lg" aria-hidden>
+                      {blockIcon(block.type)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-white">{blockLabel(block.type, lang)}</p>
+                      <p className="truncate text-xs text-slate-500">
+                        {block.content?.[lang]?.title ?? block.content?.pl?.title ?? '—'}
+                      </p>
                     </div>
-                  </div>
-                  <Input
-                    placeholder={t('page.blockTitle')}
-                    value={block.content[lang]?.title ?? ''}
-                    onChange={(e) => setText(block.id, 'title', e.target.value)}
-                  />
-                  {TEXTABLE.has(block.type) && (
-                    <Input
-                      className="mt-2"
-                      placeholder={t('page.blockText')}
-                      value={block.content[lang]?.text ?? ''}
-                      onChange={(e) => setText(block.id, 'text', e.target.value)}
-                    />
-                  )}
-                </div>
-              ))}
-              {blocks.length === 0 && <p className="text-sm text-slate-500">{t('page.noBlocks')}</p>}
-            </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        patchBlock(block.id, (b) => ({ ...b, visible: b.visible === false ? true : false }))
+                      }}
+                      className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      aria-label={t('page.toggleVisible')}
+                    >
+                      {block.visible === false ? '🚫' : '👁'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteBlock(block.id)
+                      }}
+                      className="rounded p-1 text-rose-400 hover:bg-rose-500/10"
+                      aria-label={t('agenda.delete')}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                )
+              })}
+              {blocks.length === 0 && (
+                <li className="rounded-lg border border-dashed border-slate-800 px-4 py-8 text-center text-sm text-slate-500">
+                  {t('page.noBlocks')}
+                </li>
+              )}
+            </ul>
           </Card>
 
-          <Card>
-            <h3 className="mb-3 font-semibold">{t('page.branding')}</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t('page.primaryColor')}>
-                <Input
-                  type="color"
-                  value={branding.primaryColor}
-                  onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                />
-              </Field>
-              <Field label={t('page.accentColor')}>
-                <Input
-                  type="color"
-                  value={branding.accentColor}
-                  onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
-                />
-              </Field>
-              <div className="col-span-2">
-                <Field label={t('page.logoUrl')}>
-                  <Input
-                    value={branding.logoUrl ?? ''}
-                    onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value || null })}
-                  />
-                </Field>
+          {selected && (
+            <Card>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-xl">{blockIcon(selected.type)}</span>
+                <h3 className="text-base font-semibold text-white">{blockLabel(selected.type, lang)}</h3>
+                <span className="ml-auto text-xs text-slate-500">{lang.toUpperCase()}</span>
               </div>
-            </div>
-            <Button className="mt-3" variant="ghost" onClick={handleBranding} disabled={updateBranding.isPending}>
-              {t('page.saveBranding')}
-            </Button>
-          </Card>
+              <div className="space-y-3">
+                {selected.type === 'spacer' ? (
+                  <Field label="Wysokość (px)">
+                    <Input
+                      type="number"
+                      min={4}
+                      max={400}
+                      value={Number((selected.settings as { height?: number })?.height ?? 32)}
+                      onChange={(e) =>
+                        patchBlock(selected.id, (b) => ({
+                          ...b,
+                          settings: { ...b.settings, height: Number(e.target.value) },
+                        }))
+                      }
+                    />
+                  </Field>
+                ) : (
+                  (FIELDS[selected.type] ?? []).map((field) => {
+                    const value = selected.content?.[lang]?.[field.key] ?? ''
+                    return (
+                      <Field key={field.key} label={field.label}>
+                        {field.multiline ? (
+                          <textarea
+                            value={value}
+                            placeholder={field.placeholder}
+                            onChange={(e) => setText(selected.id, field.key, e.target.value)}
+                            className="w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-400/20"
+                            rows={4}
+                          />
+                        ) : (
+                          <Input
+                            value={value}
+                            placeholder={field.placeholder}
+                            onChange={(e) => setText(selected.id, field.key, e.target.value)}
+                          />
+                        )}
+                      </Field>
+                    )
+                  })
+                )}
+              </div>
+            </Card>
+          )}
 
           {versions && versions.length > 0 && (
             <Card>
-              <h3 className="mb-3 font-semibold">{t('page.versions')}</h3>
+              <h3 className="mb-3 text-base font-semibold text-white">{t('page.versions')}</h3>
               <ul className="space-y-1 text-sm">
                 {versions.map((v) => (
                   <li key={v.version} className="flex items-center justify-between">
-                    <span>
-                      v{v.version} · {new Date(v.publishedAt).toLocaleString()}
+                    <span className="text-slate-300">
+                      v{v.version} · <span className="text-slate-500">{new Date(v.publishedAt).toLocaleString()}</span>
                     </span>
                     <Button variant="ghost" onClick={() => handleRestore(v.version)}>
                       {t('page.restore')}
@@ -292,24 +436,19 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
           )}
         </div>
 
-        <Card>
-          <h3 className="mb-3 font-semibold">{t('page.preview')}</h3>
-          <div className="space-y-3" style={{ fontFamily: branding.fontFamily }}>
-            {blocks
-              .filter((b) => b.visible)
-              .map((b) => (
-                <div
-                  key={b.id}
-                  className="rounded-lg border border-slate-100 p-4"
-                  style={{ borderLeft: `4px solid ${branding.primaryColor}` }}
-                >
-                  <p className="text-xs uppercase text-slate-400">{b.type}</p>
-                  <p className="font-semibold">{b.content[lang]?.title || `(${b.type})`}</p>
-                  {b.content[lang]?.text && <p className="text-sm text-slate-600">{b.content[lang].text}</p>}
-                </div>
-              ))}
-            {blocks.filter((b) => b.visible).length === 0 && (
-              <p className="text-sm text-slate-500">{t('page.noBlocks')}</p>
+        <Card className="p-3">
+          <div className="mb-2 flex items-center justify-between px-2">
+            <h3 className="text-sm font-semibold text-slate-300">{t('page.preview')}</h3>
+            <span className="text-xs text-slate-500">{lang.toUpperCase()}</span>
+          </div>
+          <div
+            className="space-y-5 rounded-2xl bg-slate-950/60 p-4"
+            style={{ fontFamily: branding.fontFamily }}
+          >
+            {visibleBlocks.length === 0 ? (
+              <p className="py-12 text-center text-sm text-slate-500">{t('page.noBlocks')}</p>
+            ) : (
+              visibleBlocks.map((b) => <RenderBlock key={b.id} block={b} ctx={ctx} />)
             )}
           </div>
         </Card>
