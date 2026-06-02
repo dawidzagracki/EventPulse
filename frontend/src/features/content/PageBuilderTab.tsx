@@ -10,58 +10,28 @@ import {
   useVersions,
 } from './api'
 import { useEvent } from '../events/api'
-import { RenderBlock, type BlockContext } from './EventBlocks'
+import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
 import { ALL_BLOCK_TYPES, blockIcon, blockLabel } from './blockMeta'
 import { Badge, Button, Card, Field, Input, Select } from '../../components/ui'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
 
 const TEMPLATES = ['gala', 'konferencja', 'integracja', 'premiera', 'blank']
 
-const FIELDS: Record<string, { key: string; label: string; multiline?: boolean; placeholder?: string }[]> = {
+// Non-text fields edited via the side panel (URLs, addresses, spacer height, etc.)
+const SETTINGS_FIELDS: Record<string, { key: string; label: string }[]> = {
   hero: [
-    { key: 'subtitle', label: 'Nadtytuł (mały tekst nad nazwą)' },
-    { key: 'title', label: 'Tytuł główny' },
-    { key: 'dateLabel', label: 'Data / etykieta' },
-    { key: 'location', label: 'Miejsce' },
-    { key: 'ctaLabel', label: 'Tekst przycisku' },
     { key: 'ctaUrl', label: 'Link przycisku' },
-    { key: 'bgImageUrl', label: 'URL obrazu w tle (opcjonalnie)' },
+    { key: 'bgImageUrl', label: 'URL obrazu w tle' },
   ],
-  description: [
-    { key: 'title', label: 'Tytuł sekcji' },
-    { key: 'body', label: 'Treść', multiline: true },
-  ],
-  agenda: [{ key: 'title', label: 'Tytuł sekcji' }],
-  gallery: [{ key: 'title', label: 'Tytuł sekcji' }],
-  countdown: [{ key: 'title', label: 'Tytuł nad licznikiem' }],
-  map: [
-    { key: 'title', label: 'Tytuł sekcji' },
-    { key: 'address', label: 'Adres (Google Maps)' },
-  ],
-  video: [
-    { key: 'title', label: 'Tytuł sekcji' },
-    { key: 'youtubeUrl', label: 'Link YouTube' },
-  ],
-  cta: [
-    { key: 'title', label: 'Nagłówek' },
-    { key: 'body', label: 'Opis', multiline: true },
-    { key: 'buttonLabel', label: 'Tekst przycisku' },
-    { key: 'buttonUrl', label: 'Link przycisku' },
-  ],
-  sponsors: [{ key: 'title', label: 'Tytuł sekcji' }],
-  faq: [{ key: 'title', label: 'Tytuł sekcji' }],
-  team: [{ key: 'title', label: 'Tytuł sekcji' }],
-  spacer: [],
+  map: [{ key: 'address', label: 'Adres (Google Maps)' }],
+  video: [{ key: 'youtubeUrl', label: 'Link YouTube' }],
+  cta: [{ key: 'buttonUrl', label: 'Link przycisku' }],
 }
 
 export function PageBuilderTab({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { data: page, isLoading } = usePage(eventId)
-
-  if (isLoading || !page) {
-    return <p className="text-slate-500">{t('common.loading')}</p>
-  }
-
+  if (isLoading || !page) return <p className="text-slate-500">{t('common.loading')}</p>
   return <Editor key={eventId} eventId={eventId} page={page} />
 }
 
@@ -79,10 +49,8 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   const [branding, setBranding] = useState<BrandingDto>(page.branding)
   const [lang, setLang] = useState<'pl' | 'en'>('pl')
   const [selectedId, setSelectedId] = useState<string | null>(blocks[0]?.id ?? null)
-  const [showPalette, setShowPalette] = useState(false)
   const [showBranding, setShowBranding] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [dragOverId, setDragOverId] = useState<string | null>(null)
 
   const selected = blocks.find((b) => b.id === selectedId) ?? null
   const visibleBlocks = useMemo(() => blocks.filter((b) => b.visible !== false), [blocks])
@@ -91,37 +59,58 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
     setBlocks((prev) => prev.map((b) => (b.id === id ? fn(b) : b)))
   }
 
-  function addBlock(type: string) {
-    const id = crypto.randomUUID()
-    setBlocks((prev) => [
-      ...prev,
-      {
-        id,
-        type,
-        order: prev.length,
-        visible: true,
-        settings: type === 'spacer' ? { height: 32 } : {},
-        content: { pl: {}, en: {} },
-        styles: {},
-      },
-    ])
-    setSelectedId(id)
-    setShowPalette(false)
-  }
-
-  function setText(id: string, key: string, value: string) {
-    patchBlock(id, (b) => ({
+  function setText(blockId: string, key: string, value: string) {
+    patchBlock(blockId, (b) => ({
       ...b,
       content: { ...b.content, [lang]: { ...(b.content[lang] ?? {}), [key]: value } },
     }))
   }
 
-  function reorder(fromIndex: number, toIndex: number) {
-    if (fromIndex === toIndex) return
+  function newBlock(type: string): PageBlock {
+    return {
+      id: crypto.randomUUID(),
+      type,
+      order: 0,
+      visible: true,
+      settings: type === 'spacer' ? { height: 48 } : {},
+      content: { pl: {}, en: {} },
+      styles: {},
+    }
+  }
+
+  function appendBlock(type: string) {
+    const b = newBlock(type)
+    setBlocks((prev) => [...prev, b])
+    setSelectedId(b.id)
+  }
+
+  function insertBlockAt(type: string, index: number) {
+    const b = newBlock(type)
     setBlocks((prev) => {
       const next = [...prev]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
+      next.splice(index, 0, b)
+      return next
+    })
+    setSelectedId(b.id)
+  }
+
+  function reorder(from: number, to: number) {
+    if (from === to) return
+    setBlocks((prev) => {
+      const next = [...prev]
+      const [m] = next.splice(from, 1)
+      next.splice(to, 0, m)
+      return next
+    })
+  }
+
+  function moveSelected(id: string, dir: -1 | 1) {
+    setBlocks((prev) => {
+      const i = prev.findIndex((b) => b.id === id)
+      const j = i + dir
+      if (i < 0 || j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[i], next[j]] = [next[j], next[i]]
       return next
     })
   }
@@ -142,22 +131,21 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
 
   async function handlePublish() {
     await save.mutateAsync(reindexed())
-    const result = await publish.mutateAsync()
-    setMessage(t('page.published', { version: result.publishedVersion }))
+    const r = await publish.mutateAsync()
+    setMessage(t('page.published', { version: r.publishedVersion }))
   }
 
   async function handleTemplate(key: string) {
-    const result = await applyTemplate.mutateAsync(key)
-    setBlocks(result.content.blocks ?? [])
-    setBranding(result.branding)
-    setSelectedId(result.content.blocks?.[0]?.id ?? null)
-    setMessage(null)
+    const r = await applyTemplate.mutateAsync(key)
+    setBlocks(r.content.blocks ?? [])
+    setBranding(r.branding)
+    setSelectedId(r.content.blocks?.[0]?.id ?? null)
   }
 
   async function handleRestore(version: number) {
-    const result = await restore.mutateAsync(version)
-    setBlocks(result.content.blocks ?? [])
-    setBranding(result.branding)
+    const r = await restore.mutateAsync(version)
+    setBlocks(r.content.blocks ?? [])
+    setBranding(r.branding)
     setMessage(t('page.restored', { version }))
   }
 
@@ -173,6 +161,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
     agenda: [],
     galleryUrls: [],
     startsAt: event?.startsAt,
+    edit: { onTextChange: setText },
   }
 
   return (
@@ -262,158 +251,72 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
         )}
       </Card>
 
-      {/* MAIN: block list + selected fields + live preview */}
-      <div className="grid gap-4 xl:grid-cols-[400px_1fr]">
+      {/* MAIN: palette + canvas */}
+      <div className="grid gap-4 xl:grid-cols-[260px_1fr]">
+        {/* Palette */}
         <div className="space-y-4">
-          <Card>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">{t('page.blocks')}</h3>
-              <Button variant="subtle" onClick={() => setShowPalette((v) => !v)}>
-                + {t('page.addBlock')}
-              </Button>
+          <Card className="p-3">
+            <h3 className="px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {t('page.addBlock')}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {ALL_BLOCK_TYPES.map((type) => (
+                <button
+                  key={type}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/x-block-type', type)
+                    e.dataTransfer.effectAllowed = 'copy'
+                  }}
+                  onClick={() => appendBlock(type)}
+                  className="flex cursor-grab flex-col items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 px-2 py-3 text-xs text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-900"
+                  title="Przeciągnij na podgląd lub kliknij, żeby dodać na końcu"
+                >
+                  <span className="text-2xl">{blockIcon(type)}</span>
+                  <span className="text-center leading-tight">{blockLabel(type, lang)}</span>
+                </button>
+              ))}
             </div>
-
-            {showPalette && (
-              <div className="mb-3 grid grid-cols-3 gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-                {ALL_BLOCK_TYPES.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => addBlock(type)}
-                    className="flex flex-col items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2 py-3 text-xs text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-800"
-                  >
-                    <span className="text-xl">{blockIcon(type)}</span>
-                    <span className="text-center leading-tight">{blockLabel(type, lang)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <ul className="space-y-1.5">
-              {blocks.map((block, i) => {
-                const isSel = selectedId === block.id
-                const isDragOver = dragOverId === block.id
-                return (
-                  <li
-                    key={block.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', String(i))
-                      e.dataTransfer.effectAllowed = 'move'
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      setDragOverId(block.id)
-                    }}
-                    onDragLeave={() => setDragOverId(null)}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      setDragOverId(null)
-                      const from = Number(e.dataTransfer.getData('text/plain'))
-                      if (!Number.isNaN(from)) reorder(from, i)
-                    }}
-                    onClick={() => setSelectedId(block.id)}
-                    className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition ${
-                      isSel
-                        ? 'border-indigo-400/50 bg-indigo-500/10'
-                        : isDragOver
-                          ? 'border-indigo-400/60 bg-indigo-500/5'
-                          : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900'
-                    } ${block.visible === false ? 'opacity-50' : ''}`}
-                  >
-                    <span className="cursor-grab select-none text-slate-500" title="Przeciągnij" aria-hidden>
-                      ⋮⋮
-                    </span>
-                    <span className="text-lg" aria-hidden>
-                      {blockIcon(block.type)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-white">{blockLabel(block.type, lang)}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        {block.content?.[lang]?.title ?? block.content?.pl?.title ?? '—'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        patchBlock(block.id, (b) => ({ ...b, visible: b.visible === false ? true : false }))
-                      }}
-                      className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      aria-label={t('page.toggleVisible')}
-                    >
-                      {block.visible === false ? '🚫' : '👁'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteBlock(block.id)
-                      }}
-                      className="rounded p-1 text-rose-400 hover:bg-rose-500/10"
-                      aria-label={t('agenda.delete')}
-                    >
-                      ✕
-                    </button>
-                  </li>
-                )
-              })}
-              {blocks.length === 0 && (
-                <li className="rounded-lg border border-dashed border-slate-800 px-4 py-8 text-center text-sm text-slate-500">
-                  {t('page.noBlocks')}
-                </li>
-              )}
-            </ul>
           </Card>
 
-          {selected && (
+          {selected && (SETTINGS_FIELDS[selected.type] ?? []).length > 0 && (
             <Card>
-              <div className="mb-3 flex items-center gap-2">
+              <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-white">
                 <span className="text-xl">{blockIcon(selected.type)}</span>
-                <h3 className="text-base font-semibold text-white">{blockLabel(selected.type, lang)}</h3>
-                <span className="ml-auto text-xs text-slate-500">{lang.toUpperCase()}</span>
-              </div>
+                {blockLabel(selected.type, lang)}
+              </h3>
+              <p className="mb-3 text-xs text-slate-500">
+                Tekst edytujesz klikając w niego na podglądzie po prawej. Tutaj — linki i ustawienia.
+              </p>
               <div className="space-y-3">
-                {selected.type === 'spacer' ? (
-                  <Field label="Wysokość (px)">
+                {(SETTINGS_FIELDS[selected.type] ?? []).map((f) => (
+                  <Field key={f.key} label={f.label}>
                     <Input
-                      type="number"
-                      min={4}
-                      max={400}
-                      value={Number((selected.settings as { height?: number })?.height ?? 32)}
-                      onChange={(e) =>
-                        patchBlock(selected.id, (b) => ({
-                          ...b,
-                          settings: { ...b.settings, height: Number(e.target.value) },
-                        }))
-                      }
+                      value={(selected.content?.[lang]?.[f.key] ?? '') as string}
+                      onChange={(e) => setText(selected.id, f.key, e.target.value)}
                     />
                   </Field>
-                ) : (
-                  (FIELDS[selected.type] ?? []).map((field) => {
-                    const value = selected.content?.[lang]?.[field.key] ?? ''
-                    return (
-                      <Field key={field.key} label={field.label}>
-                        {field.multiline ? (
-                          <textarea
-                            value={value}
-                            placeholder={field.placeholder}
-                            onChange={(e) => setText(selected.id, field.key, e.target.value)}
-                            className="w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-400/20"
-                            rows={4}
-                          />
-                        ) : (
-                          <Input
-                            value={value}
-                            placeholder={field.placeholder}
-                            onChange={(e) => setText(selected.id, field.key, e.target.value)}
-                          />
-                        )}
-                      </Field>
-                    )
-                  })
-                )}
+                ))}
               </div>
+            </Card>
+          )}
+
+          {selected?.type === 'spacer' && (
+            <Card>
+              <Field label="Wysokość odstępu (px)">
+                <Input
+                  type="number"
+                  min={4}
+                  max={400}
+                  value={Number((selected.settings as { height?: number })?.height ?? 48)}
+                  onChange={(e) =>
+                    patchBlock(selected.id, (b) => ({
+                      ...b,
+                      settings: { ...b.settings, height: Number(e.target.value) },
+                    }))
+                  }
+                />
+              </Field>
             </Card>
           )}
 
@@ -424,7 +327,8 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
                 {versions.map((v) => (
                   <li key={v.version} className="flex items-center justify-between">
                     <span className="text-slate-300">
-                      v{v.version} · <span className="text-slate-500">{new Date(v.publishedAt).toLocaleString()}</span>
+                      v{v.version} ·{' '}
+                      <span className="text-slate-500">{new Date(v.publishedAt).toLocaleString()}</span>
                     </span>
                     <Button variant="ghost" onClick={() => handleRestore(v.version)}>
                       {t('page.restore')}
@@ -436,23 +340,84 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
           )}
         </div>
 
-        <Card className="p-3">
-          <div className="mb-2 flex items-center justify-between px-2">
-            <h3 className="text-sm font-semibold text-slate-300">{t('page.preview')}</h3>
+        {/* CANVAS — light, marketing-grade preview with inline editing */}
+        <div className="rounded-2xl border border-slate-800/60 bg-slate-950/50 p-3">
+          <div className="mb-3 flex items-center justify-between px-2">
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              Klikaj tekst, by edytować · Przeciągaj bloki, by zmienić kolejność · Upuść z palety, by wstawić
+            </p>
             <span className="text-xs text-slate-500">{lang.toUpperCase()}</span>
           </div>
           <div
-            className="space-y-5 rounded-2xl bg-slate-950/60 p-4"
+            className="space-y-3 rounded-2xl bg-[#fbfbfd] p-6 text-slate-900 shadow-inner"
             style={{ fontFamily: branding.fontFamily }}
           >
-            {visibleBlocks.length === 0 ? (
-              <p className="py-12 text-center text-sm text-slate-500">{t('page.noBlocks')}</p>
+            {blocks.length === 0 ? (
+              <DropFirst onInsertNew={(type) => insertBlockAt(type, 0)} />
             ) : (
-              visibleBlocks.map((b) => <RenderBlock key={b.id} block={b} ctx={ctx} />)
+              <>
+                <DropZone index={0} onReorder={reorder} onInsertNew={insertBlockAt} />
+                {blocks.map((b, i) => (
+                  <div key={b.id}>
+                    <EditorFrame
+                      block={b}
+                      index={i}
+                      totalBlocks={blocks.length}
+                      selected={selectedId === b.id}
+                      onSelect={() => setSelectedId(b.id)}
+                      onMove={(dir) => moveSelected(b.id, dir)}
+                      onDelete={() => deleteBlock(b.id)}
+                      onToggleVisible={() =>
+                        patchBlock(b.id, (block) => ({ ...block, visible: block.visible === false }))
+                      }
+                    >
+                      {b.visible === false ? (
+                        <div className="rounded-3xl bg-slate-100 p-8 text-center text-slate-400">
+                          {blockLabel(b.type, lang)} — ukryty
+                        </div>
+                      ) : (
+                        <RenderBlock block={b} ctx={ctx} />
+                      )}
+                    </EditorFrame>
+                    <DropZone index={i + 1} onReorder={reorder} onInsertNew={insertBlockAt} />
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Hidden blocks listed for awareness (visible items already rendered above) */}
+            {visibleBlocks.length === 0 && blocks.length === 0 && (
+              <p className="py-16 text-center text-slate-400">{t('page.noBlocks')}</p>
             )}
           </div>
-        </Card>
+        </div>
       </div>
+    </div>
+  )
+}
+
+function DropFirst({ onInsertNew }: { onInsertNew: (type: string) => void }) {
+  const [active, setActive] = useState(false)
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault()
+        setActive(true)
+      }}
+      onDragLeave={() => setActive(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setActive(false)
+        const t = e.dataTransfer.getData('text/x-block-type')
+        if (t) onInsertNew(t)
+      }}
+      className={`rounded-3xl border-2 border-dashed p-16 text-center transition ${
+        active
+          ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+          : 'border-slate-300 bg-slate-50 text-slate-400'
+      }`}
+    >
+      Przeciągnij blok z palety albo kliknij blok po lewej, żeby zacząć
     </div>
   )
 }

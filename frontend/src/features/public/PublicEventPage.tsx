@@ -40,7 +40,6 @@ function usePublic<T>(key: string, eventId: string, path: string, enabled = true
   })
 }
 
-/** Per-block scoped customCSS in one <style>. */
 function ScopedStyles({ blocks }: { blocks: PageBlock[] }) {
   const rules = blocks
     .map((b) => {
@@ -67,6 +66,17 @@ export function PublicEventPage() {
     if (page.data?.seo.title) document.title = page.data.seo.title
   }, [page.data])
 
+  // Page-scoped light theme: override the body's dark gradient for the public landing only.
+  useEffect(() => {
+    const prev = document.body.style.background
+    document.body.style.background = '#fbfbfd'
+    document.body.style.color = '#0f172a'
+    return () => {
+      document.body.style.background = prev
+      document.body.style.color = ''
+    }
+  }, [])
+
   const blocks = useMemo(
     () =>
       (page.data?.content.blocks ?? [])
@@ -75,13 +85,15 @@ export function PublicEventPage() {
     [page.data],
   )
 
-  if (page.isLoading) return <p className="p-8 text-slate-500">{t('common.loading')}</p>
+  if (page.isLoading)
+    return <p className="p-8 text-slate-500">{t('common.loading')}</p>
+
   if (page.isError || !page.data) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-8">
+      <div className="flex min-h-screen items-center justify-center bg-white p-8 text-slate-900">
         <div className="max-w-md text-center">
-          <h1 className="text-2xl font-bold text-white">{t('public.notPublished')}</h1>
-          <p className="mt-2 text-slate-400">{t('public.notPublishedHint')}</p>
+          <h1 className="text-3xl font-bold">{t('public.notPublished')}</h1>
+          <p className="mt-2 text-slate-500">{t('public.notPublishedHint')}</p>
         </div>
       </div>
     )
@@ -98,49 +110,55 @@ export function PublicEventPage() {
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen text-slate-900"
       style={{
         fontFamily: page.data.branding.fontFamily,
-        background: page.data.branding.backgroundColor ?? undefined,
+        background: page.data.branding.backgroundColor ?? '#fbfbfd',
       }}
     >
       <ScopedStyles blocks={blocks} />
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-3">
-          {page.data.branding.logoUrl ? (
-            <img src={page.data.branding.logoUrl} alt="" className="h-9 w-auto" />
-          ) : (
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-white"
-              style={{ background: page.data.branding.primaryColor }}
-            >
-              {(event.data?.name ?? 'EP').slice(0, 2).toUpperCase()}
-            </div>
-          )}
-          {event.data && <span className="text-sm font-medium text-slate-200">{event.data.name}</span>}
-        </div>
-        <div className="inline-flex overflow-hidden rounded-md border border-slate-700/60 bg-slate-900/60 text-[11px]">
-          {(['pl', 'en'] as const).map((lng) => (
-            <button
-              key={lng}
-              onClick={() => i18n.changeLanguage(lng)}
-              className={`px-2 py-1 uppercase tracking-wide ${
-                lang === lng ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {lng}
-            </button>
-          ))}
+      <header className="sticky top-0 z-10 border-b border-slate-200/70 bg-white/85 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            {page.data.branding.logoUrl ? (
+              <img src={page.data.branding.logoUrl} alt="" className="h-9 w-auto" />
+            ) : (
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-white"
+                style={{ background: page.data.branding.primaryColor }}
+              >
+                {(event.data?.name ?? 'EP').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            {event.data && <span className="text-sm font-semibold text-slate-700">{event.data.name}</span>}
+          </div>
+          <div className="inline-flex overflow-hidden rounded-md border border-slate-200 bg-white text-[11px] shadow-sm">
+            {(['pl', 'en'] as const).map((lng) => (
+              <button
+                key={lng}
+                onClick={() => i18n.changeLanguage(lng)}
+                className={`px-2.5 py-1 uppercase tracking-wide ${
+                  lang === lng ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {lng}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-6 px-6 pb-16">
+      <main className="mx-auto max-w-6xl space-y-8 px-6 py-10">
         {blocks.length === 0 ? (
-          <p className="text-center text-slate-500">{t('public.empty')}</p>
+          <p className="text-center text-slate-400">{t('public.empty')}</p>
         ) : (
           blocks.map((b) => <RenderBlock key={b.id} block={b} ctx={ctx} />)
         )}
       </main>
+
+      <footer className="mx-auto max-w-6xl px-6 pb-12 pt-4 text-center text-xs text-slate-400">
+        Powered by EventPulse
+      </footer>
     </div>
   )
 }
