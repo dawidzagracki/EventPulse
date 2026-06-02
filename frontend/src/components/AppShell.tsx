@@ -54,11 +54,8 @@ export function AppShell({ nav, back, title, subtitle, actions, children }: AppS
     <div className="flex min-h-screen">
       <aside className="hidden w-64 flex-col border-r border-slate-800/80 bg-slate-950/40 backdrop-blur-md md:flex">
         <div className="flex items-center gap-3 border-b border-slate-800/80 px-5 py-5">
-          <Logo size={40} className="shadow-lg shadow-violet-500/20" />
-          <div>
-            <p className="text-sm font-semibold text-white">EventPulse</p>
-            <p className="text-xs text-slate-400">{badge.label}</p>
-          </div>
+          <Logo size={36} />
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{badge.label}</p>
         </div>
 
         {back && (

@@ -41,10 +41,7 @@ export function LoginPage() {
 
       <Card glow className="w-full max-w-sm">
         <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Logo size={36} className="shadow-lg shadow-violet-500/30" />
-            <span className="text-lg font-semibold text-white">{t('app.name')}</span>
-          </div>
+          <Logo size={36} />
           <LanguageSwitcher />
         </div>
         <h2 className="mb-1 text-xl font-bold text-white">{t('auth.loginTitle')}</h2>

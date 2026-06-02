@@ -34,10 +34,7 @@ export function ParticipantHome() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Logo size={32} />
-            <span className="text-sm font-semibold text-white">{t('app.name')}</span>
-          </div>
+          <Logo size={28} />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <Button variant="ghost" onClick={handleLogout}>
