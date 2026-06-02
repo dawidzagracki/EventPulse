@@ -93,6 +93,8 @@ function EventCard({ ev }: { ev: EventDto }) {
       <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${meta.bar}`} />
       {/* subtle status-tinted glow in top-right */}
       <div className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full ${meta.glow} blur-3xl transition group-hover:opacity-70`} />
+      {/* corner gradient overlay (login-card style) */}
+      <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-indigo-500/[0.06] via-transparent to-violet-500/[0.06] opacity-0 transition group-hover:opacity-100" />
 
       <div className="relative flex items-start gap-4 p-5 pl-6">
         {/* date tile */}
@@ -276,6 +278,39 @@ export function EventsListPage() {
         </Button>
       }
     >
+      {/* Page-level decorative backdrop (matches login style) */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 top-0 h-[26rem] w-[26rem] rounded-full bg-indigo-600/20 blur-3xl animate-pulse-slow" />
+        <div className="absolute right-[-8rem] top-1/3 h-[28rem] w-[28rem] rounded-full bg-violet-600/20 blur-3xl animate-pulse-slow [animation-delay:1.5s]" />
+        <div className="absolute bottom-[-6rem] left-1/3 h-[22rem] w-[22rem] rounded-full bg-fuchsia-600/15 blur-3xl animate-pulse-slow [animation-delay:3s]" />
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: 'radial-gradient(rgb(148 163 184) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
+      </div>
+
+      {/* Hero pill */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+          </span>
+          {stats.live > 0
+            ? `${stats.live} ${t('events.statLive').toLowerCase()}`
+            : `${stats.total} ${t('events.statTotal').toLowerCase()}`}
+        </span>
+        {stats.published > 0 && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-200">
+            <Icon name="sparkles" className="h-3 w-3" />
+            {stats.published} {t('events.statPublished').toLowerCase()}
+          </span>
+        )}
+      </div>
+
       {/* Stats row */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MiniStat label={t('events.statTotal')} value={stats.total} accent="indigo" icon="calendar" />
