@@ -55,7 +55,7 @@ export function AppShell({ nav, back, title, subtitle, actions, children }: AppS
       <aside className="hidden w-64 flex-col border-r border-slate-800/80 bg-slate-950/40 backdrop-blur-md md:flex">
         <div className="flex items-center gap-3 border-b border-slate-800/80 px-5 py-5">
           <Logo size={36} />
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{badge.label}</p>
+          <span className="text-base font-semibold text-white">EventPulse</span>
         </div>
 
         {back && (
