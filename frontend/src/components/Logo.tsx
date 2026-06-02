@@ -15,7 +15,7 @@ interface LogoProps {
  * If a `logo.png` file exists in `frontend/public/`, it is preferred — drop the
  * official asset there and the SVG fallback steps aside automatically.
  */
-export function Logo({ size = 36, className = '', style, iconOnly = false, alt = 'EventPulse' }: LogoProps) {
+export function Logo({ size = 36, className = '', style, iconOnly = true, alt = 'EventPulse' }: LogoProps) {
   const [pngFailed, setPngFailed] = useState(false)
 
   if (!pngFailed) {
