@@ -7,6 +7,7 @@ import { createEventConnection } from '../../lib/signalr'
 import { Card } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
 import { useEvent } from '../events/api'
+import { prettifyEventName } from '../events/eventName'
 import { EventStatus, type DashboardData } from '../../types/api'
 
 interface FeedbackSummary {
@@ -387,8 +388,11 @@ function HeroPanel({
               </span>
             )}
           </div>
-          <h1 className="truncate bg-gradient-to-r from-white via-indigo-100 to-violet-200 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
-            {eventName}
+          <h1
+            title={prettifyEventName(eventName).full !== prettifyEventName(eventName).display ? prettifyEventName(eventName).full : undefined}
+            className="truncate bg-gradient-to-r from-white via-indigo-100 to-violet-200 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent"
+          >
+            {prettifyEventName(eventName).display}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
             {dateLabel && (

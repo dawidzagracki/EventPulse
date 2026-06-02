@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEvent } from './api'
+import { prettifyEventName } from './eventName'
 import { ParticipantsTab } from '../participants/ParticipantsTab'
 import { AgendaTab } from '../agenda/AgendaTab'
 import { PageBuilderTab } from '../content/PageBuilderTab'
@@ -80,7 +81,7 @@ export function EventDetailPage() {
     <AppShell
       nav={nav}
       back={{ to: '/events', label: t('events.title') }}
-      title={event?.name ?? t('common.loading')}
+      title={event ? prettifyEventName(event.name).display : t('common.loading')}
       subtitle={event ? `/${event.slug}` : undefined}
       actions={actions}
     >

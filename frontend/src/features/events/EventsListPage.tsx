@@ -6,6 +6,7 @@ import { AppShell, type NavItem } from '../../components/AppShell'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { EventStatus, type EventDto } from '../../types/api'
+import { prettifyEventName } from './eventName'
 
 type FilterKey = 'all' | 'draft' | 'published' | 'live' | 'completed'
 
@@ -75,15 +76,6 @@ function formatTime(iso: string, lang: string) {
   return new Date(iso).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
 }
 
-/** Detects auto-generated names like "Event 8c824327dcc1435eadf735aa9c43f4b8" and shortens them. */
-function prettifyName(name: string): { display: string; full: string } {
-  const m = name.match(/^(Event\s+)([a-f0-9]{16,})$/i)
-  if (m) {
-    return { display: `${m[1].trim()} #${m[2].slice(0, 6)}`, full: name }
-  }
-  return { display: name, full: name }
-}
-
 function EventCard({ ev }: { ev: EventDto }) {
   const { i18n, t } = useTranslation()
   const meta = statusMeta(ev.status)
@@ -92,7 +84,7 @@ function EventCard({ ev }: { ev: EventDto }) {
   const sameDay = start.toDateString() === end.toDateString()
   const day = start.getDate().toString().padStart(2, '0')
   const month = start.toLocaleDateString(i18n.language, { month: 'short' }).replace('.', '').toUpperCase()
-  const { display: displayName, full: fullName } = prettifyName(ev.name)
+  const { display: displayName, full: fullName } = prettifyEventName(ev.name)
 
   return (
     <Link
