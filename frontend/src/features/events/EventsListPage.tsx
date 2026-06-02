@@ -75,6 +75,15 @@ function formatTime(iso: string, lang: string) {
   return new Date(iso).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
 }
 
+/** Detects auto-generated names like "Event 8c824327dcc1435eadf735aa9c43f4b8" and shortens them. */
+function prettifyName(name: string): { display: string; full: string } {
+  const m = name.match(/^(Event\s+)([a-f0-9]{16,})$/i)
+  if (m) {
+    return { display: `${m[1].trim()} #${m[2].slice(0, 6)}`, full: name }
+  }
+  return { display: name, full: name }
+}
+
 function EventCard({ ev }: { ev: EventDto }) {
   const { i18n, t } = useTranslation()
   const meta = statusMeta(ev.status)
@@ -83,30 +92,35 @@ function EventCard({ ev }: { ev: EventDto }) {
   const sameDay = start.toDateString() === end.toDateString()
   const day = start.getDate().toString().padStart(2, '0')
   const month = start.toLocaleDateString(i18n.language, { month: 'short' }).replace('.', '').toUpperCase()
+  const { display: displayName, full: fullName } = prettifyName(ev.name)
 
   return (
     <Link
       to={`/events/${ev.id}`}
+      title={fullName !== displayName ? fullName : undefined}
       className="group relative block overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/40 backdrop-blur transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:shadow-2xl hover:shadow-indigo-500/10"
     >
       {/* left accent bar — status color */}
       <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${meta.bar}`} />
       {/* subtle status-tinted glow in top-right */}
-      <div className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full ${meta.glow} blur-3xl transition group-hover:opacity-70`} />
+      <div className={`pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full ${meta.glow} blur-3xl transition group-hover:opacity-70`} />
       {/* corner gradient overlay (login-card style) */}
       <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-indigo-500/[0.06] via-transparent to-violet-500/[0.06] opacity-0 transition group-hover:opacity-100" />
 
-      <div className="relative flex items-start gap-4 p-5 pl-6">
+      <div className="relative flex items-center gap-4 p-4 pl-5">
         {/* date tile */}
-        <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border border-slate-700/60 bg-slate-950/70 shadow-inner shadow-slate-950/40">
+        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border border-slate-700/60 bg-slate-950/70 shadow-inner shadow-slate-950/40">
           <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">{month}</span>
-          <span className="text-2xl font-bold text-white">{day}</span>
+          <span className="text-xl font-bold text-white">{day}</span>
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200">{ev.name}</h3>
-            <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${meta.chip}`}>
+          {/* Name */}
+          <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200">{displayName}</h3>
+
+          {/* Single info row: status + time + location */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+            <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.chip}`}>
               <span className="relative flex h-1.5 w-1.5">
                 {meta.pulse && (
                   <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${meta.dot} opacity-75`} />
@@ -115,9 +129,6 @@ function EventCard({ ev }: { ev: EventDto }) {
               </span>
               {meta.label}
             </span>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="clock" className="h-3.5 w-3.5 text-slate-500" />
               {sameDay
@@ -125,40 +136,37 @@ function EventCard({ ev }: { ev: EventDto }) {
                 : `${formatDate(ev.startsAt, i18n.language)} → ${formatDate(ev.endsAt, i18n.language)}`}
             </span>
             {ev.location && (
-              <span className="inline-flex items-center gap-1.5">
-                <Icon name="mapPin" className="h-3.5 w-3.5 text-slate-500" />
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <Icon name="mapPin" className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                 <span className="truncate">{ev.location}</span>
               </span>
             )}
           </div>
+        </div>
 
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <code className="truncate rounded-md border border-slate-800/80 bg-slate-950/60 px-2 py-0.5 font-mono text-[11px] text-slate-400">
-              /{ev.slug}
-            </code>
-            <div className="flex items-center gap-1">
-              {ev.status >= EventStatus.Published && (
-                <a
-                  href={`/public/${ev.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-slate-400 hover:bg-slate-800/60 hover:text-slate-100"
-                  title={t('events.preview')}
-                >
-                  <Icon name="externalLink" className="h-3.5 w-3.5" />
-                </a>
-              )}
-              <span className="inline-flex items-center gap-1 rounded-md bg-slate-800/50 px-2 py-1 text-[11px] font-medium text-slate-200 ring-1 ring-inset ring-slate-700/60 transition group-hover:bg-indigo-500/20 group-hover:text-indigo-100 group-hover:ring-indigo-400/40">
-                {t('events.open')}
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden>
-                  <path d="M9 6l6 6-6 6V6z" />
-                </svg>
-              </span>
-            </div>
-          </div>
+        {/* Trailing controls */}
+        <div className="flex shrink-0 items-center gap-1">
+          {ev.status >= EventStatus.Published && (
+            <a
+              href={`/public/${ev.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-md p-1.5 text-slate-400 hover:bg-slate-800/60 hover:text-slate-100"
+              title={t('events.preview')}
+            >
+              <Icon name="externalLink" className="h-3.5 w-3.5" />
+            </a>
+          )}
+          <span className="hidden items-center gap-1 rounded-md bg-slate-800/50 px-2 py-1 text-[11px] font-medium text-slate-200 ring-1 ring-inset ring-slate-700/60 transition group-hover:bg-indigo-500/20 group-hover:text-indigo-100 group-hover:ring-indigo-400/40 md:inline-flex">
+            {t('events.open')}
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden>
+              <path d="M9 6l6 6-6 6V6z" />
+            </svg>
+          </span>
         </div>
       </div>
+
     </Link>
   )
 }
