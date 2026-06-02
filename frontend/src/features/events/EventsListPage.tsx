@@ -22,45 +22,45 @@ function statusMeta(status: number) {
     case EventStatus.Live:
       return {
         label: 'Live',
-        ring: 'ring-emerald-400/40',
         chip: 'bg-emerald-400/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/30',
-        cover: 'from-emerald-500/40 via-teal-500/20 to-transparent',
+        bar: 'from-emerald-400 via-teal-400 to-emerald-500',
+        glow: 'bg-emerald-500/10',
         dot: 'bg-emerald-400',
         pulse: true,
       }
     case EventStatus.Published:
       return {
         label: 'Published',
-        ring: 'ring-sky-400/40',
         chip: 'bg-sky-400/15 text-sky-300 ring-1 ring-inset ring-sky-400/30',
-        cover: 'from-sky-500/40 via-indigo-500/20 to-transparent',
+        bar: 'from-sky-400 via-indigo-400 to-sky-500',
+        glow: 'bg-sky-500/10',
         dot: 'bg-sky-400',
         pulse: false,
       }
     case EventStatus.Completed:
       return {
         label: 'Completed',
-        ring: 'ring-violet-400/40',
         chip: 'bg-violet-400/15 text-violet-300 ring-1 ring-inset ring-violet-400/30',
-        cover: 'from-violet-500/30 via-fuchsia-500/15 to-transparent',
+        bar: 'from-violet-400 via-fuchsia-400 to-violet-500',
+        glow: 'bg-violet-500/10',
         dot: 'bg-violet-400',
         pulse: false,
       }
     case EventStatus.Archived:
       return {
         label: 'Archived',
-        ring: 'ring-slate-400/30',
         chip: 'bg-slate-400/10 text-slate-300 ring-1 ring-inset ring-slate-400/20',
-        cover: 'from-slate-500/30 via-slate-500/10 to-transparent',
+        bar: 'from-slate-500 via-slate-400 to-slate-500',
+        glow: 'bg-slate-500/10',
         dot: 'bg-slate-400',
         pulse: false,
       }
     default:
       return {
         label: 'Draft',
-        ring: 'ring-amber-400/40',
         chip: 'bg-amber-400/15 text-amber-300 ring-1 ring-inset ring-amber-400/30',
-        cover: 'from-amber-500/30 via-orange-500/15 to-transparent',
+        bar: 'from-amber-400 via-orange-400 to-amber-500',
+        glow: 'bg-amber-500/10',
         dot: 'bg-amber-400',
         pulse: false,
       }
@@ -89,11 +89,12 @@ function EventCard({ ev }: { ev: EventDto }) {
       to={`/events/${ev.id}`}
       className="group relative block overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/40 backdrop-blur transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:shadow-2xl hover:shadow-indigo-500/10"
     >
-      {/* gradient cover strip */}
-      <div className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-br ${meta.cover} opacity-80`} />
-      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl transition group-hover:bg-violet-500/20" />
+      {/* left accent bar — status color */}
+      <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${meta.bar}`} />
+      {/* subtle status-tinted glow in top-right */}
+      <div className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full ${meta.glow} blur-3xl transition group-hover:opacity-70`} />
 
-      <div className="relative flex items-start gap-4 p-5">
+      <div className="relative flex items-start gap-4 p-5 pl-6">
         {/* date tile */}
         <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border border-slate-700/60 bg-slate-950/70 shadow-inner shadow-slate-950/40">
           <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">{month}</span>
