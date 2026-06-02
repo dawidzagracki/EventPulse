@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCreateEvent, useEvents } from './api'
@@ -251,8 +251,14 @@ export function EventsListPage() {
     )
   }, [events, filter, query])
 
+  // Tick once a minute so the upcoming/past partition stays fresh without re-computing on every render.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+
   const { upcoming, past } = useMemo(() => {
-    const now = Date.now()
     const upc: typeof filtered = []
     const pst: typeof filtered = []
     for (const e of filtered) {
@@ -262,7 +268,7 @@ export function EventsListPage() {
     upc.sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     pst.sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
     return { upcoming: upc, past: pst }
-  }, [filtered])
+  }, [filtered, now])
 
   const nav: NavItem[] = [{ id: 'events', label: t('events.title'), icon: 'calendar', to: '/events', active: true }]
 

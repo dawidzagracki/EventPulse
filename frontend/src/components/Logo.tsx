@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useId, useState, type CSSProperties } from 'react'
 
 interface LogoProps {
   /** Rendered height in pixels (width auto-scales). */
@@ -17,6 +17,8 @@ interface LogoProps {
  */
 export function Logo({ size = 36, className = '', style, iconOnly = true, alt = 'EventPulse' }: LogoProps) {
   const [pngFailed, setPngFailed] = useState(false)
+  const reactId = useId()
+  const iconId = `lg-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`
 
   if (!pngFailed) {
     return (
@@ -32,7 +34,6 @@ export function Logo({ size = 36, className = '', style, iconOnly = true, alt = 
 
   // SVG fallback — gradient square with location pin + pulse line, optionally
   // followed by the "EventPulse" wordmark to mirror the official lockup.
-  const iconId = `lg-${Math.random().toString(36).slice(2, 8)}`
   const iconBox = (
     <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden role="img" style={{ flexShrink: 0 }}>
       <defs>
