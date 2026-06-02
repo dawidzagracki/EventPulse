@@ -12,6 +12,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
+import { Logo } from '../../components/Logo'
 import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { useMyGallery } from '../gallery/api'
@@ -34,9 +35,7 @@ export function ParticipantHome() {
       <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white">
-              EP
-            </div>
+            <Logo size={32} />
             <span className="text-sm font-semibold text-white">{t('app.name')}</span>
           </div>
           <div className="flex items-center gap-2">

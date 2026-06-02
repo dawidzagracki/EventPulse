@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import type { AgendaItemDto, BrandingDto, PageBlock, PageContentDoc, SeoDto } from '../../types/api'
 import { RenderBlock, type BlockContext } from '../content/EventBlocks'
+import { Logo } from '../../components/Logo'
 
 interface PublishedPage {
   content: PageContentDoc
@@ -123,12 +124,7 @@ export function PublicEventPage() {
             {page.data.branding.logoUrl ? (
               <img src={page.data.branding.logoUrl} alt="" className="h-9 w-auto" />
             ) : (
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-white"
-                style={{ background: page.data.branding.primaryColor }}
-              >
-                {(event.data?.name ?? 'EP').slice(0, 2).toUpperCase()}
-              </div>
+              <Logo size={36} />
             )}
             {event.data && <span className="text-sm font-semibold text-slate-700">{event.data.name}</span>}
           </div>

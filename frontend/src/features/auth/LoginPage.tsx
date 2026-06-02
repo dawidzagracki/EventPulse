@@ -5,6 +5,7 @@ import { login } from './api'
 import { useAuthStore } from '../../stores/authStore'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
+import { Logo } from '../../components/Logo'
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -41,9 +42,7 @@ export function LoginPage() {
       <Card glow className="w-full max-w-sm">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-bold text-white shadow-lg shadow-violet-500/30">
-              EP
-            </div>
+            <Logo size={36} className="shadow-lg shadow-violet-500/30" />
             <span className="text-lg font-semibold text-white">{t('app.name')}</span>
           </div>
           <LanguageSwitcher />

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../stores/authStore'
 import { Icon, type IconName } from './Icon'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { Logo } from './Logo'
 
 export interface NavItem {
   id: string
@@ -53,11 +54,7 @@ export function AppShell({ nav, back, title, subtitle, actions, children }: AppS
     <div className="flex min-h-screen">
       <aside className="hidden w-64 flex-col border-r border-slate-800/80 bg-slate-950/40 backdrop-blur-md md:flex">
         <div className="flex items-center gap-3 border-b border-slate-800/80 px-5 py-5">
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${badge.tone} text-sm font-bold text-white shadow-lg shadow-violet-500/20`}
-          >
-            EP
-          </div>
+          <Logo size={40} className="shadow-lg shadow-violet-500/20" />
           <div>
             <p className="text-sm font-semibold text-white">EventPulse</p>
             <p className="text-xs text-slate-400">{badge.label}</p>
