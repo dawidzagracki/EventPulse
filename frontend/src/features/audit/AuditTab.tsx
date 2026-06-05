@@ -32,11 +32,11 @@ function actionMeta(action: string): { tone: 'create' | 'update' | 'delete' | 'a
 }
 
 const TONE_CLASSES = {
-  create: { chip: 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30', accent: 'border-emerald-400/40', icon: 'text-emerald-200' },
-  update: { chip: 'bg-sky-400/15 text-sky-300 ring-sky-400/30', accent: 'border-sky-400/40', icon: 'text-sky-200' },
-  delete: { chip: 'bg-rose-400/15 text-rose-300 ring-rose-400/30', accent: 'border-rose-400/40', icon: 'text-rose-200' },
-  auth: { chip: 'bg-violet-400/15 text-violet-300 ring-violet-400/30', accent: 'border-violet-400/40', icon: 'text-violet-200' },
-  other: { chip: 'bg-slate-400/10 text-slate-300 ring-slate-400/20', accent: 'border-slate-700/60', icon: 'text-slate-300' },
+  create: { chip: 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30', leftBar: 'bg-emerald-400', icon: 'text-emerald-200' },
+  update: { chip: 'bg-sky-400/15 text-sky-300 ring-sky-400/30', leftBar: 'bg-sky-400', icon: 'text-sky-200' },
+  delete: { chip: 'bg-rose-400/15 text-rose-300 ring-rose-400/30', leftBar: 'bg-rose-400', icon: 'text-rose-200' },
+  auth: { chip: 'bg-violet-400/15 text-violet-300 ring-violet-400/30', leftBar: 'bg-violet-400', icon: 'text-violet-200' },
+  other: { chip: 'bg-slate-400/10 text-slate-300 ring-slate-400/20', leftBar: 'bg-slate-500', icon: 'text-slate-300' },
 } as const
 
 type Filter = 'all' | 'create' | 'update' | 'delete' | 'auth' | 'other'
@@ -157,24 +157,27 @@ export function AuditTab() {
             const date = new Date(day)
             return (
               <section key={day}>
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-3 flex items-center gap-2 px-1">
                   <span className="h-1 w-6 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400" />
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
                     {date.toLocaleDateString(i18n.language, { weekday: 'long', day: '2-digit', month: 'long' })}
                   </h2>
-                  <span className="text-xs text-slate-500">· {entries.length}</span>
+                  <span className="rounded-full bg-slate-800/60 px-1.5 py-0.5 text-[10px] text-slate-400">{entries.length}</span>
                 </div>
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {entries.map((e) => {
                     const meta = actionMeta(e.action)
                     const tc = TONE_CLASSES[meta.tone]
                     const isOpen = expanded === e.id
                     return (
                       <li key={e.id}>
-                        <div className={`overflow-hidden rounded-lg border-l-2 ${tc.accent} bg-slate-900/40`}>
+                        <div
+                          className={`relative overflow-hidden rounded-lg border border-slate-800/70 bg-slate-900/40 transition hover:border-slate-700 ${isOpen ? 'ring-1 ring-inset ring-indigo-400/30' : ''}`}
+                        >
+                          <span className={`absolute inset-y-0 left-0 w-1 ${tc.leftBar}`} aria-hidden />
                           <button
                             onClick={() => setExpanded(isOpen ? null : e.id)}
-                            className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-slate-900/60"
+                            className="relative flex w-full items-center gap-3 px-4 py-3 pl-5 text-left transition hover:bg-slate-900/70"
                           >
                             <span
                               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-950/60 ring-1 ring-inset ${tc.icon}`}
