@@ -304,7 +304,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   )
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {/* TOP TOOLBAR */}
       <Card className="!p-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -432,9 +432,9 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       </Card>
 
       {/* MAIN 3-COLUMN LAYOUT: Layers + Canvas + Properties */}
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[240px_1fr_320px]">
+      <div className="grid items-start gap-3 lg:grid-cols-[240px_1fr_320px]">
         {/* ─── LEFT: Layers + Palette + Versions ─── */}
-        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
+        <div className="flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           <LayersPanel
             blocks={blocks}
             lang={lang}
@@ -473,9 +473,9 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
           )}
         </div>
 
-        {/* ─── CENTER: Canvas ─── */}
-        <div className="flex min-h-0 flex-col rounded-2xl border border-slate-800/60 bg-slate-950/50 p-3">
-          <div className="mb-2 flex items-center justify-between px-1">
+        {/* ─── CENTER: Canvas — grows with content, the page itself scrolls ─── */}
+        <div className="flex flex-col rounded-2xl border border-slate-800/60 bg-slate-950/50 p-3">
+          <div className="sticky top-0 z-10 mb-2 flex items-center justify-between rounded-lg bg-slate-950/80 px-2 py-1 backdrop-blur">
             <p className="text-[11px] uppercase tracking-wider text-slate-500">
               💡 {t('page.selectBlockHint')}
             </p>
@@ -483,7 +483,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
               {DEVICE_WIDTH[device]} · {lang.toUpperCase()}
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div>
             <div
               className="mx-auto space-y-3 rounded-2xl bg-[#fbfbfd] p-6 text-slate-900 shadow-2xl shadow-black/30 transition-all"
               style={{ fontFamily: branding.fontFamily, maxWidth: DEVICE_WIDTH[device], width: '100%' }}
@@ -527,8 +527,8 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
           </div>
         </div>
 
-        {/* ─── RIGHT: Properties ─── */}
-        <div className="min-h-0 overflow-y-auto">
+        {/* ─── RIGHT: Properties — sticky so it stays visible while canvas scrolls ─── */}
+        <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           {selected && schema ? (
             <PropertyPanel
               block={selected}
