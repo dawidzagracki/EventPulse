@@ -109,6 +109,17 @@ export function PublicEventPage() {
     startsAt: event.data?.startsAt,
   }
 
+  // Build dynamic anchor links from blocks that have a title in the current
+  // language. Filters out structural blocks (spacer) and hidden ones.
+  const navItems = blocks
+    .filter((b) => b.visible !== false && b.type !== 'spacer')
+    .map((b) => {
+      const title = (b.content?.[lang]?.title ?? b.content?.pl?.title ?? '').trim()
+      if (!title) return null
+      return { id: b.id, label: title }
+    })
+    .filter((x): x is { id: string; label: string } => x !== null)
+
   return (
     <div
       className="min-h-screen text-slate-900"
@@ -118,31 +129,13 @@ export function PublicEventPage() {
       }}
     >
       <ScopedStyles blocks={blocks} />
-      <header className="sticky top-0 z-10 border-b border-slate-200/70 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            {page.data.branding.logoUrl ? (
-              <img src={page.data.branding.logoUrl} alt="" className="h-9 w-auto" />
-            ) : (
-              <Logo size={36} />
-            )}
-            {event.data && <span className="text-sm font-semibold text-slate-700">{event.data.name}</span>}
-          </div>
-          <div className="inline-flex overflow-hidden rounded-md border border-slate-200 bg-white text-[11px] shadow-sm">
-            {(['pl', 'en'] as const).map((lng) => (
-              <button
-                key={lng}
-                onClick={() => i18n.changeLanguage(lng)}
-                className={`px-2.5 py-1 uppercase tracking-wide ${
-                  lang === lng ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {lng}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+      <GlassNav
+        logoUrl={page.data.branding.logoUrl}
+        eventName={event.data?.name ?? null}
+        navItems={navItems}
+        lang={lang}
+        onLangChange={(l) => i18n.changeLanguage(l)}
+      />
 
       <main className="mx-auto max-w-6xl space-y-10 px-6 py-12">
         {blocks.length === 0 ? (
@@ -160,6 +153,177 @@ export function PublicEventPage() {
         Powered by EventPulse
       </footer>
     </div>
+  )
+}
+
+/**
+ * Sticky glassmorphic navigation bar that auto-builds anchors from the
+ * page's blocks. Highlights the active section while scrolling and provides
+ * smooth-scroll on click. Compresses on scroll (smaller padding + blur).
+ */
+function GlassNav({
+  logoUrl,
+  eventName,
+  navItems,
+  lang,
+  onLangChange,
+}: {
+  logoUrl: string | null
+  eventName: string | null
+  navItems: { id: string; label: string }[]
+  lang: 'pl' | 'en'
+  onLangChange: (l: 'pl' | 'en') => void
+}) {
+  const [scrolled, setScrolled] = useState(() => (typeof window !== 'undefined' ? window.scrollY > 24 : false))
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Track scroll for the "shrink" effect.
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 24)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Track which block is most visible.
+  useEffect(() => {
+    if (navItems.length === 0 || typeof IntersectionObserver === 'undefined') return
+    const visibility = new Map<string, number>()
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          visibility.set(entry.target.id, entry.intersectionRatio)
+        }
+        let best: string | null = null
+        let bestVal = 0
+        for (const [id, val] of visibility) {
+          if (val > bestVal) {
+            bestVal = val
+            best = id
+          }
+        }
+        if (bestVal > 0.1) setActiveId(best?.replace(/^block-/, '') ?? null)
+      },
+      { rootMargin: '-30% 0px -40% 0px', threshold: [0.1, 0.5, 0.9] },
+    )
+    for (const it of navItems) {
+      const node = document.getElementById(`block-${it.id}`)
+      if (node) io.observe(node)
+    }
+    return () => io.disconnect()
+  }, [navItems])
+
+  function scrollTo(id: string) {
+    const node = document.getElementById(`block-${id}`)
+    if (node) {
+      const top = node.getBoundingClientRect().top + window.scrollY - 80
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
+    setMobileOpen(false)
+  }
+
+  return (
+    <nav
+      className={`sticky top-0 z-30 transition-all duration-300 ${
+        scrolled ? 'py-2' : 'py-4'
+      }`}
+    >
+      {/* Glassmorphism layer */}
+      <div className="pointer-events-none absolute inset-0 border-b border-white/40 bg-white/55 backdrop-blur-xl backdrop-saturate-150 shadow-sm" />
+      <div className="relative mx-auto flex max-w-6xl items-center gap-6 px-4 sm:px-6">
+        {/* Logo + name */}
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="flex shrink-0 items-center gap-3 outline-none"
+        >
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className={`w-auto transition-all ${scrolled ? 'h-8' : 'h-10'}`} />
+          ) : (
+            <Logo size={scrolled ? 30 : 36} />
+          )}
+          {eventName && (
+            <span className={`hidden font-semibold tracking-tight text-slate-800 sm:inline ${scrolled ? 'text-sm' : 'text-base'}`}>
+              {eventName}
+            </span>
+          )}
+        </button>
+
+        {/* Anchor links (desktop) */}
+        <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
+          {navItems.map((it) => {
+            const isActive = activeId === it.id
+            return (
+              <button
+                key={it.id}
+                onClick={() => scrollTo(it.id)}
+                className={`relative rounded-full px-3.5 py-1.5 text-[13px] font-medium transition ${
+                  isActive ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {it.label}
+                {isActive && (
+                  <span
+                    className="absolute inset-0 -z-10 rounded-full bg-white/80 shadow-sm ring-1 ring-slate-200/80"
+                    aria-hidden
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Language switch */}
+        <div className="ml-auto inline-flex overflow-hidden rounded-full border border-slate-200/80 bg-white/70 text-[11px] shadow-sm backdrop-blur">
+          {(['pl', 'en'] as const).map((lng) => (
+            <button
+              key={lng}
+              onClick={() => onLangChange(lng)}
+              className={`px-2.5 py-1 uppercase tracking-wide transition ${
+                lang === lng ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {lng}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile menu trigger */}
+        {navItems.length > 0 && (
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            className="rounded-md border border-slate-200/80 bg-white/70 p-1.5 text-slate-700 backdrop-blur md:hidden"
+            aria-label="Menu"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+              <path d={mobileOpen ? 'M6 6l12 12M18 6L6 18' : 'M3 6h18M3 12h18M3 18h18'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Mobile drawer */}
+      {mobileOpen && navItems.length > 0 && (
+        <div className="relative mx-3 mt-2 max-h-[60vh] overflow-y-auto rounded-2xl border border-white/40 bg-white/85 p-2 shadow-xl backdrop-blur-xl md:hidden">
+          {navItems.map((it) => {
+            const isActive = activeId === it.id
+            return (
+              <button
+                key={it.id}
+                onClick={() => scrollTo(it.id)}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
+                  isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <span>{it.label}</span>
+                <span className="text-xs opacity-50">→</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </nav>
   )
 }
 

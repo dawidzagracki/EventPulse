@@ -421,33 +421,12 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
         </div>
 
         {showBranding && (
-          <div className="mt-3 grid gap-3 border-t border-slate-800 pt-3 sm:grid-cols-4">
-            <Field label={t('page.primaryColor')}>
-              <Input
-                type="color"
-                value={branding.primaryColor}
-                onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-              />
-            </Field>
-            <Field label={t('page.accentColor')}>
-              <Input
-                type="color"
-                value={branding.accentColor}
-                onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
-              />
-            </Field>
-            <Field label={t('page.logoUrl')}>
-              <Input
-                value={branding.logoUrl ?? ''}
-                onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value || null })}
-              />
-            </Field>
-            <div className="flex items-end">
-              <Button variant="subtle" onClick={handleBranding} disabled={updateBranding.isPending}>
-                {t('page.saveBranding')}
-              </Button>
-            </div>
-          </div>
+          <BrandingEditor
+            branding={branding}
+            onChange={setBranding}
+            onSave={handleBranding}
+            saving={updateBranding.isPending}
+          />
         )}
       </Card>
 
@@ -683,6 +662,208 @@ function LayersPanel({
         </ul>
       )}
     </Card>
+  )
+}
+
+// ===================== BrandingEditor =====================
+// Parses the branding.backgroundColor string to detect whether it's a solid
+// color, a 2-stop gradient, or a CSS image URL — so we can drive the right
+// editor controls and serialize back into the same string.
+function parseBackground(value: string | null): { mode: 'color' | 'gradient' | 'image'; color: string; gradientFrom: string; gradientTo: string; angle: number; imageUrl: string } {
+  const v = (value ?? '').trim()
+  if (!v) return { mode: 'color', color: '#fbfbfd', gradientFrom: '#fbfbfd', gradientTo: '#f1f5f9', angle: 135, imageUrl: '' }
+  if (v.startsWith('url(')) {
+    const m = v.match(/url\(['"]?([^'")]+)['"]?\)/)
+    return { mode: 'image', color: '#fbfbfd', gradientFrom: '#fbfbfd', gradientTo: '#f1f5f9', angle: 135, imageUrl: m?.[1] ?? '' }
+  }
+  if (v.startsWith('linear-gradient(')) {
+    const inner = v.slice(v.indexOf('(') + 1, v.lastIndexOf(')'))
+    const parts = inner.split(',').map((p) => p.trim())
+    let angle = 135
+    let colors = parts
+    if (parts[0]?.endsWith('deg')) {
+      angle = parseFloat(parts[0])
+      colors = parts.slice(1)
+    }
+    return {
+      mode: 'gradient',
+      color: colors[0] ?? '#fbfbfd',
+      gradientFrom: colors[0] ?? '#fbfbfd',
+      gradientTo: colors[1] ?? '#f1f5f9',
+      angle,
+      imageUrl: '',
+    }
+  }
+  return { mode: 'color', color: v, gradientFrom: v, gradientTo: '#f1f5f9', angle: 135, imageUrl: '' }
+}
+
+function serializeBackground(mode: 'color' | 'gradient' | 'image', color: string, from: string, to: string, angle: number, url: string): string | null {
+  if (mode === 'image') return url ? `url('${url}') center/cover` : null
+  if (mode === 'gradient') return `linear-gradient(${angle}deg, ${from}, ${to})`
+  return color || null
+}
+
+function BrandingEditor({
+  branding,
+  onChange,
+  onSave,
+  saving,
+}: {
+  branding: BrandingDto
+  onChange: (b: BrandingDto) => void
+  onSave: () => Promise<void> | void
+  saving: boolean
+}) {
+  const { t } = useTranslation()
+  const parsed = parseBackground(branding.backgroundColor)
+  const [mode, setMode] = useState(parsed.mode)
+  const [color, setColor] = useState(parsed.color)
+  const [from, setFrom] = useState(parsed.gradientFrom)
+  const [to, setTo] = useState(parsed.gradientTo)
+  const [angle, setAngle] = useState(parsed.angle)
+  const [imageUrl, setImageUrl] = useState(parsed.imageUrl)
+
+  function commitBg(nextMode = mode, nextColor = color, nextFrom = from, nextTo = to, nextAngle = angle, nextUrl = imageUrl) {
+    onChange({
+      ...branding,
+      backgroundColor: serializeBackground(nextMode, nextColor, nextFrom, nextTo, nextAngle, nextUrl),
+    })
+  }
+
+  return (
+    <div className="mt-3 border-t border-slate-800 pt-3">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label={t('page.primaryColor')}>
+          <Input
+            type="color"
+            value={branding.primaryColor}
+            onChange={(e) => onChange({ ...branding, primaryColor: e.target.value })}
+          />
+        </Field>
+        <Field label={t('page.accentColor')}>
+          <Input
+            type="color"
+            value={branding.accentColor}
+            onChange={(e) => onChange({ ...branding, accentColor: e.target.value })}
+          />
+        </Field>
+        <Field label={t('page.logoUrl')}>
+          <Input
+            value={branding.logoUrl ?? ''}
+            onChange={(e) => onChange({ ...branding, logoUrl: e.target.value || null })}
+          />
+        </Field>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tło strony</p>
+          <div
+            className="h-6 w-20 rounded-md ring-1 ring-inset ring-slate-700/60"
+            style={{
+              background: serializeBackground(mode, color, from, to, angle, imageUrl) ?? '#fbfbfd',
+            }}
+            aria-hidden
+          />
+        </div>
+        <div className="mb-3 flex flex-wrap gap-1 rounded-md border border-slate-800 bg-slate-950/60 p-1">
+          {(
+            [
+              { k: 'color', label: 'Kolor', emoji: '🎨' },
+              { k: 'gradient', label: 'Gradient', emoji: '🌈' },
+              { k: 'image', label: 'Obraz', emoji: '🖼' },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.k}
+              type="button"
+              onClick={() => {
+                setMode(opt.k)
+                commitBg(opt.k)
+              }}
+              className={`flex-1 rounded px-2 py-1 text-xs transition ${
+                mode === opt.k
+                  ? 'bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white ring-1 ring-inset ring-indigo-400/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {opt.emoji} {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'color' && (
+          <Field label="Kolor tła">
+            <Input
+              type="color"
+              value={color}
+              onChange={(e) => {
+                setColor(e.target.value)
+                commitBg('color', e.target.value)
+              }}
+            />
+          </Field>
+        )}
+
+        {mode === 'gradient' && (
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Od">
+              <Input
+                type="color"
+                value={from}
+                onChange={(e) => {
+                  setFrom(e.target.value)
+                  commitBg('gradient', color, e.target.value)
+                }}
+              />
+            </Field>
+            <Field label="Do">
+              <Input
+                type="color"
+                value={to}
+                onChange={(e) => {
+                  setTo(e.target.value)
+                  commitBg('gradient', color, from, e.target.value)
+                }}
+              />
+            </Field>
+            <Field label="Kąt (°)">
+              <Input
+                type="number"
+                min={0}
+                max={360}
+                step={5}
+                value={angle}
+                onChange={(e) => {
+                  const v = Number(e.target.value)
+                  setAngle(v)
+                  commitBg('gradient', color, from, to, v)
+                }}
+              />
+            </Field>
+          </div>
+        )}
+
+        {mode === 'image' && (
+          <Field label="URL obrazu w tle">
+            <Input
+              placeholder="https://…"
+              value={imageUrl}
+              onChange={(e) => {
+                setImageUrl(e.target.value)
+                commitBg('image', color, from, to, angle, e.target.value)
+              }}
+            />
+          </Field>
+        )}
+      </div>
+
+      <div className="mt-3 flex justify-end">
+        <Button variant="subtle" onClick={onSave} disabled={saving}>
+          {t('page.saveBranding')}
+        </Button>
+      </div>
+    </div>
   )
 }
 
