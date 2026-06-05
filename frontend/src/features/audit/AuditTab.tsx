@@ -164,47 +164,67 @@ export function AuditTab() {
                   </h2>
                   <span className="rounded-full bg-slate-800/60 px-1.5 py-0.5 text-[10px] text-slate-400">{entries.length}</span>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {entries.map((e) => {
                     const meta = actionMeta(e.action)
                     const tc = TONE_CLASSES[meta.tone]
                     const isOpen = expanded === e.id
+                    const time = new Date(e.createdAt).toLocaleTimeString(i18n.language, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
                     return (
                       <li key={e.id}>
                         <div
-                          className={`relative overflow-hidden rounded-lg border border-slate-800/70 bg-slate-900/40 transition hover:border-slate-700 ${isOpen ? 'ring-1 ring-inset ring-indigo-400/30' : ''}`}
+                          className={`group relative overflow-hidden rounded-xl border bg-slate-900/60 shadow-sm shadow-black/20 transition ${
+                            isOpen
+                              ? 'border-indigo-400/40 ring-1 ring-inset ring-indigo-400/30'
+                              : 'border-slate-800/70 hover:border-slate-700'
+                          }`}
                         >
-                          <span className={`absolute inset-y-0 left-0 w-1 ${tc.leftBar}`} aria-hidden />
+                          {/* status bar pinned left */}
+                          <span className={`absolute inset-y-0 left-0 w-1.5 ${tc.leftBar}`} aria-hidden />
+
                           <button
                             onClick={() => setExpanded(isOpen ? null : e.id)}
-                            className="relative flex w-full items-center gap-3 px-4 py-3 pl-5 text-left transition hover:bg-slate-900/70"
+                            className="relative flex w-full items-center gap-4 py-3.5 pl-6 pr-4 text-left transition hover:bg-slate-900/40"
                           >
-                            <span
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-950/60 ring-1 ring-inset ${tc.icon}`}
-                            >
-                              <Icon name={meta.icon} className="h-3.5 w-3.5" />
-                            </span>
+                            {/* Time on far left */}
+                            <div className="flex w-14 shrink-0 flex-col items-center border-r border-slate-800/70 pr-3">
+                              <span className="font-mono text-sm font-semibold text-white tabular-nums">{time}</span>
+                              <span className="mt-0.5 font-mono text-[10px] text-slate-500 tabular-nums">
+                                :{new Date(e.createdAt).getSeconds().toString().padStart(2, '0')}
+                              </span>
+                            </div>
+
+                            {/* Main content */}
                             <div className="min-w-0 flex-1">
-                              <p className="flex items-center gap-2 truncate text-sm">
-                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${tc.chip}`}>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${tc.chip}`}
+                                >
+                                  <Icon name={meta.icon} className="h-2.5 w-2.5" />
                                   {meta.label}
                                 </span>
-                                <code className="truncate font-mono text-xs text-slate-200">{e.action}</code>
-                              </p>
-                              <p className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
+                                <code className="truncate font-mono text-sm font-medium text-white">{e.action}</code>
+                              </div>
+                              <p className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-400">
                                 <span
                                   className={`inline-flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-bold text-white ${principalAvatarStyle(e.principalType)}`}
                                 >
                                   {(e.principalType ?? 'S').charAt(0)}
                                 </span>
                                 {principalLabel(e.principalType, t)}
-                                <span>·</span>
-                                {new Date(e.createdAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                               </p>
                             </div>
+
                             {e.payload && (
-                              <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                                {isOpen ? '▾' : '▸'}
+                              <span
+                                className={`shrink-0 rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
+                                  isOpen ? 'text-indigo-200' : 'text-slate-400 group-hover:text-slate-200'
+                                }`}
+                              >
+                                {isOpen ? '▾ ' + t('audit.hidePayload') : '▸ ' + t('audit.viewDetails')}
                               </span>
                             )}
                           </button>
