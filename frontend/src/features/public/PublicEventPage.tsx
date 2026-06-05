@@ -233,30 +233,19 @@ function GlassNav({
             scrolled ? 'px-3 py-1.5' : 'px-4 py-2'
           }`}
           style={{
-            // Multi-layer liquid-glass background:
-            // 1) Soft white tint                              → ambient diffuse
-            // 2) Strong backdrop blur + saturate              → glass refraction
-            // 3) Subtle top-to-bottom highlight gradient      → specular sheen
-            // 4) Inner hairline ring (top brighter)           → glass edge
-            // 5) Outer drop shadow                            → floating feel
+            // Delicate liquid-glass — much lighter than before.
             background:
-              'linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.22) 100%)',
-            backdropFilter: 'blur(22px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(22px) saturate(180%)',
+              'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 60%, rgba(255,255,255,0.10) 100%)',
+            backdropFilter: 'blur(16px) saturate(150%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(150%)',
             boxShadow:
-              '0 8px 32px -8px rgba(15, 23, 42, 0.25), 0 2px 8px -2px rgba(15, 23, 42, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 0 rgba(255, 255, 255, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.18)',
+              '0 4px 16px -6px rgba(15, 23, 42, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.10)',
           }}
         >
-          {/* Specular highlight — subtle bright streak on top edge */}
+          {/* Soft specular highlight on top edge */}
           <span
-            className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)' }}
-            aria-hidden
-          />
-          {/* Soft inner glow at the bottom */}
-          <span
-            className="pointer-events-none absolute inset-x-12 bottom-0 h-px rounded-full opacity-50"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }}
+            className="pointer-events-none absolute inset-x-8 top-0 h-px rounded-full"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)' }}
             aria-hidden
           />
 
@@ -272,8 +261,7 @@ function GlassNav({
             )}
             {eventName && (
               <span
-                className={`hidden font-semibold tracking-tight text-slate-900/90 sm:inline ${scrolled ? 'text-sm' : 'text-[15px]'}`}
-                style={{ textShadow: '0 1px 0 rgba(255,255,255,0.45)' }}
+                className={`hidden font-semibold tracking-tight text-slate-900/85 sm:inline ${scrolled ? 'text-sm' : 'text-[15px]'}`}
               >
                 {eventName}
               </span>
@@ -297,18 +285,14 @@ function GlassNav({
                     isActive ? 'text-slate-900' : 'text-slate-700/85 hover:text-slate-900'
                   }`}
                 >
-                  <span className="relative" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.35)' }}>
-                    {it.label}
-                  </span>
+                  <span className="relative">{it.label}</span>
                   {isActive && (
                     <span
                       aria-hidden
                       className="absolute inset-0 -z-10 rounded-full"
                       style={{
-                        background:
-                          'linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.55))',
-                        boxShadow:
-                          '0 1px 3px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.1)',
+                        background: 'rgba(255,255,255,0.35)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
                       }}
                     />
                   )}
@@ -317,11 +301,12 @@ function GlassNav({
             })}
           </div>
 
-          {/* Language switch — mini liquid pill */}
-          <div className="relative ml-auto inline-flex shrink-0 overflow-hidden rounded-full bg-white/35 text-[11px] backdrop-blur-md"
+          {/* Language switch — delicate inner pill */}
+          <div
+            className="relative ml-auto inline-flex shrink-0 overflow-hidden rounded-full text-[11px]"
             style={{
-              boxShadow:
-                'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(15,23,42,0.08)',
+              background: 'rgba(255,255,255,0.14)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28)',
             }}
           >
             {(['pl', 'en'] as const).map((lng) => (
@@ -329,7 +314,7 @@ function GlassNav({
                 key={lng}
                 onClick={() => onLangChange(lng)}
                 className={`px-2.5 py-1 uppercase tracking-wide transition ${
-                  lang === lng ? 'bg-slate-900 text-white' : 'text-slate-700 hover:text-slate-900'
+                  lang === lng ? 'bg-slate-900/85 text-white' : 'text-slate-700/85 hover:text-slate-900'
                 }`}
               >
                 {lng}
@@ -341,9 +326,10 @@ function GlassNav({
           {navItems.length > 0 && (
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className="relative ml-1 rounded-full bg-white/35 p-1.5 text-slate-700 backdrop-blur-md md:hidden"
+              className="relative ml-1 rounded-full p-1.5 text-slate-700 md:hidden"
               style={{
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(15,23,42,0.08)',
+                background: 'rgba(255,255,255,0.14)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28)',
               }}
               aria-label="Menu"
             >
@@ -361,17 +347,15 @@ function GlassNav({
           <div
             className="relative overflow-hidden rounded-3xl p-2"
             style={{
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.20) 100%)',
-              backdropFilter: 'blur(22px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(22px) saturate(180%)',
-              boxShadow:
-                '0 12px 36px -10px rgba(15, 23, 42, 0.3), inset 0 1px 0 rgba(255,255,255,0.65), inset 0 0 0 1px rgba(255,255,255,0.18)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)',
+              backdropFilter: 'blur(16px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(150%)',
+              boxShadow: '0 6px 20px -8px rgba(15, 23, 42, 0.15), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 0 0 1px rgba(255,255,255,0.10)',
             }}
           >
             <span
-              className="pointer-events-none absolute inset-x-6 top-0 h-px"
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)' }}
+              className="pointer-events-none absolute inset-x-8 top-0 h-px"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)' }}
               aria-hidden
             />
             {navItems.map((it) => {
