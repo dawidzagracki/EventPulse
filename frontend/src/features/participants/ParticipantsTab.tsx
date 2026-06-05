@@ -166,7 +166,18 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
       </div>
 
       {/* MAIN 2-COL */}
-      <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
+      {(participants ?? []).length === 0 && view.kind === 'empty' && !isLoading ? (
+        <EmptyAll onNew={() => setView({ kind: 'new' })} onImport={() => setShowImport(true)} />
+      ) : (participants ?? []).length === 0 && view.kind === 'new' ? (
+        <div className="mx-auto w-full max-w-3xl">
+          <NewParticipantForm
+            eventId={eventId}
+            onDone={() => setView({ kind: 'empty' })}
+            onCancel={() => setView({ kind: 'empty' })}
+          />
+        </div>
+      ) : (
+      <div className="grid items-start gap-4 lg:grid-cols-[420px_1fr]">
         {/* LEFT: list */}
         <div className="space-y-1.5">
           {isLoading ? (
@@ -206,7 +217,36 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
           )}
         </div>
       </div>
+      )}
     </div>
+  )
+}
+
+// Single full-width empty state when no participants exist yet.
+function EmptyAll({ onNew, onImport }: { onNew: () => void; onImport: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-16 bottom-[-4rem] h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+      <div className="relative flex flex-col items-center py-16 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 ring-1 ring-inset ring-indigo-400/40">
+          <Icon name="users" className="h-7 w-7 text-indigo-200" />
+        </div>
+        <p className="mt-4 text-base font-semibold text-white">{t('participants.empty')}</p>
+        <p className="mt-1 max-w-md text-sm text-slate-400">{t('participants.emptyHint')}</p>
+        <div className="mt-5 flex gap-2">
+          <Button variant="ghost" onClick={onImport}>
+            <Icon name="document" className="h-3.5 w-3.5" />
+            {t('participants.import')}
+          </Button>
+          <Button onClick={onNew}>
+            <Icon name="plus" className="h-3.5 w-3.5" />
+            {t('participants.newParticipant')}
+          </Button>
+        </div>
+      </div>
+    </Card>
   )
 }
 

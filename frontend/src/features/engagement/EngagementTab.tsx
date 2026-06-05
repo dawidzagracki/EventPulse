@@ -65,8 +65,29 @@ export function EngagementTab({ eventId }: { eventId: string }) {
         </Button>
       </div>
 
-      {/* MAIN 2-COL */}
-      <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+      {/* No items, no form → single full-width empty state. */}
+      {items.length === 0 && view.kind === 'empty' ? (
+        <EmptyAll mode={mode} onNew={() => setView({ kind: mode === 'contests' ? 'new-contest' : 'new-quiz' })} />
+      ) : items.length === 0 ? (
+        // No items but a form is open → render the form full-width, skip the list column.
+        <div className="mx-auto w-full max-w-3xl">
+          {view.kind === 'new-contest' && (
+            <NewContestForm
+              eventId={eventId}
+              onDone={(c) => setView({ kind: 'contest', contest: c })}
+              onCancel={() => setView({ kind: 'empty' })}
+            />
+          )}
+          {view.kind === 'new-quiz' && (
+            <NewQuizForm
+              eventId={eventId}
+              onDone={(q) => setView({ kind: 'quiz', quiz: q })}
+              onCancel={() => setView({ kind: 'empty' })}
+            />
+          )}
+        </div>
+      ) : (
+      <div className="grid items-start gap-4 lg:grid-cols-[340px_1fr]">
         {/* LEFT: list */}
         <div className="space-y-2">
           {items.length === 0 ? (
@@ -118,7 +139,34 @@ export function EngagementTab({ eventId }: { eventId: string }) {
           {view.kind === 'quiz' && <QuizDetail key={view.quiz.id} eventId={eventId} quiz={view.quiz} />}
         </div>
       </div>
+      )}
     </div>
+  )
+}
+
+// ============ Combined empty (no items yet, no form open) ============
+function EmptyAll({ mode, onNew }: { mode: Mode; onNew: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-16 bottom-[-4rem] h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+      <div className="relative flex flex-col items-center py-16 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 ring-1 ring-inset ring-indigo-400/40">
+          <Icon name={mode === 'contests' ? 'bolt' : 'sparkles'} className="h-7 w-7 text-indigo-200" />
+        </div>
+        <p className="mt-4 text-base font-semibold text-white">
+          {mode === 'contests' ? t('engagement.noContests') : t('engagement.noQuizzes')}
+        </p>
+        <p className="mt-1 max-w-md text-sm text-slate-400">
+          {mode === 'contests' ? t('engagement.noContestsHint') : t('engagement.noQuizzesHint')}
+        </p>
+        <Button className="mt-5" onClick={onNew}>
+          <Icon name="plus" className="h-4 w-4" />
+          {mode === 'contests' ? t('engagement.newContest') : t('engagement.newQuiz')}
+        </Button>
+      </div>
+    </Card>
   )
 }
 

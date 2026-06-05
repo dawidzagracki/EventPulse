@@ -35,7 +35,19 @@ export function LogisticsTab({ eventId }: { eventId: string }) {
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+      {/* No transfers + no form → single full-width empty state. */}
+      {sorted.length === 0 && view.kind === 'empty' && !isLoading ? (
+        <EmptyAll onNew={() => setView({ kind: 'new' })} />
+      ) : sorted.length === 0 && view.kind === 'new' ? (
+        <div className="mx-auto w-full max-w-3xl">
+          <NewTransferForm
+            eventId={eventId}
+            onDone={(tr) => setView({ kind: 'detail', transfer: tr })}
+            onCancel={() => setView({ kind: 'empty' })}
+          />
+        </div>
+      ) : (
+      <div className="grid items-start gap-4 lg:grid-cols-[340px_1fr]">
         {/* LEFT */}
         <div className="space-y-2">
           {isLoading ? (
@@ -91,7 +103,30 @@ export function LogisticsTab({ eventId }: { eventId: string }) {
           )}
         </div>
       </div>
+      )}
     </div>
+  )
+}
+
+// Single full-width empty state when no transfers exist yet.
+function EmptyAll({ onNew }: { onNew: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-16 bottom-[-4rem] h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+      <div className="relative flex flex-col items-center py-16 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 ring-1 ring-inset ring-indigo-400/40">
+          <Icon name="truck" className="h-7 w-7 text-indigo-200" />
+        </div>
+        <p className="mt-4 text-base font-semibold text-white">{t('logistics.empty')}</p>
+        <p className="mt-1 max-w-md text-sm text-slate-400">{t('logistics.emptyHint')}</p>
+        <Button className="mt-5" onClick={onNew}>
+          <Icon name="plus" className="h-4 w-4" />
+          {t('logistics.newTransfer')}
+        </Button>
+      </div>
+    </Card>
   )
 }
 
