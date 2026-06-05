@@ -11,7 +11,7 @@ import {
 } from './api'
 import { useEvent } from '../events/api'
 import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
-import { ALL_BLOCK_TYPES, blockIcon, blockLabel, blockSchema } from './blockSchema'
+import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, blockSchema, type BlockCategory } from './blockSchema'
 import { Button, Card, Field, Input, Select } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
@@ -689,28 +689,55 @@ function LayersPanel({
 // ===================== PalettePanel =====================
 function PalettePanel({ lang, onAdd }: { lang: 'pl' | 'en'; onAdd: (type: string) => void }) {
   const { t } = useTranslation()
+  // Group block types by category for a more readable palette.
+  const grouped = useMemo(() => {
+    const groups: Record<string, string[]> = {}
+    for (const type of ALL_BLOCK_TYPES) {
+      const cat = (BLOCK_SCHEMAS[type]?.category as string | undefined) ?? 'content'
+      ;(groups[cat] = groups[cat] ?? []).push(type)
+    }
+    // Stable order matching CATEGORY_META keys.
+    const order: BlockCategory[] = ['hero', 'content', 'media', 'data', 'cta', 'layout']
+    return order.filter((k) => groups[k]?.length).map((k) => ({ key: k, types: groups[k] }))
+  }, [])
+
   return (
     <Card className="!p-2">
       <h3 className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
         {t('page.addBlock')}
       </h3>
-      <div className="grid grid-cols-3 gap-1.5">
-        {ALL_BLOCK_TYPES.map((type) => (
-          <button
-            key={type}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('text/x-block-type', type)
-              e.dataTransfer.effectAllowed = 'copy'
-            }}
-            onClick={() => onAdd(type)}
-            className="group flex cursor-grab flex-col items-center gap-1 rounded-lg border border-slate-800 bg-slate-950/60 px-1 py-2.5 text-[10px] text-slate-300 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900 hover:text-white"
-            title={blockLabel(type, lang)}
-          >
-            <span className="text-lg leading-none">{blockIcon(type)}</span>
-            <span className="text-center leading-tight">{blockLabel(type, lang)}</span>
-          </button>
-        ))}
+      <div className="space-y-2.5">
+        {grouped.map(({ key, types }) => {
+          const meta = CATEGORY_META[key]
+          return (
+            <div key={key}>
+              <div className="mb-1 flex items-center gap-1.5 px-1">
+                <span className="text-[10px]">{meta.icon}</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  {lang === 'en' ? meta.titleEn : meta.titlePl}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {types.map((type) => (
+                  <button
+                    key={type}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/x-block-type', type)
+                      e.dataTransfer.effectAllowed = 'copy'
+                    }}
+                    onClick={() => onAdd(type)}
+                    className="group flex cursor-grab flex-col items-center gap-1 rounded-lg border border-slate-800 bg-slate-950/60 px-1 py-2.5 text-[10px] text-slate-300 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900 hover:text-white"
+                    title={blockLabel(type, lang)}
+                  >
+                    <span className="text-lg leading-none">{blockIcon(type)}</span>
+                    <span className="text-center leading-tight">{blockLabel(type, lang)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </Card>
   )

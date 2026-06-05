@@ -68,6 +68,19 @@ export interface BlockSchema {
     textColor?: boolean
     accentOverride?: boolean
   }
+  /** UI grouping in the block palette. */
+  category?: BlockCategory
+}
+
+export type BlockCategory = 'hero' | 'content' | 'media' | 'data' | 'cta' | 'layout'
+
+export const CATEGORY_META: Record<BlockCategory, { titlePl: string; titleEn: string; icon: string }> = {
+  hero: { titlePl: 'Bohatery', titleEn: 'Heroes', icon: '✨' },
+  content: { titlePl: 'Treść', titleEn: 'Content', icon: '📝' },
+  media: { titlePl: 'Media', titleEn: 'Media', icon: '🎬' },
+  data: { titlePl: 'Dane', titleEn: 'Data', icon: '📊' },
+  cta: { titlePl: 'Akcje', titleEn: 'Actions', icon: '🎯' },
+  layout: { titlePl: 'Układ', titleEn: 'Layout', icon: '⬜' },
 }
 
 export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
@@ -86,6 +99,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       { key: 'bgImageUrl', label: 'URL obrazu w tle', kind: 'image' },
     ],
     styleOptions: { background: true, padding: true, textAlign: true, borderRadius: true, accentOverride: true },
+    category: 'hero',
   },
   description: {
     type: 'description',
@@ -93,10 +107,12 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
     titleEn: 'Description',
     icon: '📄',
     contentFields: [
+      { key: 'eyebrow', label: 'Nadtytuł', kind: 'text', placeholder: 'O wydarzeniu' },
       { key: 'title', label: 'Tytuł sekcji', kind: 'text' },
       { key: 'body', label: 'Treść', kind: 'longtext', placeholder: 'Opisz tu swoje wydarzenie...' },
     ],
     styleOptions: { background: true, padding: true, textAlign: true, borderRadius: true, titleColor: true, textColor: true },
+    category: 'content',
   },
   agenda: {
     type: 'agenda',
@@ -105,6 +121,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
     icon: '📅',
     contentFields: [{ key: 'title', label: 'Tytuł sekcji', kind: 'text', placeholder: 'Agenda' }],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true, accentOverride: true },
+    category: 'data',
   },
   map: {
     type: 'map',
@@ -116,6 +133,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       { key: 'address', label: 'Adres (Google Maps)', kind: 'text' },
     ],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true },
+    category: 'data',
   },
   gallery: {
     type: 'gallery',
@@ -124,6 +142,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
     icon: '🖼️',
     contentFields: [{ key: 'title', label: 'Tytuł sekcji', kind: 'text', placeholder: 'Galeria' }],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true },
+    category: 'media',
   },
   sponsors: {
     type: 'sponsors',
@@ -145,6 +164,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       },
     ],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true },
+    category: 'data',
   },
   countdown: {
     type: 'countdown',
@@ -153,6 +173,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
     icon: '⏱️',
     contentFields: [{ key: 'title', label: 'Tytuł', kind: 'text', placeholder: 'Do startu zostało' }],
     styleOptions: { background: true, padding: true, borderRadius: true, accentOverride: true },
+    category: 'data',
   },
   faq: {
     type: 'faq',
@@ -173,6 +194,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       },
     ],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true, textColor: true },
+    category: 'content',
   },
   team: {
     type: 'team',
@@ -194,6 +216,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       },
     ],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true },
+    category: 'content',
   },
   video: {
     type: 'video',
@@ -205,6 +228,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       { key: 'youtubeUrl', label: 'Link YouTube', kind: 'url' },
     ],
     styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true },
+    category: 'media',
   },
   cta: {
     type: 'cta',
@@ -218,6 +242,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
       { key: 'buttonUrl', label: 'Link przycisku', kind: 'url' },
     ],
     styleOptions: { background: true, padding: true, textAlign: true, borderRadius: true, accentOverride: true },
+    category: 'cta',
   },
   spacer: {
     type: 'spacer',
@@ -227,6 +252,83 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
     contentFields: [],
     settingsFields: [{ key: 'height', label: 'Wysokość odstępu (px)', kind: 'number', min: 4, max: 400, step: 4 }],
     styleOptions: {},
+    category: 'layout',
+  },
+  stats: {
+    type: 'stats',
+    titlePl: 'Liczby',
+    titleEn: 'Stats',
+    icon: '📊',
+    contentFields: [{ key: 'title', label: 'Tytuł sekcji', kind: 'text', placeholder: 'W liczbach' }],
+    settingsRepeaters: [
+      {
+        key: 'stats',
+        label: 'Statystyki',
+        addLabel: 'Dodaj liczbę',
+        emptyHint: 'Dodaj liczby kluczowe (uczestnicy, prelegenci, godziny...).',
+        itemFields: [
+          { key: 'value', label: 'Wartość (np. 500+)', kind: 'text' },
+          { key: 'label', label: 'Etykieta', kind: 'text' },
+        ],
+      },
+    ],
+    styleOptions: { padding: true, borderRadius: true, accentOverride: true },
+    category: 'data',
+  },
+  features: {
+    type: 'features',
+    titlePl: 'Cechy / Korzyści',
+    titleEn: 'Features',
+    icon: '🎁',
+    contentFields: [
+      { key: 'eyebrow', label: 'Nadtytuł', kind: 'text', placeholder: 'Co Cię czeka' },
+      { key: 'title', label: 'Tytuł sekcji', kind: 'text', placeholder: 'Najważniejsze elementy' },
+    ],
+    settingsRepeaters: [
+      {
+        key: 'features',
+        label: 'Cechy',
+        addLabel: 'Dodaj cechę',
+        emptyHint: 'Pokaż 3–6 najważniejszych rzeczy, jakie czekają uczestników.',
+        itemFields: [
+          { key: 'emoji', label: 'Ikona (emoji)', kind: 'text' },
+          { key: 'title', label: 'Nagłówek', kind: 'text' },
+          { key: 'body', label: 'Opis', kind: 'longtext' },
+        ],
+      },
+    ],
+    styleOptions: { background: true, padding: true, borderRadius: true, titleColor: true, textColor: true, accentOverride: true },
+    category: 'content',
+  },
+  testimonial: {
+    type: 'testimonial',
+    titlePl: 'Opinia',
+    titleEn: 'Testimonial',
+    icon: '💬',
+    contentFields: [
+      { key: 'quote', label: 'Cytat', kind: 'longtext', placeholder: 'Najlepsze wydarzenie roku!' },
+      { key: 'author', label: 'Autor', kind: 'text', placeholder: 'Jan Kowalski' },
+      { key: 'authorRole', label: 'Rola autora', kind: 'text', placeholder: 'CEO, Firma' },
+      { key: 'avatarUrl', label: 'URL zdjęcia', kind: 'image' },
+    ],
+    styleOptions: { background: true, padding: true, borderRadius: true, accentOverride: true },
+    category: 'content',
+  },
+  split: {
+    type: 'split',
+    titlePl: 'Obraz + tekst',
+    titleEn: 'Image + text',
+    icon: '🪟',
+    contentFields: [
+      { key: 'eyebrow', label: 'Nadtytuł', kind: 'text', placeholder: 'O wydarzeniu' },
+      { key: 'title', label: 'Tytuł', kind: 'text', placeholder: 'Tytuł sekcji' },
+      { key: 'body', label: 'Treść', kind: 'longtext', placeholder: 'Opisz szczegóły...' },
+      { key: 'ctaLabel', label: 'Etykieta przycisku', kind: 'text' },
+      { key: 'ctaUrl', label: 'Link przycisku', kind: 'url' },
+      { key: 'imageUrl', label: 'URL obrazu', kind: 'image' },
+    ],
+    styleOptions: { padding: true, borderRadius: true, accentOverride: true },
+    category: 'media',
   },
 }
 

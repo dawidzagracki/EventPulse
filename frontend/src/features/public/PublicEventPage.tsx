@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -144,17 +144,62 @@ export function PublicEventPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-8 px-6 py-10">
+      <main className="mx-auto max-w-6xl space-y-10 px-6 py-12">
         {blocks.length === 0 ? (
           <p className="text-center text-slate-400">{t('public.empty')}</p>
         ) : (
-          blocks.map((b) => <RenderBlock key={b.id} block={b} ctx={ctx} />)
+          blocks.map((b, i) => (
+            <RevealOnScroll key={b.id} delayMs={Math.min(i * 80, 240)}>
+              <RenderBlock block={b} ctx={ctx} />
+            </RevealOnScroll>
+          ))
         )}
       </main>
 
       <footer className="mx-auto max-w-6xl px-6 pb-12 pt-4 text-center text-xs text-slate-400">
         Powered by EventPulse
       </footer>
+    </div>
+  )
+}
+
+/**
+ * Reveals its child with a CSS fade+slide once it enters the viewport.
+ * Uses IntersectionObserver; once revealed it stays visible (one-shot).
+ */
+function RevealOnScroll({ children, delayMs = 0 }: { children: React.ReactNode; delayMs?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  // Default to revealed when IO is unavailable (SSR / very old browsers) so
+  // content is never invisible.
+  const [revealed, setRevealed] = useState(() => typeof IntersectionObserver === 'undefined')
+
+  useEffect(() => {
+    if (revealed) return
+    const node = ref.current
+    if (!node) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setRevealed(true)
+            io.disconnect()
+            break
+          }
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.05 },
+    )
+    io.observe(node)
+    return () => io.disconnect()
+  }, [revealed])
+
+  return (
+    <div
+      ref={ref}
+      className={`reveal-on-scroll ${revealed ? 'reveal-in' : ''}`}
+      style={delayMs ? { transitionDelay: `${delayMs}ms` } : undefined}
+    >
+      {children}
     </div>
   )
 }
