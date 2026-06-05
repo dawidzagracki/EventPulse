@@ -13,6 +13,7 @@ import { useEvent } from '../events/api'
 import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, blockSchema, type BlockCategory } from './blockSchema'
 import { Button, Card, Field, Input, Select } from '../../components/ui'
+import { ColorPicker } from '../../components/ColorPicker'
 import { Icon } from '../../components/Icon'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
 
@@ -730,142 +731,186 @@ function BrandingEditor({
     })
   }
 
+  const bgPreview = serializeBackground(mode, color, from, to, angle, imageUrl) ?? '#fbfbfd'
+
   return (
     <div className="mt-3 border-t border-slate-800 pt-3">
-      <div className="grid gap-3 sm:grid-cols-3">
+      {/* Brand colors + logo + Save button in one tidy row */}
+      <div className="grid gap-3 lg:grid-cols-[1fr_1fr_2fr_auto] items-end">
         <Field label={t('page.primaryColor')}>
-          <Input
-            type="color"
+          <ColorPicker
             value={branding.primaryColor}
-            onChange={(e) => onChange({ ...branding, primaryColor: e.target.value })}
+            onChange={(v) => onChange({ ...branding, primaryColor: v })}
           />
         </Field>
         <Field label={t('page.accentColor')}>
-          <Input
-            type="color"
+          <ColorPicker
             value={branding.accentColor}
-            onChange={(e) => onChange({ ...branding, accentColor: e.target.value })}
+            onChange={(v) => onChange({ ...branding, accentColor: v })}
           />
         </Field>
         <Field label={t('page.logoUrl')}>
           <Input
+            placeholder="https://…"
             value={branding.logoUrl ?? ''}
             onChange={(e) => onChange({ ...branding, logoUrl: e.target.value || null })}
           />
         </Field>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tło strony</p>
-          <div
-            className="h-6 w-20 rounded-md ring-1 ring-inset ring-slate-700/60"
-            style={{
-              background: serializeBackground(mode, color, from, to, angle, imageUrl) ?? '#fbfbfd',
-            }}
-            aria-hidden
-          />
-        </div>
-        <div className="mb-3 flex flex-wrap gap-1 rounded-md border border-slate-800 bg-slate-950/60 p-1">
-          {(
-            [
-              { k: 'color', label: 'Kolor', emoji: '🎨' },
-              { k: 'gradient', label: 'Gradient', emoji: '🌈' },
-              { k: 'image', label: 'Obraz', emoji: '🖼' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.k}
-              type="button"
-              onClick={() => {
-                setMode(opt.k)
-                commitBg(opt.k)
-              }}
-              className={`flex-1 rounded px-2 py-1 text-xs transition ${
-                mode === opt.k
-                  ? 'bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white ring-1 ring-inset ring-indigo-400/40'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {opt.emoji} {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {mode === 'color' && (
-          <Field label="Kolor tła">
-            <Input
-              type="color"
-              value={color}
-              onChange={(e) => {
-                setColor(e.target.value)
-                commitBg('color', e.target.value)
-              }}
-            />
-          </Field>
-        )}
-
-        {mode === 'gradient' && (
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="Od">
-              <Input
-                type="color"
-                value={from}
-                onChange={(e) => {
-                  setFrom(e.target.value)
-                  commitBg('gradient', color, e.target.value)
-                }}
-              />
-            </Field>
-            <Field label="Do">
-              <Input
-                type="color"
-                value={to}
-                onChange={(e) => {
-                  setTo(e.target.value)
-                  commitBg('gradient', color, from, e.target.value)
-                }}
-              />
-            </Field>
-            <Field label="Kąt (°)">
-              <Input
-                type="number"
-                min={0}
-                max={360}
-                step={5}
-                value={angle}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setAngle(v)
-                  commitBg('gradient', color, from, to, v)
-                }}
-              />
-            </Field>
-          </div>
-        )}
-
-        {mode === 'image' && (
-          <Field label="URL obrazu w tle">
-            <Input
-              placeholder="https://…"
-              value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value)
-                commitBg('image', color, from, to, angle, e.target.value)
-              }}
-            />
-          </Field>
-        )}
-      </div>
-
-      <div className="mt-3 flex justify-end">
         <Button variant="subtle" onClick={onSave} disabled={saving}>
           {t('page.saveBranding')}
         </Button>
       </div>
+
+      {/* Page background — big swatch + toggle + only the relevant controls */}
+      <div className="mt-4 grid items-stretch gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3 sm:grid-cols-[160px_1fr]">
+        {/* Big live preview */}
+        <div className="flex flex-col">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tło strony</p>
+          <div
+            className="relative flex-1 overflow-hidden rounded-lg ring-1 ring-inset ring-slate-700/60"
+            style={{ background: bgPreview, minHeight: 120 }}
+            aria-hidden
+          >
+            {/* Checkerboard so light/transparent backgrounds are still visible */}
+            <div
+              className="pointer-events-none absolute inset-0 -z-10 opacity-30"
+              style={{
+                backgroundImage:
+                  'linear-gradient(45deg, #334155 25%, transparent 25%), linear-gradient(-45deg, #334155 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #334155 75%), linear-gradient(-45deg, transparent 75%, #334155 75%)',
+                backgroundSize: '14px 14px',
+                backgroundPosition: '0 0, 0 7px, 7px -7px, -7px 0',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div>
+          <div className="mb-3 flex flex-wrap gap-1 rounded-md border border-slate-800 bg-slate-950/60 p-1">
+            {(
+              [
+                { k: 'color', label: 'Kolor', emoji: '🎨' },
+                { k: 'gradient', label: 'Gradient', emoji: '🌈' },
+                { k: 'image', label: 'Obraz', emoji: '🖼' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.k}
+                type="button"
+                onClick={() => {
+                  setMode(opt.k)
+                  commitBg(opt.k)
+                }}
+                className={`flex-1 rounded px-3 py-1.5 text-xs font-medium transition ${
+                  mode === opt.k
+                    ? 'bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white ring-1 ring-inset ring-indigo-400/40'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {opt.emoji} {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {mode === 'color' && (
+            <Field label="Kolor tła">
+              <ColorPicker
+                value={color}
+                onChange={(v) => {
+                  setColor(v)
+                  commitBg('color', v)
+                }}
+              />
+            </Field>
+          )}
+
+          {mode === 'gradient' && (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Od">
+                  <ColorPicker
+                    value={from}
+                    onChange={(v) => {
+                      setFrom(v)
+                      commitBg('gradient', color, v)
+                    }}
+                  />
+                </Field>
+                <Field label="Do">
+                  <ColorPicker
+                    value={to}
+                    onChange={(v) => {
+                      setTo(v)
+                      commitBg('gradient', color, from, v)
+                    }}
+                  />
+                </Field>
+              </div>
+              <Field label={`Kąt: ${angle}°`}>
+                <input
+                  type="range"
+                  min={0}
+                  max={360}
+                  step={5}
+                  value={angle}
+                  onChange={(e) => {
+                    const v = Number(e.target.value)
+                    setAngle(v)
+                    commitBg('gradient', color, from, to, v)
+                  }}
+                  className="w-full accent-indigo-500"
+                />
+              </Field>
+              {/* Quick gradient presets */}
+              <div className="mt-2 flex flex-wrap gap-1">
+                {GRADIENT_PRESETS.map((p) => (
+                  <button
+                    key={p.from + p.to}
+                    type="button"
+                    onClick={() => {
+                      setFrom(p.from)
+                      setTo(p.to)
+                      setAngle(p.angle)
+                      commitBg('gradient', color, p.from, p.to, p.angle)
+                    }}
+                    title={p.label}
+                    className="h-7 w-12 rounded-md ring-1 ring-inset ring-slate-700/60 transition hover:scale-110 hover:ring-indigo-400/60"
+                    style={{ background: `linear-gradient(${p.angle}deg, ${p.from}, ${p.to})` }}
+                    aria-label={p.label}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {mode === 'image' && (
+            <Field label="URL obrazu w tle">
+              <Input
+                placeholder="https://…"
+                value={imageUrl}
+                onChange={(e) => {
+                  setImageUrl(e.target.value)
+                  commitBg('image', color, from, to, angle, e.target.value)
+                }}
+              />
+            </Field>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
+
+const GRADIENT_PRESETS: { label: string; from: string; to: string; angle: number }[] = [
+  { label: 'Świt', from: '#fbcfe8', to: '#a78bfa', angle: 135 },
+  { label: 'Ocean', from: '#bae6fd', to: '#6366f1', angle: 135 },
+  { label: 'Las', from: '#bbf7d0', to: '#0d9488', angle: 135 },
+  { label: 'Pustynia', from: '#fde68a', to: '#f97316', angle: 135 },
+  { label: 'Noc', from: '#1e293b', to: '#4c1d95', angle: 135 },
+  { label: 'Róż', from: '#fce7f3', to: '#f472b6', angle: 135 },
+  { label: 'Miętowy', from: '#d1fae5', to: '#6ee7b7', angle: 135 },
+  { label: 'Mgła', from: '#f1f5f9', to: '#cbd5e1', angle: 135 },
+]
 
 // ===================== PalettePanel =====================
 function PalettePanel({ lang, onAdd }: { lang: 'pl' | 'en'; onAdd: (type: string) => void }) {
