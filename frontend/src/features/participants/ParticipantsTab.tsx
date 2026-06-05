@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   downloadTemplate,
@@ -11,155 +11,528 @@ import {
 import { Button, Card, Field, Input } from '../../components/ui'
 import { FileButton } from '../../components/FileButton'
 import { Icon } from '../../components/Icon'
-import { ParticipantStatusName, type ImportResult } from '../../types/api'
+import { ParticipantStatusName, type ImportResult, type ParticipantDto } from '../../types/api'
+
+type View = { kind: 'empty' } | { kind: 'new' } | { kind: 'detail'; participant: ParticipantDto }
+type StatusFilter = 'all' | 'invited' | 'confirmed' | 'checkedIn' | 'noShow'
+
+function statusMeta(status: number): { label: string; chip: string; dot: string } {
+  switch (status) {
+    case 0:
+      return { label: 'Invited', chip: 'bg-amber-400/15 text-amber-300 ring-amber-400/30', dot: 'bg-amber-400' }
+    case 1:
+      return { label: 'Activated', chip: 'bg-sky-400/15 text-sky-300 ring-sky-400/30', dot: 'bg-sky-400' }
+    case 2:
+      return { label: 'Confirmed', chip: 'bg-indigo-400/15 text-indigo-300 ring-indigo-400/30', dot: 'bg-indigo-400' }
+    case 3:
+      return { label: 'Declined', chip: 'bg-rose-400/15 text-rose-300 ring-rose-400/30', dot: 'bg-rose-400' }
+    case 4:
+      return { label: 'Checked-in', chip: 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30', dot: 'bg-emerald-400' }
+    case 5:
+      return { label: 'Checked-out', chip: 'bg-violet-400/15 text-violet-300 ring-violet-400/30', dot: 'bg-violet-400' }
+    case 6:
+      return { label: 'No-show', chip: 'bg-slate-400/10 text-slate-300 ring-slate-400/20', dot: 'bg-slate-400' }
+    default:
+      return { label: '—', chip: 'bg-slate-400/10 text-slate-300 ring-slate-400/20', dot: 'bg-slate-400' }
+  }
+}
+
+function initials(p: ParticipantDto): string {
+  return `${p.firstName.charAt(0)}${p.lastName.charAt(0)}`.toUpperCase()
+}
+function avatarGradient(seed: string): string {
+  // Stable hash-ish picker.
+  const variants = [
+    'from-indigo-500 to-violet-500',
+    'from-violet-500 to-fuchsia-500',
+    'from-sky-500 to-cyan-500',
+    'from-emerald-500 to-teal-500',
+    'from-amber-500 to-orange-500',
+    'from-pink-500 to-rose-500',
+  ]
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
+  return variants[h % variants.length]
+}
 
 export function ParticipantsTab({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { data: participants, isLoading } = useParticipants(eventId)
-  const importMut = useImportParticipants(eventId)
-  const addMut = useAddParticipant(eventId)
   const inviteMut = useSendInvitations(eventId)
+  const [view, setView] = useState<View>({ kind: 'empty' })
+  const [showImport, setShowImport] = useState(false)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<StatusFilter>('all')
+
+  const filtered = useMemo(() => {
+    const list = participants ?? []
+    const q = query.trim().toLowerCase()
+    return list.filter((p) => {
+      const matchStatus =
+        filter === 'all' ||
+        (filter === 'invited' && p.status === 0) ||
+        (filter === 'confirmed' && p.status === 2) ||
+        (filter === 'checkedIn' && (p.status === 4 || p.status === 5)) ||
+        (filter === 'noShow' && p.status === 6)
+      if (!matchStatus) return false
+      if (!q) return true
+      return (
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        (p.company ?? '').toLowerCase().includes(q)
+      )
+    })
+  }, [participants, query, filter])
+
+  // Stat counts.
+  const stats = useMemo(() => {
+    const list = participants ?? []
+    return {
+      total: list.length,
+      invited: list.filter((p) => p.status === 0).length,
+      confirmed: list.filter((p) => p.status === 2).length,
+      checkedIn: list.filter((p) => p.status === 4 || p.status === 5).length,
+      noShow: list.filter((p) => p.status === 6).length,
+    }
+  }, [participants])
+
+  return (
+    <div className="space-y-4">
+      {/* TOOLBAR */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-800/80 bg-slate-950/40 px-3 py-1.5">
+          <Icon name="users" className="h-3.5 w-3.5 text-indigo-200" />
+          <span className="text-sm font-semibold text-white">{t('participants.title')}</span>
+          <span className="rounded-full bg-slate-800/80 px-1.5 text-[10px] text-slate-400">{stats.total}</span>
+        </div>
+        <Button variant="ghost" onClick={() => setShowImport((v) => !v)}>
+          <Icon name="document" className="h-3.5 w-3.5" />
+          {showImport ? t('participants.importCollapse') : t('participants.importExpand')}
+        </Button>
+        <Button variant="ghost" onClick={() => inviteMut.mutate()} disabled={inviteMut.isPending}>
+          <Icon name="sparkles" className="h-3.5 w-3.5" />
+          {t('participants.invite')}
+        </Button>
+        <Button className="ml-auto" onClick={() => setView({ kind: 'new' })}>
+          <Icon name="plus" className="h-4 w-4" />
+          {t('participants.newParticipant')}
+        </Button>
+      </div>
+
+      {/* IMPORT (collapsible) */}
+      {showImport && <ImportPanel eventId={eventId} />}
+
+      {inviteMut.data && (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          ✓ {t('participants.invited', { count: inviteMut.data.sentCount })}
+        </p>
+      )}
+
+      {/* SEARCH + FILTER */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[240px]">
+          <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('participants.search')}
+            className="w-full rounded-xl border border-slate-800/80 bg-slate-950/60 py-2.5 pl-10 pr-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1 rounded-xl border border-slate-800/80 bg-slate-950/40 p-1">
+          {(['all', 'invited', 'confirmed', 'checkedIn', 'noShow'] as StatusFilter[]).map((f) => {
+            const labels: Record<StatusFilter, string> = {
+              all: `${t('participants.all')} ${stats.total}`,
+              invited: `Invited ${stats.invited}`,
+              confirmed: `Confirmed ${stats.confirmed}`,
+              checkedIn: `Checked-in ${stats.checkedIn}`,
+              noShow: `No-show ${stats.noShow}`,
+            }
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  filter === f
+                    ? 'bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white ring-1 ring-inset ring-indigo-400/40'
+                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                }`}
+              >
+                {labels[f]}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* MAIN 2-COL */}
+      <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
+        {/* LEFT: list */}
+        <div className="space-y-1.5">
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 animate-pulse rounded-lg border border-slate-800/70 bg-slate-900/40" />
+            ))
+          ) : filtered.length === 0 ? (
+            (participants ?? []).length === 0 ? (
+              <EmptyList onNew={() => setView({ kind: 'new' })} onImport={() => setShowImport(true)} />
+            ) : (
+              <Card className="py-8 text-center text-sm text-slate-400">—</Card>
+            )
+          ) : (
+            filtered.map((p) => (
+              <ParticipantRow
+                key={p.id}
+                participant={p}
+                active={view.kind === 'detail' && view.participant.id === p.id}
+                onClick={() => setView({ kind: 'detail', participant: p })}
+              />
+            ))
+          )}
+        </div>
+
+        {/* RIGHT: detail */}
+        <div>
+          {view.kind === 'empty' && <EmptyDetail />}
+          {view.kind === 'new' && (
+            <NewParticipantForm
+              eventId={eventId}
+              onDone={() => setView({ kind: 'empty' })}
+              onCancel={() => setView({ kind: 'empty' })}
+            />
+          )}
+          {view.kind === 'detail' && (
+            <ParticipantDetail key={view.participant.id} eventId={eventId} participant={view.participant} />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============ ParticipantRow ============
+function ParticipantRow({
+  participant,
+  active,
+  onClick,
+}: {
+  participant: ParticipantDto
+  active: boolean
+  onClick: () => void
+}) {
+  const status = statusMeta(participant.status)
+  return (
+    <button
+      onClick={onClick}
+      className={`group flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
+        active
+          ? 'border-indigo-400/40 bg-gradient-to-r from-indigo-500/20 to-violet-500/20 ring-1 ring-inset ring-indigo-400/40'
+          : 'border-slate-800/70 bg-slate-900/40 hover:border-indigo-400/30 hover:bg-slate-900'
+      }`}
+    >
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(participant.email)} text-xs font-bold text-white`}
+      >
+        {initials(participant)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-white">
+          {participant.firstName} {participant.lastName}
+        </p>
+        <p className="truncate text-[11px] text-slate-400">{participant.email}</p>
+      </div>
+      <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${status.chip}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+        {status.label}
+      </span>
+    </button>
+  )
+}
+
+// ============ Empty states ============
+function EmptyList({ onNew, onImport }: { onNew: () => void; onImport: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Card className="flex flex-col items-center py-8 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 ring-1 ring-inset ring-indigo-400/40">
+        <Icon name="users" className="h-5 w-5 text-indigo-200" />
+      </div>
+      <p className="mt-3 text-sm font-semibold text-white">{t('participants.empty')}</p>
+      <p className="mt-1 max-w-xs text-xs text-slate-400">{t('participants.emptyHint')}</p>
+      <div className="mt-4 flex gap-2">
+        <Button variant="ghost" onClick={onImport}>
+          <Icon name="document" className="h-3.5 w-3.5" />
+          {t('participants.import')}
+        </Button>
+        <Button onClick={onNew}>
+          <Icon name="plus" className="h-3.5 w-3.5" />
+          {t('participants.newParticipant')}
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
+function EmptyDetail() {
+  const { t } = useTranslation()
+  return (
+    <Card className="flex h-full flex-col items-center justify-center py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 ring-1 ring-inset ring-indigo-400/30">
+        <Icon name="users" className="h-6 w-6 text-indigo-200" />
+      </div>
+      <p className="mt-4 text-sm font-semibold text-white">{t('participants.select')}</p>
+      <p className="mt-1 max-w-xs text-xs text-slate-400">{t('participants.selectHint')}</p>
+    </Card>
+  )
+}
+
+// ============ Import Panel ============
+function ImportPanel({ eventId }: { eventId: string }) {
+  const { t } = useTranslation()
+  const importMut = useImportParticipants(eventId)
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
 
   async function runImport(commit: boolean) {
     if (!file) return
     const res = await importMut.mutateAsync({ file, commit })
     setResult(res)
-    if (commit) {
-      setFile(null)
-    }
-  }
-
-  async function add(e: React.FormEvent) {
-    e.preventDefault()
-    await addMut.mutateAsync({ firstName, lastName, email })
-    setFirstName('')
-    setLastName('')
-    setEmail('')
+    if (commit) setFile(null)
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h3 className="mr-auto font-semibold text-white">{t('participants.import')}</h3>
-          <Button variant="ghost" onClick={() => downloadTemplate(eventId)}>
-            <Icon name="document" className="h-3.5 w-3.5" />
-            {t('participants.template')}
-          </Button>
-          <Button variant="ghost" onClick={() => inviteMut.mutate()} disabled={inviteMut.isPending}>
-            <Icon name="sparkles" className="h-3.5 w-3.5" />
-            {t('participants.invite')}
-          </Button>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <FileButton
-            accept=".xlsx"
-            onSelect={(files) => setFile(files[0] ?? null)}
-            icon="document"
-            variant={file ? 'subtle' : 'primary'}
-            showFileName
-          >
-            {file ? t('participants.changeFile') : t('participants.chooseFile')}
-          </FileButton>
-          <Button variant="ghost" disabled={!file || importMut.isPending} onClick={() => runImport(false)}>
-            {t('participants.preview')}
-          </Button>
-          <Button disabled={!file || importMut.isPending} onClick={() => runImport(true)}>
-            <Icon name="check" className="h-3.5 w-3.5" />
-            {t('participants.doImport')}
-          </Button>
-        </div>
-        {inviteMut.data && (
-          <p className="mt-2 text-sm text-emerald-700">
-            {t('participants.invited', { count: inviteMut.data.sentCount })}
-          </p>
-        )}
-        {result && (
-          <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
-            <p>
-              {t('participants.rows')}: {result.totalRows} · {t('participants.valid')}: {result.validRows} ·{' '}
-              {t('participants.importedCount')}: {result.importedCount}
-            </p>
-            {result.errors.length > 0 && (
-              <ul className="mt-1 list-disc pl-5 text-red-600">
-                {result.errors.map((er, i) => (
-                  <li key={i}>
-                    {t('participants.row')} {er.rowNumber}: {er.message}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {result.duplicateEmails.length > 0 && (
-              <p className="mt-1 text-amber-700">
-                {t('participants.duplicates')}: {result.duplicateEmails.join(', ')}
-              </p>
-            )}
+    <Card>
+      <div className="mb-3 flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+          <Icon name="document" className="h-4 w-4" />
+        </span>
+        <h3 className="font-semibold text-white">{t('participants.import')}</h3>
+        <Button variant="ghost" className="ml-auto" onClick={() => downloadTemplate(eventId)}>
+          <Icon name="document" className="h-3.5 w-3.5" />
+          {t('participants.template')}
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <FileButton
+          accept=".xlsx"
+          onSelect={(files) => setFile(files[0] ?? null)}
+          icon="document"
+          variant={file ? 'subtle' : 'primary'}
+          showFileName
+        >
+          {file ? t('participants.changeFile') : t('participants.chooseFile')}
+        </FileButton>
+        <Button variant="ghost" disabled={!file || importMut.isPending} onClick={() => runImport(false)}>
+          {t('participants.preview')}
+        </Button>
+        <Button disabled={!file || importMut.isPending} onClick={() => runImport(true)}>
+          <Icon name="check" className="h-3.5 w-3.5" />
+          {t('participants.doImport')}
+        </Button>
+      </div>
+      {result && (
+        <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-sm">
+          <div className="flex flex-wrap gap-3 text-xs">
+            <Stat label={t('participants.rows')} value={result.totalRows} />
+            <Stat label={t('participants.valid')} value={result.validRows} accent="emerald" />
+            <Stat label={t('participants.importedCount')} value={result.importedCount} accent="indigo" />
           </div>
-        )}
-      </Card>
+          {result.errors.length > 0 && (
+            <ul className="mt-3 space-y-1 text-xs text-rose-300">
+              {result.errors.map((er, i) => (
+                <li key={i}>
+                  <span className="font-mono text-rose-400">{t('participants.row')} {er.rowNumber}</span> · {er.message}
+                </li>
+              ))}
+            </ul>
+          )}
+          {result.duplicateEmails.length > 0 && (
+            <p className="mt-2 text-xs text-amber-300">
+              {t('participants.duplicates')}: {result.duplicateEmails.join(', ')}
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}
 
-      <Card>
-        <h3 className="mb-3 font-semibold">{t('participants.add')}</h3>
-        <form onSubmit={add} className="flex flex-wrap items-end gap-2">
+function Stat({ label, value, accent = 'slate' }: { label: string; value: number; accent?: 'slate' | 'emerald' | 'indigo' }) {
+  const colors = {
+    slate: 'text-slate-300',
+    emerald: 'text-emerald-300',
+    indigo: 'text-indigo-300',
+  }[accent]
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">{label}</p>
+      <p className={`text-lg font-bold ${colors}`}>{value}</p>
+    </div>
+  )
+}
+
+// ============ New participant ============
+function NewParticipantForm({
+  eventId,
+  onDone,
+  onCancel,
+}: {
+  eventId: string
+  onDone: () => void
+  onCancel: () => void
+}) {
+  const { t } = useTranslation()
+  const add = useAddParticipant(eventId)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+
+  return (
+    <Card>
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-violet-500/30">
+          <Icon name="plus" className="h-4 w-4" />
+        </span>
+        <div>
+          <h3 className="text-base font-semibold text-white">{t('participants.newParticipant')}</h3>
+          <p className="text-xs text-slate-400">{t('participants.emptyHint')}</p>
+        </div>
+      </div>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault()
+          await add.mutateAsync({ firstName, lastName, email })
+          onDone()
+        }}
+        className="space-y-3"
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t('participants.firstName')}>
-            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required autoFocus />
           </Field>
           <Field label={t('participants.lastName')}>
             <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
           </Field>
-          <Field label={t('auth.email')}>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </Field>
-          <Button type="submit" disabled={addMut.isPending}>
+        </div>
+        <Field label={t('auth.email')}>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </Field>
+        <div className="flex gap-2 border-t border-slate-800/80 pt-3">
+          <Button type="submit" disabled={add.isPending}>
+            <Icon name="check" className="h-3.5 w-3.5" />
             {t('common.create')}
           </Button>
-        </form>
-      </Card>
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  )
+}
 
-      {isLoading ? (
-        <p className="text-slate-500">{t('common.loading')}</p>
-      ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 text-slate-500">
-              <tr>
-                <th className="px-4 py-2">{t('participants.name')}</th>
-                <th className="px-4 py-2">{t('auth.email')}</th>
-                <th className="px-4 py-2">{t('events.status')}</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(participants ?? []).map((p) => (
-                <tr key={p.id} className="border-b border-slate-100">
-                  <td className="px-4 py-2">
-                    {p.firstName} {p.lastName}
-                  </td>
-                  <td className="px-4 py-2">{p.email}</td>
-                  <td className="px-4 py-2">{ParticipantStatusName[p.status]}</td>
-                  <td className="px-4 py-2 text-right">
-                    <Button variant="ghost" onClick={() => openParticipantQr(eventId, p.id)}>
-                      QR
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {(participants ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                    {t('participants.empty')}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Card>
-      )}
+// ============ Participant detail ============
+function ParticipantDetail({ eventId, participant }: { eventId: string; participant: ParticipantDto }) {
+  const { t } = useTranslation()
+  const status = statusMeta(participant.status)
+  return (
+    <Card>
+      {/* Header */}
+      <div className="mb-4 flex items-start gap-3">
+        <span
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(participant.email)} text-lg font-bold text-white shadow-lg`}
+        >
+          {initials(participant)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-xl font-bold text-white">
+            {participant.firstName} {participant.lastName}
+          </h2>
+          <p className="truncate text-sm text-slate-400">{participant.email}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${status.chip}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+              {status.label}
+            </span>
+            <span className="rounded-full bg-slate-800/60 px-2 py-0.5 text-[10px] font-mono text-slate-300">
+              {ParticipantStatusName[participant.status]}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => openParticipantQr(eventId, participant.id)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white"
+          title={t('participants.qrCode')}
+        >
+          <Icon name="qr" className="h-3.5 w-3.5" />
+          QR
+        </button>
+      </div>
+
+      {/* Sections */}
+      <div className="space-y-4">
+        <Section title={t('participants.info')}>
+          {participant.phone && <DetailItem icon="users" label={t('participants.phone')}>{participant.phone}</DetailItem>}
+          {participant.company && <DetailItem icon="document" label={t('participants.company')}>{participant.company}</DetailItem>}
+          {participant.position && <DetailItem icon="sparkles" label={t('participants.position')}>{participant.position}</DetailItem>}
+          <DetailItem icon="document" label={t('participants.language')}>{participant.language.toUpperCase()}</DetailItem>
+        </Section>
+
+        {participant.dietaryPreferences && (
+          <Section title={t('participants.preferences')}>
+            <DetailItem icon="document" label={t('participants.diet')}>{participant.dietaryPreferences}</DetailItem>
+          </Section>
+        )}
+
+        {(participant.tableName || participant.roomNumber || participant.groupName || participant.airportTransfer) && (
+          <Section title={t('participants.logistics')}>
+            {participant.tableName && <DetailItem icon="document" label={t('participants.table')}>{participant.tableName}</DetailItem>}
+            {participant.roomNumber && <DetailItem icon="document" label={t('participants.room')}>{participant.roomNumber}</DetailItem>}
+            {participant.groupName && <DetailItem icon="users" label={t('participants.group')}>{participant.groupName}</DetailItem>}
+            {participant.airportTransfer && (
+              <DetailItem icon="truck" label={t('participants.transfer')}>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                  <Icon name="check" className="h-3 w-3" /> Tak
+                </span>
+              </DetailItem>
+            )}
+          </Section>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+        <span className="h-1 w-4 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400" />
+        {title}
+      </h3>
+      <div className="space-y-2">{children}</div>
+    </div>
+  )
+}
+
+function DetailItem({
+  icon,
+  label,
+  children,
+}: {
+  icon: 'users' | 'document' | 'sparkles' | 'truck'
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-2.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-900/80 ring-1 ring-inset ring-slate-700/60 text-slate-300">
+        <Icon name={icon} className="h-3 w-3" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">{label}</p>
+        <p className="truncate text-sm text-white">{children}</p>
+      </div>
     </div>
   )
 }
