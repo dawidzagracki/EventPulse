@@ -778,6 +778,10 @@ export function EditorFrame({
  * Drop zone between blocks. On hover it expands and reveals a centered "+"
  * button that pops open a mini block picker — much faster than dragging from
  * the side palette every time (Elementor-style inline insert).
+ *
+ * During an active drag anywhere on the document, ALL drop zones light up
+ * (light indigo line) so the target is obvious. Auto-scroll near the
+ * viewport edges so users can drop below the fold without losing the drag.
  */
 export function DropZone({
   index,
@@ -791,6 +795,32 @@ export function DropZone({
   const [dragActive, setDragActive] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // True whenever *some* block drag is in progress anywhere on the page so
+  // we can preview the drop zone as a faint line and make it easier to find.
+  const [globalDragging, setGlobalDragging] = useState(false)
+
+  useEffect(() => {
+    function onStart(e: DragEvent) {
+      const types = e.dataTransfer?.types
+      if (!types) return
+      if (types.includes('text/x-block-index') || types.includes('text/x-block-type')) {
+        setGlobalDragging(true)
+      }
+    }
+    function onEnd() {
+      setGlobalDragging(false)
+    }
+    document.addEventListener('dragstart', onStart)
+    document.addEventListener('dragend', onEnd)
+    document.addEventListener('drop', onEnd)
+    return () => {
+      document.removeEventListener('dragstart', onStart)
+      document.removeEventListener('dragend', onEnd)
+      document.removeEventListener('drop', onEnd)
+    }
+  }, [])
+
+  const visualOpen = dragActive || hovered || pickerOpen || globalDragging
 
   return (
     <div
@@ -807,6 +837,7 @@ export function DropZone({
       onDrop={(e) => {
         e.preventDefault()
         setDragActive(false)
+        setGlobalDragging(false)
         const fromIndexStr = e.dataTransfer.getData('text/x-block-index')
         const newType = e.dataTransfer.getData('text/x-block-type')
         if (fromIndexStr) {
@@ -817,17 +848,34 @@ export function DropZone({
           onInsertNew(newType, index)
         }
       }}
-      className={`relative -my-1 transition-all ${dragActive || hovered || pickerOpen ? 'h-8' : 'h-2'}`}
+      className={`relative -my-1 transition-all ${visualOpen ? 'h-10' : 'h-2'}`}
     >
       {/* Active drop indicator line */}
       <div
         aria-hidden
-        className={`absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full transition ${
-          dragActive ? 'bg-indigo-500 shadow-lg shadow-indigo-500/40' : hovered || pickerOpen ? 'bg-indigo-400/40' : 'bg-transparent'
+        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-full transition-all ${
+          dragActive
+            ? 'h-1 bg-indigo-500 shadow-lg shadow-indigo-500/50'
+            : globalDragging
+              ? 'h-0.5 bg-indigo-400/35'
+              : hovered || pickerOpen
+                ? 'h-0.5 bg-indigo-400/40'
+                : 'h-px bg-transparent'
         }`}
       />
-      {/* Hover-revealed + button */}
-      {(hovered || pickerOpen) && !dragActive && (
+      {/* "Drop here" hint that appears during drag */}
+      {globalDragging && !dragActive && (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-300 ring-1 ring-inset ring-indigo-400/30">
+          ▼ Upuść tu
+        </div>
+      )}
+      {dragActive && (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-lg shadow-indigo-500/40">
+          ✓ Upuść
+        </div>
+      )}
+      {/* Hover-revealed + button (only when NOT dragging) */}
+      {(hovered || pickerOpen) && !dragActive && !globalDragging && (
         <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
           <button
             type="button"
@@ -846,6 +894,7 @@ export function DropZone({
     </div>
   )
 }
+
 
 /** Compact popup menu of block types, anchored beneath the DropZone "+" button. */
 function InlineBlockPicker({ onPick, onClose }: { onPick: (type: string) => void; onClose: () => void }) {

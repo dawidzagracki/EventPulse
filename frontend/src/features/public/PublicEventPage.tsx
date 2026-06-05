@@ -259,7 +259,19 @@ function GlassNav({
   }
 
   return (
-    <div className={`sticky top-0 z-30 pointer-events-none transition-all duration-300 ${scrolled ? 'pt-3' : 'pt-5'}`}>
+    <div
+      className={`sticky top-0 z-30 pointer-events-none transition-all duration-300 ${scrolled ? 'pt-3' : 'pt-5'}`}
+      // The nav must NOT inherit the brand font — many brand fonts are
+      // decorative serifs that look ugly in tiny nav text. Force a clean
+      // modern system stack so links are always legible.
+      style={{
+        fontFamily:
+          'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        WebkitFontSmoothing: 'antialiased',
+        MozOsxFontSmoothing: 'grayscale',
+        letterSpacing: '-0.01em',
+      }}
+    >
       <nav className="pointer-events-auto mx-auto flex max-w-5xl items-center gap-4 px-3 sm:px-4">
         {/* ───────────── Glass capsule ───────────── */}
         <div

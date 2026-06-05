@@ -11,6 +11,7 @@ import {
 } from './api'
 import { useEvent } from '../events/api'
 import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
+import { useDragAutoScroll } from './useDragAutoScroll'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, blockSchema, type BlockCategory } from './blockSchema'
 import { Button, Card, Field, Input, Select } from '../../components/ui'
 import { ColorPicker } from '../../components/ColorPicker'
@@ -83,6 +84,8 @@ function useHistoryState<T>(initial: T) {
 
 function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   const { t, i18n } = useTranslation()
+  // Auto-scroll the window when dragging near top/bottom edges.
+  useDragAutoScroll()
   const save = useSaveDraft(eventId)
   const applyTemplate = useApplyTemplate(eventId)
   const updateBranding = useUpdateBranding(eventId)

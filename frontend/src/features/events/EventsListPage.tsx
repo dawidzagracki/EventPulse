@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useCreateEvent, useEvents } from './api'
+import { useEvents } from './api'
+import { SmartEventForm } from './SmartEventForm'
 import { AppShell, type NavItem } from '../../components/AppShell'
-import { Button, Card, Field, Input } from '../../components/ui'
+import { Button, Card } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { EventStatus, type EventDto } from '../../types/api'
 import { prettifyEventName } from './eventName'
@@ -196,33 +197,9 @@ function MiniStat({ label, value, accent, icon }: MiniStatProps) {
 export function EventsListPage() {
   const { t, i18n } = useTranslation()
   const { data: events, isLoading } = useEvents()
-  const createEvent = useCreateEvent()
   const [showForm, setShowForm] = useState(false)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterKey>('all')
-
-  const [name, setName] = useState('')
-  const [startsAt, setStartsAt] = useState('')
-  const [endsAt, setEndsAt] = useState('')
-  const [location, setLocation] = useState('')
-  const [clientEmail, setClientEmail] = useState('')
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    await createEvent.mutateAsync({
-      name,
-      startsAt: new Date(startsAt).toISOString(),
-      endsAt: new Date(endsAt).toISOString(),
-      location: location || null,
-      clientEmail: clientEmail || null,
-    })
-    setShowForm(false)
-    setName('')
-    setStartsAt('')
-    setEndsAt('')
-    setLocation('')
-    setClientEmail('')
-  }
 
   const stats = useMemo(() => {
     const list = events ?? []
@@ -356,47 +333,9 @@ export function EventsListPage() {
         </div>
       </div>
 
-      {/* Create form */}
+      {/* Create form — smart wizard with presets, auto end, live validation */}
       {showForm && (
-        <Card glow className="mt-6">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
-              <Icon name="sparkles" className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-white">{t('events.new')}</p>
-              <p className="text-xs text-slate-400">{t('events.subtitle')}</p>
-            </div>
-          </div>
-          <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Field label={t('events.name')}>
-                <Input value={name} onChange={(e) => setName(e.target.value)} required />
-              </Field>
-            </div>
-            <Field label={t('events.starts')}>
-              <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
-            </Field>
-            <Field label={t('events.ends')}>
-              <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
-            </Field>
-            <Field label={t('events.location')}>
-              <Input value={location} onChange={(e) => setLocation(e.target.value)} />
-            </Field>
-            <Field label={t('events.clientEmail')}>
-              <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
-            </Field>
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" disabled={createEvent.isPending}>
-                <Icon name="check" className="h-4 w-4" />
-                {t('common.create')}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
-                {t('common.cancel')}
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <SmartEventForm onCancel={() => setShowForm(false)} onCreated={() => setShowForm(false)} />
       )}
 
       {/* Content */}
