@@ -220,7 +220,11 @@
     "noActivity": "No activity yet",
     "eventInfo": "Event info",
     "noFeedback": "No ratings yet",
-    "ratings": "ratings"
+    "ratings": "ratings",
+    "untitled": "Untitled event",
+    "rename": "Rename",
+    "renamePrompt": "New event name",
+    "save": "Save"
   },
   "feedback": {
     "title": "Rate the event",

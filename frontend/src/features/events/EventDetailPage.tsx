@@ -81,7 +81,13 @@ export function EventDetailPage() {
     <AppShell
       nav={nav}
       back={{ to: '/events', label: t('events.title') }}
-      title={event ? prettifyEventName(event.name).display : t('common.loading')}
+      title={
+        event
+          ? prettifyEventName(event.name).isAuto
+            ? t('dashboard.untitled')
+            : prettifyEventName(event.name).display
+          : t('common.loading')
+      }
       subtitle={event ? `/${event.slug}` : undefined}
       actions={actions}
     >

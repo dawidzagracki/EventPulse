@@ -220,7 +220,11 @@
     "noActivity": "Brak aktywności",
     "eventInfo": "Informacje o wydarzeniu",
     "noFeedback": "Brak ocen",
-    "ratings": "ocen"
+    "ratings": "ocen",
+    "untitled": "Bez nazwy",
+    "rename": "Zmień nazwę",
+    "renamePrompt": "Podaj nową nazwę wydarzenia",
+    "save": "Zapisz"
   },
   "feedback": {
     "title": "Oceń wydarzenie",

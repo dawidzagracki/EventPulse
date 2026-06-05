@@ -32,3 +32,25 @@ export function useCreateEvent() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
+
+export interface UpdateEventRequest {
+  name: string
+  startsAt: string
+  endsAt: string
+  location?: string | null
+  description?: string | null
+  defaultLanguage?: string | null
+  clientEmail?: string | null
+}
+
+export function useUpdateEvent(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: UpdateEventRequest) =>
+      (await api.put<EventDto>(`/api/events/${eventId}`, body)).data,
+    onSuccess: (data) => {
+      qc.setQueryData(['events', eventId], data)
+      qc.invalidateQueries({ queryKey: KEY })
+    },
+  })
+}

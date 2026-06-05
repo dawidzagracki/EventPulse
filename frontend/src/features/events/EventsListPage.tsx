@@ -84,7 +84,9 @@ function EventCard({ ev }: { ev: EventDto }) {
   const sameDay = start.toDateString() === end.toDateString()
   const day = start.getDate().toString().padStart(2, '0')
   const month = start.toLocaleDateString(i18n.language, { month: 'short' }).replace('.', '').toUpperCase()
-  const { display: displayName, full: fullName } = prettifyEventName(ev.name)
+  const pretty = prettifyEventName(ev.name)
+  const displayName = pretty.isAuto ? t('dashboard.untitled') : pretty.display
+  const fullName = pretty.full
 
   return (
     <Link

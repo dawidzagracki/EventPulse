@@ -6,9 +6,9 @@ import { api } from '../../lib/api'
 import { createEventConnection } from '../../lib/signalr'
 import { Card } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
-import { useEvent } from '../events/api'
+import { useEvent, useUpdateEvent } from '../events/api'
 import { prettifyEventName } from '../events/eventName'
-import { EventStatus, type DashboardData } from '../../types/api'
+import { EventStatus, type DashboardData, type EventDto } from '../../types/api'
 
 interface FeedbackSummary {
   count: number
@@ -119,12 +119,8 @@ export function DashboardTab({ eventId }: { eventId: string }) {
     <div className="space-y-5">
       {/* HERO */}
       <HeroPanel
-        eventName={event?.name ?? ''}
-        startsAt={event?.startsAt}
-        endsAt={event?.endsAt}
-        location={event?.location ?? null}
-        slug={event?.slug ?? ''}
-        status={event?.status ?? EventStatus.Draft}
+        eventId={eventId}
+        event={event}
         phase={phase}
         now={now}
         onDownload={() => downloadReport(eventId)}
@@ -296,27 +292,45 @@ export function DashboardTab({ eventId }: { eventId: string }) {
 
 // ===================== Hero =====================
 function HeroPanel({
-  eventName,
-  startsAt,
-  endsAt,
-  location,
-  slug,
-  status,
+  eventId,
+  event,
   phase,
   now,
   onDownload,
 }: {
-  eventName: string
-  startsAt?: string
-  endsAt?: string
-  location: string | null
-  slug: string
-  status: number
+  eventId: string
+  event: EventDto | undefined
   phase: 'upcoming' | 'live' | 'ended' | 'unknown'
   now: number
   onDownload: () => void
 }) {
   const { t, i18n } = useTranslation()
+  const updateEvent = useUpdateEvent(eventId)
+  const [editing, setEditing] = useState(false)
+  const [draftName, setDraftName] = useState('')
+
+  const startsAt = event?.startsAt
+  const endsAt = event?.endsAt
+  const location = event?.location ?? null
+  const slug = event?.slug ?? ''
+  const status = event?.status ?? EventStatus.Draft
+  const pretty = prettifyEventName(event?.name)
+
+  async function commitRename() {
+    if (!event) return
+    const trimmed = draftName.trim()
+    if (!trimmed || trimmed === event.name) {
+      setEditing(false)
+      return
+    }
+    await updateEvent.mutateAsync({
+      name: trimmed,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      location: event.location,
+    })
+    setEditing(false)
+  }
   const phaseMeta = {
     upcoming: { tone: 'amber', text: t('dashboard.untilStart'), pulse: false },
     live: { tone: 'emerald', text: t('dashboard.happeningNow'), pulse: true },
@@ -388,12 +402,52 @@ function HeroPanel({
               </span>
             )}
           </div>
-          <h1
-            title={prettifyEventName(eventName).full !== prettifyEventName(eventName).display ? prettifyEventName(eventName).full : undefined}
-            className="truncate bg-gradient-to-r from-white via-indigo-100 to-violet-200 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent"
-          >
-            {prettifyEventName(eventName).display}
-          </h1>
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void commitRename()
+                  if (e.key === 'Escape') setEditing(false)
+                }}
+                placeholder={t('dashboard.renamePrompt')}
+                className="flex-1 rounded-lg border border-indigo-400/60 bg-slate-950/60 px-3 py-2 text-2xl font-bold text-white outline-none ring-2 ring-indigo-500/20"
+              />
+              <button
+                onClick={() => void commitRename()}
+                disabled={updateEvent.isPending}
+                className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 hover:opacity-90 disabled:opacity-50"
+              >
+                {updateEvent.isPending ? '…' : t('dashboard.save')}
+              </button>
+              <button onClick={() => setEditing(false)} className="rounded-lg px-3 py-2 text-sm text-slate-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <h1
+                title={pretty.isAuto ? pretty.full : undefined}
+                className={`truncate bg-gradient-to-r from-white via-indigo-100 to-violet-200 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent ${
+                  pretty.isAuto ? 'italic opacity-80' : ''
+                }`}
+              >
+                {pretty.isAuto ? t('dashboard.untitled') : pretty.display}
+              </h1>
+              <button
+                onClick={() => {
+                  setDraftName(pretty.isAuto ? '' : pretty.full)
+                  setEditing(true)
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-[11px] font-medium text-slate-300 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white"
+                title={t('dashboard.rename')}
+              >
+                ✏ {t('dashboard.rename')}
+              </button>
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
             {dateLabel && (
               <span className="inline-flex items-center gap-1.5">
