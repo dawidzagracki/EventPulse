@@ -103,7 +103,9 @@
     "firstName": "Imię",
     "lastName": "Nazwisko",
     "name": "Uczestnik",
-    "empty": "Brak uczestników"
+    "empty": "Brak uczestników",
+    "chooseFile": "Wybierz plik .xlsx",
+    "changeFile": "Zmień plik"
   },
   "agenda": {
     "title": "Agenda",
@@ -327,7 +329,8 @@
   },
   "gallery": {
     "title": "Galeria",
-    "empty": "Brak zdjęć"
+    "empty": "Brak zdjęć",
+    "upload": "Dodaj zdjęcia"
   },
   "ai": {
     "title": "Asystent",

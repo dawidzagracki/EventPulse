@@ -1,30 +1,35 @@
-import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDeletePhoto, useGallery, useUploadPhoto } from './api'
 import { Thumb } from './Thumb'
 import { Card } from '../../components/ui'
+import { FileButton } from '../../components/FileButton'
 
 export function GalleryTab({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { data: photos, isLoading } = useGallery(eventId)
   const upload = useUploadPhoto(eventId)
   const del = useDeletePhoto(eventId)
-  const fileRef = useRef<HTMLInputElement>(null)
 
-  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
+  async function onPick(files: File[]) {
     for (const f of files) {
       await upload.mutateAsync(f)
     }
-    if (fileRef.current) fileRef.current.value = ''
   }
 
   return (
     <div className="space-y-6">
       <Card>
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">{t('gallery.title')}</h3>
-          <input ref={fileRef} type="file" accept="image/*" multiple onChange={onPick} className="text-sm" />
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-semibold text-white">{t('gallery.title')}</h3>
+          <FileButton
+            accept="image/*"
+            multiple
+            onSelect={onPick}
+            icon="image"
+            disabled={upload.isPending}
+          >
+            {upload.isPending ? '…' : '+ ' + t('gallery.upload')}
+          </FileButton>
         </div>
       </Card>
 

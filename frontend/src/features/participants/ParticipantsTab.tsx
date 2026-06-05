@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   downloadTemplate,
@@ -9,6 +9,8 @@ import {
   useSendInvitations,
 } from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
+import { FileButton } from '../../components/FileButton'
+import { Icon } from '../../components/Icon'
 import { ParticipantStatusName, type ImportResult } from '../../types/api'
 
 export function ParticipantsTab({ eventId }: { eventId: string }) {
@@ -17,8 +19,6 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
   const importMut = useImportParticipants(eventId)
   const addMut = useAddParticipant(eventId)
   const inviteMut = useSendInvitations(eventId)
-  const fileRef = useRef<HTMLInputElement>(null)
-
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [firstName, setFirstName] = useState('')
@@ -31,7 +31,6 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
     setResult(res)
     if (commit) {
       setFile(null)
-      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
@@ -47,26 +46,31 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
     <div className="space-y-6">
       <Card>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h3 className="mr-auto font-semibold">{t('participants.import')}</h3>
+          <h3 className="mr-auto font-semibold text-white">{t('participants.import')}</h3>
           <Button variant="ghost" onClick={() => downloadTemplate(eventId)}>
+            <Icon name="document" className="h-3.5 w-3.5" />
             {t('participants.template')}
           </Button>
           <Button variant="ghost" onClick={() => inviteMut.mutate()} disabled={inviteMut.isPending}>
+            <Icon name="sparkles" className="h-3.5 w-3.5" />
             {t('participants.invite')}
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
+          <FileButton
             accept=".xlsx"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm"
-          />
+            onSelect={(files) => setFile(files[0] ?? null)}
+            icon="document"
+            variant={file ? 'subtle' : 'primary'}
+            showFileName
+          >
+            {file ? t('participants.changeFile') : t('participants.chooseFile')}
+          </FileButton>
           <Button variant="ghost" disabled={!file || importMut.isPending} onClick={() => runImport(false)}>
             {t('participants.preview')}
           </Button>
           <Button disabled={!file || importMut.isPending} onClick={() => runImport(true)}>
+            <Icon name="check" className="h-3.5 w-3.5" />
             {t('participants.doImport')}
           </Button>
         </div>
