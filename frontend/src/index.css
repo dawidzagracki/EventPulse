@@ -49,6 +49,71 @@ body {
   animation: floatY 6s ease-in-out infinite;
 }
 
+/* Aurora — flowing mesh gradient background. Two layered radials shift
+ * position over time to create a living, hand-painted feel. */
+@keyframes auroraA {
+  0%, 100% { transform: translate(-10%, -20%) rotate(0deg);  }
+  33%      { transform: translate(20%, 10%)  rotate(90deg);  }
+  66%      { transform: translate(-15%, 25%) rotate(180deg); }
+}
+@keyframes auroraB {
+  0%, 100% { transform: translate(30%, 40%)  rotate(0deg);   }
+  33%      { transform: translate(-20%, 5%)  rotate(-90deg); }
+  66%      { transform: translate(10%, -25%) rotate(-180deg); }
+}
+.animate-aurora-a { animation: auroraA 22s ease-in-out infinite; }
+.animate-aurora-b { animation: auroraB 28s ease-in-out infinite; }
+
+/* Rotating "what you can plan" word in the hero subtitle.
+ * Each word fades up, stays, fades out before the next slides in. */
+@keyframes wordCycle {
+  0%, 18%   { opacity: 0; transform: translateY(8px); }
+  3%, 15%   { opacity: 1; transform: translateY(0); }
+  20%, 100% { opacity: 0; transform: translateY(-8px); }
+}
+.word-cycle > span {
+  animation: wordCycle 12s infinite both;
+}
+.word-cycle > span:nth-child(1) { animation-delay:  0s; }
+.word-cycle > span:nth-child(2) { animation-delay:  2.4s; }
+.word-cycle > span:nth-child(3) { animation-delay:  4.8s; }
+.word-cycle > span:nth-child(4) { animation-delay:  7.2s; }
+.word-cycle > span:nth-child(5) { animation-delay:  9.6s; }
+
+/* Soft floating cards in the hero — gentle drift to feel alive. */
+@keyframes floatA {
+  0%, 100% { transform: translate(0, 0)        rotate(-6deg); }
+  50%      { transform: translate(8px, -10px)  rotate(-4deg); }
+}
+@keyframes floatB {
+  0%, 100% { transform: translate(0, 0)        rotate(4deg); }
+  50%      { transform: translate(-6px, 8px)   rotate(2deg); }
+}
+@keyframes floatC {
+  0%, 100% { transform: translate(0, 0)        rotate(-2deg); }
+  50%      { transform: translate(4px, -6px)   rotate(0deg); }
+}
+.animate-card-a { animation: floatA 8s  ease-in-out infinite; }
+.animate-card-b { animation: floatB 10s ease-in-out infinite; }
+.animate-card-c { animation: floatC 7s  ease-in-out infinite; }
+
+/* Conic-gradient glow ring that revolves around the CTA button. */
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spinSlow 6s linear infinite; }
+
+/* Staggered fade-in for major elements on page mount. */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up           { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade-up-delay-1   { animation: fadeUp 0.7s 0.10s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade-up-delay-2   { animation: fadeUp 0.7s 0.20s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade-up-delay-3   { animation: fadeUp 0.7s 0.30s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade-up-delay-4   { animation: fadeUp 0.7s 0.40s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
 /* Page Builder — entrance animations triggered when block enters viewport. */
 @keyframes blockFadeIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes blockSlideUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
