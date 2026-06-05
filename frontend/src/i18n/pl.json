@@ -65,7 +65,21 @@
     "endAuto": "(auto +4h)",
     "nameHint": "Tę nazwę zobaczy klient i uczestnicy",
     "endBeforeStart": "Koniec musi być po starcie",
-    "invalidEmail": "Nieprawidłowy e-mail"
+    "invalidEmail": "Nieprawidłowy e-mail",
+    "greetingMorning": "Dzień dobry",
+    "greetingDay": "Dobre popołudnie",
+    "greetingEvening": "Dobry wieczór",
+    "greetingNight": "Dobry wieczór",
+    "summaryHasLive": "{{live}} na żywo, {{upcoming}} nadchodzących",
+    "summaryUpcoming": "{{upcoming}} nadchodzących wydarzeń",
+    "summaryEmpty": "Stwórz pierwsze wydarzenie — gotowe w 30 sekund",
+    "summaryOnlyPast": "Wszystkie wydarzenia zakończone",
+    "nextEvent": "Najbliższe wydarzenie",
+    "startsIn": "Startuje za",
+    "happeningNow": "Trwa teraz",
+    "quickActions": "Skróty",
+    "quickCreate": "Nowe",
+    "quickToday": "Dzisiaj"
   },
   "eventDetail": {
     "overview": "Przegląd",

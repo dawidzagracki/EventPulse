@@ -65,7 +65,21 @@
     "endAuto": "(auto +4h)",
     "nameHint": "Client and participants will see this name",
     "endBeforeStart": "End must be after start",
-    "invalidEmail": "Invalid email"
+    "invalidEmail": "Invalid email",
+    "greetingMorning": "Good morning",
+    "greetingDay": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingNight": "Good evening",
+    "summaryHasLive": "{{live}} live, {{upcoming}} upcoming",
+    "summaryUpcoming": "{{upcoming}} upcoming events",
+    "summaryEmpty": "Create your first event — ready in 30 seconds",
+    "summaryOnlyPast": "All events finished",
+    "nextEvent": "Next event",
+    "startsIn": "Starts in",
+    "happeningNow": "Live now",
+    "quickActions": "Quick actions",
+    "quickCreate": "New",
+    "quickToday": "Today"
   },
   "eventDetail": {
     "overview": "Overview",

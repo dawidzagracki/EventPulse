@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEvents } from './api'
@@ -6,6 +6,7 @@ import { SmartEventForm } from './SmartEventForm'
 import { AppShell, type NavItem } from '../../components/AppShell'
 import { Button, Card } from '../../components/ui'
 import { Icon } from '../../components/Icon'
+import { useAuthStore } from '../../stores/authStore'
 import { EventStatus, type EventDto } from '../../types/api'
 import { prettifyEventName } from './eventName'
 
@@ -93,7 +94,7 @@ function EventCard({ ev }: { ev: EventDto }) {
     <Link
       to={`/events/${ev.id}`}
       title={fullName !== displayName ? fullName : undefined}
-      className="group relative block overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/40 backdrop-blur transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:shadow-2xl hover:shadow-indigo-500/10"
+      className="group relative block overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/40 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] hover:border-indigo-400/50 hover:shadow-2xl hover:shadow-indigo-500/20"
     >
       {/* left accent bar — status color */}
       <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${meta.bar}`} />
@@ -189,7 +190,9 @@ function MiniStat({ label, value, accent, icon }: MiniStatProps) {
           <Icon name={icon} className="h-4 w-4" />
         </div>
       </div>
-      <p className="relative mt-2 text-3xl font-bold tracking-tight text-white">{value}</p>
+      <p className="relative mt-2 text-3xl font-bold tabular-nums tracking-tight text-white">
+        <AnimatedCount value={value} />
+      </p>
     </div>
   )
 }
@@ -263,41 +266,14 @@ export function EventsListPage() {
         </Button>
       }
     >
-      {/* Page-level decorative backdrop (matches login style) */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 top-0 h-[26rem] w-[26rem] rounded-full bg-indigo-600/20 blur-3xl animate-pulse-slow" />
-        <div className="absolute right-[-8rem] top-1/3 h-[28rem] w-[28rem] rounded-full bg-violet-600/20 blur-3xl animate-pulse-slow [animation-delay:1.5s]" />
-        <div className="absolute bottom-[-6rem] left-1/3 h-[22rem] w-[22rem] rounded-full bg-fuchsia-600/15 blur-3xl animate-pulse-slow [animation-delay:3s]" />
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage: 'radial-gradient(rgb(148 163 184) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
-      </div>
+      {/* Page-level decorative backdrop with aurora + mouse spotlight */}
+      <PageBackdrop />
 
-      {/* Hero pill */}
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
-          </span>
-          {stats.live > 0
-            ? `${stats.live} ${t('events.statLive').toLowerCase()}`
-            : `${stats.total} ${t('events.statTotal').toLowerCase()}`}
-        </span>
-        {stats.published > 0 && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-200">
-            <Icon name="sparkles" className="h-3 w-3" />
-            {stats.published} {t('events.statPublished').toLowerCase()}
-          </span>
-        )}
-      </div>
+      {/* Personalized greeting hero */}
+      <WelcomeHero stats={stats} upcoming={upcoming[0]} now={now} onNew={() => setShowForm(true)} />
 
-      {/* Stats row */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats row with animated counters */}
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MiniStat label={t('events.statTotal')} value={stats.total} accent="indigo" icon="calendar" />
         <MiniStat label={t('events.statLive')} value={stats.live} accent="emerald" icon="bolt" />
         <MiniStat label={t('events.statPublished')} value={stats.published} accent="sky" icon="sparkles" />
@@ -398,4 +374,235 @@ export function EventsListPage() {
       <span className="hidden">{i18n.language}</span>
     </AppShell>
   )
+}
+
+// ===================== PageBackdrop =====================
+// Aurora + dot grid + mouse-tracking spotlight. Lives behind everything via
+// fixed positioning so it follows scroll for free.
+function PageBackdrop() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    function onMove(e: MouseEvent) {
+      node!.style.setProperty('--mx', `${e.clientX}px`)
+      node!.style.setProperty('--my', `${e.clientY}px`)
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+  return (
+    <div
+      ref={ref}
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      style={{ ['--mx' as string]: '50vw', ['--my' as string]: '50vh' }}
+    >
+      <div
+        className="absolute -left-1/4 top-[-10%] h-[120%] w-[70%] rounded-full blur-3xl opacity-40 animate-aurora-a"
+        style={{ background: 'radial-gradient(closest-side, rgba(99,102,241,0.45), transparent 70%)' }}
+      />
+      <div
+        className="absolute right-[-20%] top-[20%] h-[100%] w-[60%] rounded-full blur-3xl opacity-35 animate-aurora-b"
+        style={{ background: 'radial-gradient(closest-side, rgba(217,70,239,0.4), transparent 70%)' }}
+      />
+      <div className="absolute bottom-[-6rem] left-1/3 h-[22rem] w-[22rem] rounded-full bg-fuchsia-600/12 blur-3xl animate-pulse-slow [animation-delay:3s]" />
+      <div
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage: 'radial-gradient(rgb(148 163 184) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(360px circle at var(--mx) var(--my), rgba(165,180,252,0.10), transparent 60%)',
+        }}
+        aria-hidden
+      />
+    </div>
+  )
+}
+
+// ===================== WelcomeHero =====================
+function WelcomeHero({
+  stats,
+  upcoming,
+  now,
+  onNew,
+}: {
+  stats: { total: number; live: number; published: number; draft: number }
+  upcoming: EventDto | undefined
+  now: number
+  onNew: () => void
+}) {
+  const { t, i18n } = useTranslation()
+  const displayName = useAuthStore((s) => s.displayName)
+
+  const hour = new Date().getHours()
+  const greetingKey =
+    hour < 5
+      ? 'events.greetingNight'
+      : hour < 12
+        ? 'events.greetingMorning'
+        : hour < 17
+          ? 'events.greetingDay'
+          : 'events.greetingEvening'
+
+  const upcomingCount = stats.total - stats.draft
+  const summary =
+    stats.total === 0
+      ? t('events.summaryEmpty')
+      : stats.live > 0
+        ? t('events.summaryHasLive', { live: stats.live, upcoming: upcomingCount })
+        : upcomingCount > 0
+          ? t('events.summaryUpcoming', { upcoming: upcomingCount })
+          : t('events.summaryOnlyPast')
+
+  return (
+    <div className="fade-up relative overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/40 p-5 backdrop-blur sm:p-6">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-16 bottom-[-4rem] h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-12 top-0 h-px"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
+      />
+
+      <div className="relative grid items-center gap-5 lg:grid-cols-[1fr_auto]">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            {new Date().toLocaleDateString(i18n.language, { weekday: 'long', day: '2-digit', month: 'long' })}
+          </p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <span className="bg-gradient-to-r from-white via-indigo-100 to-violet-200 bg-clip-text text-transparent">
+              {t(greetingKey)}
+            </span>
+            {displayName && (
+              <>
+                <span className="text-slate-500">,</span>{' '}
+                <span className="text-white">{displayName.split(' ')[0]}</span>
+              </>
+            )}
+            <span className="ml-1 inline-block animate-pulse-slow">👋</span>
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-300/90">{summary}</p>
+        </div>
+
+        <div className="lg:w-[360px]">
+          {upcoming ? <NextEventCountdown ev={upcoming} now={now} /> : <BigCreateCTA onNew={onNew} />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===================== NextEventCountdown =====================
+function NextEventCountdown({ ev, now }: { ev: EventDto; now: number }) {
+  const { t, i18n } = useTranslation()
+  const start = new Date(ev.startsAt).getTime()
+  const end = new Date(ev.endsAt).getTime()
+  const isLive = now >= start && now <= end
+  const diff = isLive ? end - now : start - now
+  const days = Math.floor(diff / 86_400_000)
+  const hours = Math.floor((diff / 3_600_000) % 24)
+  const minutes = Math.floor((diff / 60_000) % 60)
+  const pretty = prettifyEventName(ev.name)
+  const display = pretty.isAuto ? t('dashboard.untitled') : pretty.display
+
+  return (
+    <Link
+      to={`/events/${ev.id}`}
+      className="group relative block overflow-hidden rounded-xl border border-slate-800/80 bg-slate-950/50 p-4 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:shadow-2xl hover:shadow-indigo-500/10"
+    >
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-indigo-500/15 blur-2xl transition group-hover:bg-violet-500/25" />
+      <div className="relative flex items-center justify-between">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {isLive ? t('events.happeningNow') : t('events.nextEvent')}
+        </p>
+        {isLive && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </span>
+            LIVE
+          </span>
+        )}
+      </div>
+      <p className="relative mt-1 truncate text-base font-semibold text-white group-hover:text-indigo-200">{display}</p>
+      <p className="relative mt-0.5 text-[11px] text-slate-400">
+        {new Date(ev.startsAt).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' })}
+      </p>
+      {!isLive && (
+        <div className="relative mt-3 flex gap-2">
+          <CountdownTile value={days} label={t('dashboard.days')} />
+          <CountdownTile value={hours} label={t('dashboard.hours')} />
+          <CountdownTile value={minutes} label={t('dashboard.minutes')} />
+        </div>
+      )}
+    </Link>
+  )
+}
+
+function CountdownTile({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center rounded-lg border border-slate-800/80 bg-slate-900/60 py-1.5">
+      <span className="text-lg font-bold tabular-nums text-white">{String(Math.max(0, value)).padStart(2, '0')}</span>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-slate-500">{label}</span>
+    </div>
+  )
+}
+
+// ===================== BigCreateCTA =====================
+function BigCreateCTA({ onNew }: { onNew: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <button
+      onClick={onNew}
+      className="group relative block w-full overflow-hidden rounded-xl border border-indigo-400/30 bg-gradient-to-br from-indigo-500/15 via-violet-500/10 to-fuchsia-500/15 p-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-400/60"
+    >
+      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-indigo-500/20 blur-2xl transition group-hover:bg-violet-500/30" />
+      <div className="relative flex items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-violet-500/30">
+          <Icon name="plus" className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white">{t('events.new')}</p>
+          <p className="text-[11px] text-slate-300/90">{t('events.summaryEmpty')}</p>
+        </div>
+        <svg viewBox="0 0 24 24" className="ml-auto h-4 w-4 text-indigo-200 transition group-hover:translate-x-1" fill="none" aria-hidden>
+          <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    </button>
+  )
+}
+
+// ===================== AnimatedCount =====================
+function AnimatedCount({ value, durationMs = 900 }: { value: number; durationMs?: number }) {
+  const [display, setDisplay] = useState(value)
+  const startRef = useRef<{ ts: number; from: number; to: number } | null>(null)
+  const seenRef = useRef(value)
+
+  useEffect(() => {
+    if (seenRef.current === value) return
+    startRef.current = { ts: performance.now(), from: seenRef.current, to: value }
+    seenRef.current = value
+    let raf = 0
+    const tick = () => {
+      const s = startRef.current
+      if (!s) return
+      const elapsed = performance.now() - s.ts
+      const t = Math.min(1, elapsed / durationMs)
+      const eased = 1 - Math.pow(1 - t, 3)
+      const current = Math.round(s.from + (s.to - s.from) * eased)
+      setDisplay(current)
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, durationMs])
+
+  return <>{display}</>
 }
