@@ -109,14 +109,25 @@ export function PublicEventPage() {
     startsAt: event.data?.startsAt,
   }
 
-  // Build dynamic anchor links from blocks that have a title in the current
-  // language. Filters out structural blocks (spacer) and hidden ones.
+  // Build dynamic anchor links. A block is included when:
+  //  - it's visible
+  //  - settings.navShow === true (default true for sectional blocks,
+  //    default false for hero/spacer — the editor exposes a toggle)
+  //  - it has SOMETHING to label it (settings.navLabel override, else title,
+  //    else falls back to a sensible block-type label)
   const navItems = blocks
     .filter((b) => b.visible !== false && b.type !== 'spacer')
     .map((b) => {
-      const title = (b.content?.[lang]?.title ?? b.content?.pl?.title ?? '').trim()
-      if (!title) return null
-      return { id: b.id, label: title }
+      const settings = (b.settings ?? {}) as Record<string, unknown>
+      const defaultInNav = b.type !== 'hero'
+      const inNav = settings.navShow === undefined ? defaultInNav : settings.navShow === true
+      if (!inNav) return null
+      const labelOverride = (settings.navLabel as string | undefined)?.trim()
+      const titleFromContent = (b.content?.[lang]?.title ?? b.content?.pl?.title ?? '').trim()
+      const fallback = blockTypeFallbackLabel(b.type, lang)
+      const label = labelOverride || titleFromContent || fallback
+      if (!label) return null
+      return { id: b.id, label }
     })
     .filter((x): x is { id: string; label: string } => x !== null)
 
@@ -154,6 +165,29 @@ export function PublicEventPage() {
       </footer>
     </div>
   )
+}
+
+// Sensible fallback labels for menu items when the block has no title yet.
+function blockTypeFallbackLabel(type: string, lang: 'pl' | 'en'): string {
+  const map: Record<string, [string, string]> = {
+    description: ['O wydarzeniu', 'About'],
+    agenda: ['Agenda', 'Agenda'],
+    map: ['Lokalizacja', 'Location'],
+    gallery: ['Galeria', 'Gallery'],
+    countdown: ['Odliczanie', 'Countdown'],
+    faq: ['FAQ', 'FAQ'],
+    team: ['Zespół', 'Team'],
+    video: ['Wideo', 'Video'],
+    sponsors: ['Partnerzy', 'Sponsors'],
+    cta: ['Dołącz', 'Join'],
+    stats: ['Liczby', 'Stats'],
+    features: ['Co Cię czeka', 'Features'],
+    testimonial: ['Opinia', 'Testimonial'],
+    split: ['Szczegóły', 'Details'],
+  }
+  const pair = map[type]
+  if (!pair) return ''
+  return lang === 'en' ? pair[1] : pair[0]
 }
 
 /**

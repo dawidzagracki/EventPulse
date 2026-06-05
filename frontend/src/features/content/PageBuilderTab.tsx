@@ -603,6 +603,19 @@ function LayersPanel({
               >
                 <span className="text-base leading-none">{blockIcon(b.type)}</span>
                 <span className="truncate flex-1">{blockLabel(b.type, lang)}</span>
+                {(() => {
+                  const settings = (b.settings ?? {}) as Record<string, unknown>
+                  const defaultInNav = b.type !== 'hero' && b.type !== 'spacer'
+                  const inNav = settings.navShow === undefined ? defaultInNav : settings.navShow === true
+                  return inNav ? (
+                    <span
+                      title="W menu na górze strony"
+                      className="shrink-0 text-[10px] leading-none text-indigo-300"
+                    >
+                      🧭
+                    </span>
+                  ) : null
+                })()}
                 <div className="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
                   <button
                     onClick={(e) => {
@@ -1059,7 +1072,15 @@ function PropertyPanel({
         {tab === 'style' && (
           <StyleTab block={block} schema={schema} styles={styles} branding={branding} onStyle={onStyleChange} />
         )}
-        {tab === 'advanced' && <AdvancedTab styles={styles} blockId={block.id} onStyle={onStyleChange} />}
+        {tab === 'advanced' && (
+          <AdvancedTab
+            block={block}
+            styles={styles}
+            blockId={block.id}
+            onStyle={onStyleChange}
+            onSetting={onSettingChange}
+          />
+        )}
       </div>
     </Card>
   )
@@ -1407,19 +1428,78 @@ function StyleTab({
 
 // ===================== AdvancedTab =====================
 function AdvancedTab({
+  block,
   styles,
   blockId,
   onStyle,
+  onSetting,
 }: {
+  block: PageBlock
   styles: Record<string, unknown>
   blockId: string
   onStyle: (id: string, k: string, v: unknown) => void
+  onSetting: (id: string, k: string, v: unknown) => void
 }) {
   const { t } = useTranslation()
   const anim = (styles.animation as string) ?? 'none'
+  const settings = (block.settings ?? {}) as Record<string, unknown>
+  // Default: include in nav for sectional blocks (not hero, not spacer).
+  const defaultInNav = block.type !== 'hero' && block.type !== 'spacer'
+  const inNav = settings.navShow === undefined ? defaultInNav : settings.navShow === true
+  const navLabel = (settings.navLabel as string) ?? ''
 
   return (
     <div className="space-y-3">
+      {/* Navigation menu controls */}
+      <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+          Menu nawigacji
+        </p>
+        <button
+          type="button"
+          onClick={() => onSetting(blockId, 'navShow', !inNav)}
+          className={`flex w-full items-center gap-3 rounded-lg border p-2.5 text-left transition ${
+            inNav ? 'border-indigo-400/40 bg-indigo-500/10' : 'border-slate-800/70 bg-slate-900/40 hover:border-indigo-400/30'
+          }`}
+        >
+          <span
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+              inNav ? 'bg-indigo-500/30 text-indigo-200' : 'bg-slate-950/60 text-slate-400'
+            }`}
+          >
+            🧭
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">Pokaż w menu na górze strony</p>
+            <p className="text-[11px] text-slate-400">
+              {inNav ? 'Pojawi się jako klikalny link w pasku nawigacji' : 'Ukryty z menu'}
+            </p>
+          </div>
+          <span
+            className={`relative inline-block h-5 w-9 shrink-0 rounded-full transition ${
+              inNav ? 'bg-indigo-500' : 'bg-slate-700'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 inline-block h-4 w-4 rounded-full bg-white transition ${
+                inNav ? 'left-[18px]' : 'left-0.5'
+              }`}
+            />
+          </span>
+        </button>
+        {inNav && (
+          <div className="mt-2">
+            <Field label="Etykieta w menu (opcjonalnie)">
+              <Input
+                value={navLabel}
+                onChange={(e) => onSetting(blockId, 'navLabel', e.target.value)}
+                placeholder="domyślnie: tytuł bloku"
+              />
+            </Field>
+          </div>
+        )}
+      </div>
+
       <Field label={t('page.animation')}>
         <Select value={anim} onChange={(e) => onStyle(blockId, 'animation', e.target.value)}>
           <option value="none">{t('page.animNone')}</option>
