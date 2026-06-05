@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../stores/authStore'
@@ -77,47 +77,42 @@ function TopBarShell({
 
   return (
     <div className="min-h-screen">
-      {/* Top bar — sticky, slim, glassy */}
-      <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-md">
+      {/* Top bar — sticky, glassmorphic, cohesive */}
+      <header className="sticky top-0 z-30 backdrop-blur-xl">
+        {/* Glass layer */}
+        <div className="pointer-events-none absolute inset-0 -z-10 border-b border-white/5 bg-slate-950/55" />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-12 top-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)' }}
+        />
+
+        {/* Row 1: brand + actions + user menu */}
         <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-6 py-3">
           {/* Brand */}
-          <Link to="/events" className="flex items-center gap-2.5 outline-none">
+          <Link to="/events" className="flex items-center gap-2.5 outline-none transition hover:opacity-90">
             <Logo size={32} />
             <span className="hidden bg-gradient-to-r from-indigo-300 via-violet-300 to-fuchsia-300 bg-clip-text text-lg font-extrabold tracking-tight text-transparent sm:inline">
               Event<span className="font-light italic">Pulse</span>
             </span>
           </Link>
 
-          <span className="mx-1 hidden h-6 w-px bg-slate-800/80 sm:block" />
-
-          {/* User pill (left of center area) */}
-          <div className="hidden items-center gap-2 rounded-full border border-slate-800/80 bg-slate-900/60 py-1 pl-1 pr-3 md:inline-flex">
-            <span className={`flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br ${badge.tone} text-[11px] font-semibold text-white`}>
-              {(displayName ?? '?').slice(0, 1).toUpperCase()}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium leading-tight text-white">{displayName}</p>
-              <p className="text-[10px] leading-tight text-slate-500">{badge.label}</p>
-            </div>
-          </div>
-
+          {/* Spacer */}
           <span className="ml-auto" />
 
-          <LanguageSwitcher />
-          <button
-            onClick={handleLogout}
-            className="rounded-md border border-slate-700/60 bg-slate-800/60 p-1.5 text-slate-300 hover:border-rose-400/40 hover:text-rose-300"
-            aria-label={t('common.logout')}
-            title={t('common.logout')}
-          >
-            <Icon name="logout" className="h-4 w-4" />
-          </button>
+          {/* Single user menu — avatar + name + chevron, click opens dropdown */}
+          <UserMenu
+            displayName={displayName}
+            badge={badge}
+            onLogout={handleLogout}
+            logoutLabel={t('common.logout')}
+          />
         </div>
 
-        {/* Page title row */}
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-start justify-between gap-4 px-6 pb-5">
+        {/* Row 2: page title + actions */}
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-end justify-between gap-4 border-t border-slate-800/40 px-6 py-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">{title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-2">{actions}</div>
@@ -125,6 +120,121 @@ function TopBarShell({
       </header>
 
       <div className="mx-auto max-w-[1600px] px-6 py-6">{children}</div>
+    </div>
+  )
+}
+
+// ============== Compact user menu (avatar dropdown) ==============
+function UserMenu({
+  displayName,
+  badge,
+  onLogout,
+  logoutLabel,
+}: {
+  displayName: string | null
+  badge: { label: string; tone: string }
+  onLogout: () => void
+  logoutLabel: string
+}) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // Close on outside click + Escape.
+  useEffect(() => {
+    if (!open) return
+    function onClick(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [open])
+
+  return (
+    <div ref={wrapRef} className="relative">
+      {/* Trigger — glassy pill */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`group inline-flex items-center gap-2 rounded-full border bg-slate-900/60 py-1 pl-1 pr-3 backdrop-blur transition ${
+          open ? 'border-indigo-400/40 bg-slate-900/80' : 'border-slate-800/80 hover:border-indigo-400/30'
+        }`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <span
+          className={`relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br ${badge.tone} text-[11px] font-semibold text-white`}
+        >
+          {(displayName ?? '?').slice(0, 1).toUpperCase()}
+          {/* Subtle online ring */}
+          <span
+            className="pointer-events-none absolute -inset-0.5 rounded-full opacity-70"
+            style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)' }}
+          />
+        </span>
+        <span className="hidden text-sm font-medium leading-none text-white sm:inline">{displayName ?? '—'}</span>
+        <svg
+          viewBox="0 0 24 24"
+          className={`h-3 w-3 text-slate-400 transition ${open ? 'rotate-180' : ''}`}
+          fill="currentColor"
+          aria-hidden
+        >
+          <path d="M7 10l5 5 5-5z" />
+        </svg>
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-6 top-0 h-px"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)' }}
+          />
+
+          {/* Identity header */}
+          <div className="flex items-center gap-3 border-b border-slate-800/80 px-4 py-3">
+            <span
+              className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${badge.tone} text-sm font-semibold text-white shadow-lg`}
+            >
+              {(displayName ?? '?').slice(0, 1).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{displayName ?? '—'}</p>
+              <p className="text-[11px] text-slate-400">{badge.label}</p>
+            </div>
+          </div>
+
+          {/* Language row */}
+          <div className="px-4 py-3">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Język</p>
+            <LanguageSwitcher />
+          </div>
+
+          {/* Logout */}
+          <div className="border-t border-slate-800/80 p-2">
+            <button
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                onLogout()
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-rose-300 transition hover:bg-rose-500/10 hover:text-rose-200"
+            >
+              <Icon name="logout" className="h-4 w-4" />
+              {logoutLabel}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
