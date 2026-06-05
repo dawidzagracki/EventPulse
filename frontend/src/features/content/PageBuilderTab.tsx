@@ -435,7 +435,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       </Card>
 
       {/* MAIN 3-COLUMN LAYOUT: Layers + Canvas + Properties */}
-      <div className="grid items-start gap-3 lg:grid-cols-[240px_1fr_320px]">
+      <div className="grid items-start gap-3 lg:grid-cols-[288px_1fr_320px]">
         {/* ─── LEFT: Layers + Palette + Versions ─── */}
         <div className="flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           <LayersPanel
@@ -959,7 +959,7 @@ function PalettePanel({ lang, onAdd }: { lang: 'pl' | 'en'; onAdd: (type: string
                   {lang === 'en' ? meta.titleEn : meta.titlePl}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {types.map((type) => (
                   <button
                     key={type}
@@ -969,11 +969,11 @@ function PalettePanel({ lang, onAdd }: { lang: 'pl' | 'en'; onAdd: (type: string
                       e.dataTransfer.effectAllowed = 'copy'
                     }}
                     onClick={() => onAdd(type)}
-                    className="group flex cursor-grab flex-col items-center gap-1 rounded-lg border border-slate-800 bg-slate-950/60 px-1 py-2.5 text-[10px] text-slate-300 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900 hover:text-white"
+                    className="group flex min-h-[68px] cursor-grab flex-col items-center justify-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950/60 px-1.5 py-2.5 text-[11px] leading-tight text-slate-300 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900 hover:text-white"
                     title={blockLabel(type, lang)}
                   >
-                    <span className="text-lg leading-none">{blockIcon(type)}</span>
-                    <span className="text-center leading-tight">{blockLabel(type, lang)}</span>
+                    <span className="text-xl leading-none">{blockIcon(type)}</span>
+                    <span className="text-center">{blockLabel(type, lang)}</span>
                   </button>
                 ))}
               </div>
