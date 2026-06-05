@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEvent } from './api'
 import { prettifyEventName } from './eventName'
+import { OverviewTab } from './OverviewTab'
 import { ParticipantsTab } from '../participants/ParticipantsTab'
 import { AgendaTab } from '../agenda/AgendaTab'
 import { PageBuilderTab } from '../content/PageBuilderTab'
@@ -12,7 +13,7 @@ import { EngagementTab } from '../engagement/EngagementTab'
 import { GalleryTab } from '../gallery/GalleryTab'
 import { AuditTab } from '../audit/AuditTab'
 import { AppShell, type NavItem } from '../../components/AppShell'
-import { Badge, Card } from '../../components/ui'
+import { Badge } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { EventStatus, EventStatusName } from '../../types/api'
 
@@ -95,26 +96,7 @@ export function EventDetailPage() {
         <p className="text-slate-500">{t('common.loading')}</p>
       ) : (
         <>
-          {tab === 'overview' && (
-            <Card className="grid gap-3 text-sm sm:grid-cols-2">
-              <p>
-                <span className="text-slate-500">{t('events.starts')}:</span>{' '}
-                <span className="text-slate-100">{new Date(event.startsAt).toLocaleString()}</span>
-              </p>
-              <p>
-                <span className="text-slate-500">{t('events.ends')}:</span>{' '}
-                <span className="text-slate-100">{new Date(event.endsAt).toLocaleString()}</span>
-              </p>
-              <p>
-                <span className="text-slate-500">{t('events.location')}:</span>{' '}
-                <span className="text-slate-100">{event.location ?? '—'}</span>
-              </p>
-              <p>
-                <span className="text-slate-500">{t('events.clientEmail')}:</span>{' '}
-                <span className="text-slate-100">{event.clientEmail ?? '—'}</span>
-              </p>
-            </Card>
-          )}
+          {tab === 'overview' && <OverviewTab eventId={eventId} />}
           {tab === 'participants' && <ParticipantsTab eventId={eventId} />}
           {tab === 'agenda' && <AgendaTab eventId={eventId} />}
           {tab === 'page' && <PageBuilderTab eventId={eventId} />}
