@@ -7,6 +7,8 @@ export interface QueuedScan {
   kind: number
   occurredAt: string
   online: boolean
+  /** Optional station label (e.g. "WEJŚCIE", "BAR") so scans can be attributed per post. */
+  stationCode?: string | null
 }
 
 const DB_NAME = 'eventpulse'

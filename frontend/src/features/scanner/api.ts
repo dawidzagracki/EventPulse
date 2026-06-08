@@ -2,11 +2,25 @@ import { api } from '../../lib/api'
 import { allScans, removeScan } from '../../lib/scanQueue'
 import type { BatchScanResult } from '../../types/api'
 
+// Serialize flushes so the periodic background sync and an explicit per-scan
+// flush never run concurrently (which could otherwise "steal" the item a
+// caller wants to report on). Idempotency makes double-send harmless, but the
+// lock guarantees the per-scan flush reads its own result.
+let flushing: Promise<BatchScanResult | null> | null = null
+
 /**
  * Sends all queued scans for an event to the idempotent batch endpoint and clears the ones the
  * server resolved. On a network error nothing is removed, so the queue survives until back online.
  */
-export async function flushQueue(eventId: string): Promise<BatchScanResult | null> {
+export function flushQueue(eventId: string): Promise<BatchScanResult | null> {
+  if (flushing) return flushing
+  flushing = flushQueueInner(eventId).finally(() => {
+    flushing = null
+  })
+  return flushing
+}
+
+async function flushQueueInner(eventId: string): Promise<BatchScanResult | null> {
   const scans = (await allScans()).filter((s) => s.eventId === eventId)
   if (scans.length === 0) {
     return null
@@ -18,7 +32,7 @@ export async function flushQueue(eventId: string): Promise<BatchScanResult | nul
       participantToken: s.participantToken,
       kind: s.kind,
       occurredAt: s.occurredAt,
-      stationCode: null,
+      stationCode: s.stationCode ?? null,
       online: s.online,
     })),
   })

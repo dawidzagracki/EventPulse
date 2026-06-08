@@ -255,11 +255,23 @@ export interface DashboardData {
   stations: StationActivity[]
 }
 
+export interface ScanResultItem {
+  clientId: string
+  status: 'accepted' | 'duplicate' | 'notfound' | string
+  name?: string | null
+  participantStatus?: number | null
+  tableName?: string | null
+  roomNumber?: string | null
+  dietary?: string | null
+  alreadyCheckedIn?: boolean
+  previousAt?: string | null
+}
+
 export interface BatchScanResult {
   accepted: number
   duplicates: number
   notFound: number
-  items: { clientId: string; status: string }[]
+  items: ScanResultItem[]
 }
 
 export interface ContestDto {

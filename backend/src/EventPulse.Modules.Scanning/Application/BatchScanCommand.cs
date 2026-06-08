@@ -17,7 +17,16 @@ public sealed record ScanInput(
 
 public sealed record BatchScanCommand(Guid EventId, IReadOnlyList<ScanInput> Items) : IRequest<BatchScanResult>;
 
-public sealed record ScanResultItem(Guid ClientId, string Status);
+public sealed record ScanResultItem(
+    Guid ClientId,
+    string Status,
+    string? Name = null,
+    int? ParticipantStatus = null,
+    string? TableName = null,
+    string? RoomNumber = null,
+    string? Dietary = null,
+    bool AlreadyCheckedIn = false,
+    DateTimeOffset? PreviousAt = null);
 
 public sealed record BatchScanResult(int Accepted, int Duplicates, int NotFound, IReadOnlyList<ScanResultItem> Items);
 
@@ -59,6 +68,11 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
                 continue;
             }
 
+            // Capture the prior state BEFORE mutating, so the operator can be warned
+            // about re-entries ("already checked in at 17:32").
+            var alreadyCheckedIn = item.Kind == ScanKind.CheckIn && participant.CheckedInAt is not null;
+            var previousAt = item.Kind == ScanKind.CheckOut ? participant.CheckedOutAt : participant.CheckedInAt;
+
             db.Set<ScanEvent>().Add(new ScanEvent
             {
                 EventId = request.EventId,
@@ -73,7 +87,16 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
             ApplyToParticipant(participant, item);
 
             accepted++;
-            results.Add(new ScanResultItem(item.ClientId, "accepted"));
+            results.Add(new ScanResultItem(
+                item.ClientId,
+                "accepted",
+                Name: $"{participant.FirstName} {participant.LastName}".Trim(),
+                ParticipantStatus: (int)participant.Status,
+                TableName: participant.TableName,
+                RoomNumber: participant.RoomNumber,
+                Dietary: participant.DietaryPreferences,
+                AlreadyCheckedIn: alreadyCheckedIn,
+                PreviousAt: previousAt));
         }
 
         if (accepted > 0)
