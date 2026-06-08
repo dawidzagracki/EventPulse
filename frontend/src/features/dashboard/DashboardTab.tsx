@@ -8,6 +8,7 @@ import { Card } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
 import { useEvent, useUpdateEvent } from '../events/api'
 import { prettifyEventName } from '../events/eventName'
+import { useAuthStore } from '../../stores/authStore'
 import { EventStatus, type DashboardData, type EventDto } from '../../types/api'
 
 interface FeedbackSummary {
@@ -117,6 +118,9 @@ export function DashboardTab({ eventId }: { eventId: string }) {
 
   return (
     <div className="space-y-5">
+      {/* Client welcome stripe (only for the Client role) */}
+      <ClientWelcomeStripe eventSlug={event?.slug ?? null} />
+
       {/* HERO */}
       <HeroPanel
         eventId={eventId}
@@ -285,6 +289,60 @@ export function DashboardTab({ eventId }: { eventId: string }) {
             )}
           </Card>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ===================== Client welcome stripe =====================
+// Friendly orientation banner shown only to Client-role users. Dismissible
+// for the day (localStorage), with a quick link to the public page.
+function ClientWelcomeStripe({ eventSlug }: { eventSlug: string | null }) {
+  const { t } = useTranslation()
+  const principalType = useAuthStore((s) => s.principalType)
+  const displayName = useAuthStore((s) => s.displayName)
+  const todayKey = `ep.client.welcome.${new Date().toISOString().slice(0, 10)}`
+  const [dismissed, setDismissed] = useState(() => localStorage.getItem(todayKey) === '1')
+
+  if (principalType !== 'Client' || dismissed) return null
+
+  const rawFirst = displayName?.split(' ')[0] ?? ''
+  const firstName = rawFirst ? `, ${rawFirst}` : ''
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-sky-400/30 bg-gradient-to-r from-sky-500/15 via-cyan-500/10 to-transparent p-4 backdrop-blur">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" />
+      <div className="relative flex flex-wrap items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/30">
+          👋
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-white">
+            {t('dashboard.clientWelcomeTitle', { name: firstName })}
+          </p>
+          <p className="text-xs text-slate-300/90">{t('dashboard.clientWelcomeBody')}</p>
+        </div>
+        {eventSlug && (
+          <a
+            href={`/public/events/${eventSlug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/30 transition hover:opacity-95"
+          >
+            <Icon name="externalLink" className="h-3.5 w-3.5" />
+            {t('eventDetail.openPublic')}
+          </a>
+        )}
+        <button
+          onClick={() => {
+            localStorage.setItem(todayKey, '1')
+            setDismissed(true)
+          }}
+          className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-800/60 hover:text-white"
+          aria-label={t('common.cancel')}
+        >
+          ✕
+        </button>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEvents } from './api'
 import { SmartEventForm } from './SmartEventForm'
@@ -200,9 +200,16 @@ function MiniStat({ label, value, accent, icon }: MiniStatProps) {
 export function EventsListPage() {
   const { t, i18n } = useTranslation()
   const { data: events, isLoading } = useEvents()
+  const principalType = useAuthStore((s) => s.principalType)
   const [showForm, setShowForm] = useState(false)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterKey>('all')
+
+  // A Client is assigned to exactly one event — skip the list and drop them
+  // straight onto their event's dashboard. Computed here, rendered after all
+  // hooks below to respect the rules of hooks.
+  const clientRedirectId =
+    principalType === 'Client' && events && events.length === 1 ? events[0].id : null
 
   const stats = useMemo(() => {
     const list = events ?? []
@@ -243,6 +250,10 @@ export function EventsListPage() {
     pst.sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
     return { upcoming: upc, past: pst }
   }, [filtered, now])
+
+  if (clientRedirectId) {
+    return <Navigate to={`/events/${clientRedirectId}`} replace />
+  }
 
   const nav: NavItem[] = [{ id: 'events', label: t('events.title'), icon: 'calendar', to: '/events', active: true }]
 

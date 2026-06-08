@@ -353,6 +353,8 @@
     "noFeedback": "No ratings yet",
     "ratings": "ratings",
     "untitled": "Untitled event",
+    "clientWelcomeTitle": "Welcome{{name}}! Here's your event at a glance",
+    "clientWelcomeBody": "Track attendance and progress live. Preview the public page or browse your participants.",
     "rename": "Rename",
     "renamePrompt": "New event name",
     "save": "Save"

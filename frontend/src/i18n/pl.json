@@ -353,6 +353,8 @@
     "noFeedback": "Brak ocen",
     "ratings": "ocen",
     "untitled": "Bez nazwy",
+    "clientWelcomeTitle": "Witaj{{name}}! Oto stan Twojego wydarzenia",
+    "clientWelcomeBody": "Tu na bieżąco widzisz frekwencję i postępy. Sprawdź jak wygląda strona publiczna lub przejrzyj uczestników.",
     "rename": "Zmień nazwę",
     "renamePrompt": "Podaj nową nazwę wydarzenia",
     "save": "Zapisz"

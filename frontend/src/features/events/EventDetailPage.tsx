@@ -15,7 +15,12 @@ import { AuditTab } from '../audit/AuditTab'
 import { AppShell, type NavItem } from '../../components/AppShell'
 import { Badge } from '../../components/ui'
 import { Icon } from '../../components/Icon'
+import { useAuthStore } from '../../stores/authStore'
 import { EventStatus, EventStatusName } from '../../types/api'
+
+// Clients get a focused subset — the tabs they actually care about when
+// reviewing their event. Agency staff see everything.
+const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'page', 'participants', 'gallery']
 
 type Tab =
   | 'dashboard'
@@ -47,21 +52,31 @@ export function EventDetailPage() {
   const { eventId = '' } = useParams()
   const { t } = useTranslation()
   const { data: event, isLoading } = useEvent(eventId)
+  const principalType = useAuthStore((s) => s.principalType)
+  const isClient = principalType === 'Client'
   const [tab, setTab] = useState<Tab>('dashboard')
 
-  const nav: NavItem[] = (
-    [
-      { id: 'dashboard', label: t('dashboard.title'), icon: 'dashboard' },
-      { id: 'overview', label: t('eventDetail.overview'), icon: 'document' },
-      { id: 'participants', label: t('participants.title'), icon: 'users' },
-      { id: 'agenda', label: t('agenda.title'), icon: 'calendar' },
-      { id: 'page', label: t('page.title'), icon: 'document' },
-      { id: 'logistics', label: t('logistics.title'), icon: 'truck' },
-      { id: 'engagement', label: t('engagement.title'), icon: 'bolt' },
-      { id: 'gallery', label: t('gallery.title'), icon: 'image' },
-      { id: 'audit', label: t('audit.title'), icon: 'shield' },
-    ] as { id: Tab; label: string; icon: NavItem['icon'] }[]
-  ).map((item) => ({ ...item, active: tab === item.id, onClick: () => setTab(item.id) }))
+  const allTabs = [
+    { id: 'dashboard', label: t('dashboard.title'), icon: 'dashboard' },
+    { id: 'overview', label: t('eventDetail.overview'), icon: 'document' },
+    { id: 'participants', label: t('participants.title'), icon: 'users' },
+    { id: 'agenda', label: t('agenda.title'), icon: 'calendar' },
+    { id: 'page', label: t('page.title'), icon: 'document' },
+    { id: 'logistics', label: t('logistics.title'), icon: 'truck' },
+    { id: 'engagement', label: t('engagement.title'), icon: 'bolt' },
+    { id: 'gallery', label: t('gallery.title'), icon: 'image' },
+    { id: 'audit', label: t('audit.title'), icon: 'shield' },
+  ] as { id: Tab; label: string; icon: NavItem['icon'] }[]
+
+  const visibleTabs = isClient ? allTabs.filter((x) => CLIENT_TABS.includes(x.id)) : allTabs
+  // Guard against a stale/hidden tab (e.g. client lands with a non-client tab).
+  const activeTab = visibleTabs.some((x) => x.id === tab) ? tab : 'dashboard'
+
+  const nav: NavItem[] = visibleTabs.map((item) => ({
+    ...item,
+    active: activeTab === item.id,
+    onClick: () => setTab(item.id),
+  }))
 
   const actions = event ? (
     <>
@@ -96,15 +111,15 @@ export function EventDetailPage() {
         <p className="text-slate-500">{t('common.loading')}</p>
       ) : (
         <>
-          {tab === 'overview' && <OverviewTab eventId={eventId} />}
-          {tab === 'participants' && <ParticipantsTab eventId={eventId} />}
-          {tab === 'agenda' && <AgendaTab eventId={eventId} />}
-          {tab === 'page' && <PageBuilderTab eventId={eventId} />}
-          {tab === 'logistics' && <LogisticsTab eventId={eventId} />}
-          {tab === 'engagement' && <EngagementTab eventId={eventId} />}
-          {tab === 'gallery' && <GalleryTab eventId={eventId} />}
-          {tab === 'dashboard' && <DashboardTab eventId={eventId} />}
-          {tab === 'audit' && <AuditTab />}
+          {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
+          {activeTab === 'participants' && <ParticipantsTab eventId={eventId} />}
+          {activeTab === 'agenda' && <AgendaTab eventId={eventId} />}
+          {activeTab === 'page' && <PageBuilderTab eventId={eventId} />}
+          {activeTab === 'logistics' && <LogisticsTab eventId={eventId} />}
+          {activeTab === 'engagement' && <EngagementTab eventId={eventId} />}
+          {activeTab === 'gallery' && <GalleryTab eventId={eventId} />}
+          {activeTab === 'dashboard' && <DashboardTab eventId={eventId} />}
+          {activeTab === 'audit' && <AuditTab />}
         </>
       )}
     </AppShell>
