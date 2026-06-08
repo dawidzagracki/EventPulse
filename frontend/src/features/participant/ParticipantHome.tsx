@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -16,8 +16,14 @@ import { Logo } from '../../components/Logo'
 import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { useMyGallery } from '../gallery/api'
+import { fetchPhotoUrl } from '../gallery/api'
 import { Thumb } from '../gallery/Thumb'
 import { AiAssistantSection } from '../ai/AiAssistantSection'
+
+type Tab = 'agenda' | 'qr' | 'activities' | 'gallery' | 'profile'
+
+// Module-scope clock read keeps component bodies "pure" for the linter.
+const nowMs = () => Date.now()
 
 export function ParticipantHome() {
   const { t } = useTranslation()
@@ -30,52 +36,322 @@ export function ParticipantHome() {
     navigate('/login', { replace: true })
   }
 
+  if (isLoading || !profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-slate-500">{t('common.loading')}</p>
+      </div>
+    )
+  }
+
+  // Hard gate: GDPR consent must be accepted before any personal data is shown.
+  if (!profile.hasAcceptedRodo) {
+    return <RodoGate key={`gate-${profile.id}`} profile={profile} onLogout={handleLogout} />
+  }
+
+  return <ParticipantApp profile={profile} onLogout={handleLogout} />
+}
+
+// ===================== Tabbed app shell =====================
+function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
+  const { t } = useTranslation()
+  const [tab, setTab] = useState<Tab>('agenda')
+
+  const tabs: { id: Tab; label: string; emoji: string }[] = [
+    { id: 'agenda', label: t('participant.tabAgenda'), emoji: '📅' },
+    { id: 'activities', label: t('participant.tabActivities'), emoji: '🎯' },
+    { id: 'qr', label: t('participant.tabQr'), emoji: '🎟' },
+    { id: 'gallery', label: t('participant.tabGallery'), emoji: '📸' },
+    { id: 'profile', label: t('participant.tabProfile'), emoji: '👤' },
+  ]
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24">
+      {/* Slim header */}
       <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <Logo size={28} />
+          <Logo size={26} />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <Button variant="ghost" onClick={handleLogout}>
+            <Button variant="ghost" onClick={onLogout}>
               {t('common.logout')}
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl space-y-5 px-4 py-6">
-        {isLoading || !profile ? (
-          <p className="text-slate-500">{t('common.loading')}</p>
-        ) : (
-          <>
-            <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-violet-500/20 via-indigo-500/10 to-transparent p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-violet-300/80">{t('dashboard.live')}</p>
-              <h1 className="mt-1 text-2xl font-bold text-white">
-                {t('participant.hello', { name: profile.firstName })}
-              </h1>
-            </div>
-            {/* key forces a fresh form when the profile identity changes */}
+      <main className="mx-auto max-w-2xl px-4 py-5">
+        {tab === 'agenda' && (
+          <div className="space-y-5">
+            <GreetingHero profile={profile} />
+            <AgendaSection />
+          </div>
+        )}
+        {tab === 'activities' && (
+          <div className="space-y-5">
+            <QuizzesSection />
+            <NetworkingSection />
+            <AiAssistantSection />
+            <FeedbackSection />
+          </div>
+        )}
+        {tab === 'qr' && <MyQrScreen profile={profile} />}
+        {tab === 'gallery' && <GallerySection />}
+        {tab === 'profile' && (
+          <div className="space-y-5">
+            <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
+            <LogisticsSection profile={profile} />
             <ConsentsSection key={`consents-${profile.id}`} profile={profile} />
-            {profile.hasAcceptedRodo && (
-              <>
-                <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
-                <LogisticsSection profile={profile} />
-                <AgendaSection />
-                <QuizzesSection />
-                <NetworkingSection />
-                <GallerySection />
-                <AiAssistantSection />
-                <FeedbackSection />
-              </>
-            )}
-          </>
+          </div>
         )}
       </main>
+
+      {/* Bottom nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800/70 bg-slate-950/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-2xl items-stretch">
+          {tabs.map((tb) => {
+            const active = tab === tb.id
+            const isQr = tb.id === 'qr'
+            return (
+              <button
+                key={tb.id}
+                onClick={() => setTab(tb.id)}
+                className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5"
+              >
+                {isQr ? (
+                  <span
+                    className={`-mt-6 flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-lg transition ${
+                      active
+                        ? 'bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-violet-500/40 ring-4 ring-slate-950'
+                        : 'bg-slate-800 text-slate-300 ring-4 ring-slate-950'
+                    }`}
+                  >
+                    {tb.emoji}
+                  </span>
+                ) : (
+                  <span className={`text-lg transition ${active ? 'scale-110' : 'opacity-60'}`}>{tb.emoji}</span>
+                )}
+                <span className={`text-[10px] font-medium ${active ? 'text-indigo-300' : 'text-slate-500'}`}>
+                  {tb.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }
 
+// ===================== Greeting + What's next =====================
+function GreetingHero({ profile }: { profile: MyProfileDto }) {
+  const { t, i18n } = useTranslation()
+  const { data: items } = useMyAgenda()
+  const isEn = (i18n.resolvedLanguage ?? 'pl') === 'en'
+
+  const now = nowMs()
+  const next = (items ?? [])
+    .filter((it) => new Date(it.startsAt).getTime() >= now)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0]
+
+  const seat = profile.tableName || profile.roomNumber
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-gradient-to-br from-violet-500/20 via-indigo-500/10 to-transparent p-5">
+      <p className="text-xs uppercase tracking-[0.2em] text-violet-300/80">{t('dashboard.live')}</p>
+      <h1 className="mt-1 text-2xl font-bold text-white">{t('participant.hello', { name: profile.firstName })}</h1>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {/* What's next */}
+        <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+            {t('participant.whatsNext')}
+          </p>
+          {next ? (
+            <>
+              <p className="mt-1 truncate text-sm font-semibold text-white">{isEn ? next.titleEn : next.titlePl}</p>
+              <p className="text-xs text-slate-400">
+                {new Date(next.startsAt).toLocaleString(i18n.language, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
+                {next.locationName ? ` · ${next.locationName}` : ''}
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-slate-500">{t('participant.noNext')}</p>
+          )}
+        </div>
+
+        {/* Seat */}
+        {seat && (
+          <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+              {t('participant.yourSeat')}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              {profile.tableName && `${t('logistics.table')}: ${profile.tableName}`}
+              {profile.tableName && profile.roomNumber ? ' · ' : ''}
+              {profile.roomNumber && `${t('logistics.room')}: ${profile.roomNumber}`}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ===================== My QR screen =====================
+function MyQrScreen({ profile }: { profile: MyProfileDto }) {
+  const { t } = useTranslation()
+  const [url, setUrl] = useState<string | null>(null)
+  const [bright, setBright] = useState(false)
+
+  useEffect(() => {
+    let revoke: string | null = null
+    let active = true
+    fetchPhotoUrl('/api/me/qr')
+      .then((u) => {
+        if (active) {
+          revoke = u
+          setUrl(u)
+        } else {
+          URL.revokeObjectURL(u)
+        }
+      })
+      .catch(() => {
+        /* keep null → spinner */
+      })
+    return () => {
+      active = false
+      if (revoke) URL.revokeObjectURL(revoke)
+    }
+  }, [])
+
+  return (
+    <div className="flex flex-col items-center pt-2 text-center">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/80">{t('participant.myQrTitle')}</p>
+      <h2 className="mt-1 text-xl font-bold text-white">
+        {profile.firstName} {profile.lastName}
+      </h2>
+      <p className="mt-1 text-sm text-slate-400">{t('participant.myQrHint')}</p>
+
+      <div
+        className={`mt-6 rounded-3xl p-5 shadow-2xl transition-all ${
+          bright ? 'bg-white shadow-white/30' : 'bg-white/95'
+        }`}
+        style={bright ? { boxShadow: '0 0 80px 20px rgba(255,255,255,0.35)' } : undefined}
+      >
+        {url ? (
+          <img src={url} alt="QR" className="h-60 w-60 object-contain sm:h-72 sm:w-72" />
+        ) : (
+          <div className="flex h-60 w-60 items-center justify-center sm:h-72 sm:w-72">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={() => setBright((v) => !v)}
+        className={`mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+          bright
+            ? 'bg-amber-400 text-slate-900 shadow-lg shadow-amber-400/30'
+            : 'border border-slate-700/60 bg-slate-900/60 text-slate-200 hover:border-amber-400/40'
+        }`}
+      >
+        ☀️ {bright ? t('participant.brightenOn') : t('participant.brighten')}
+      </button>
+    </div>
+  )
+}
+
+// ===================== RODO gate (full screen, friendly) =====================
+function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
+  const { t } = useTranslation()
+  const update = useUpdateConsents()
+  const [rodo, setRodo] = useState(profile.hasAcceptedRodo)
+  const [photo, setPhoto] = useState(profile.photoConsent)
+  const [networking, setNetworking] = useState(profile.networkingConsent)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!rodo) return
+    await update.mutateAsync({ rodoAccepted: rodo, photoConsent: photo, networkingConsent: networking })
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-600/25 blur-3xl animate-pulse-slow" />
+        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl animate-pulse-slow [animation-delay:1.5s]" />
+      </div>
+
+      <div className="w-full max-w-md">
+        <div className="mb-5 flex items-center justify-between">
+          <Logo size={32} />
+          <Button variant="ghost" onClick={onLogout}>
+            {t('common.logout')}
+          </Button>
+        </div>
+
+        <Card glow>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-xl text-white shadow-lg shadow-violet-500/30">
+              👋
+            </span>
+            <div>
+              <h1 className="text-lg font-bold text-white">{t('participant.hello', { name: profile.firstName })}</h1>
+              <p className="text-xs text-slate-400">{t('participant.rodoGateLead')}</p>
+            </div>
+          </div>
+
+          <form onSubmit={save} className="space-y-2.5">
+            <ConsentRow checked={rodo} onChange={setRodo} required label={t('participant.rodo')} />
+            <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />
+            <ConsentRow checked={networking} onChange={setNetworking} label={t('participant.networking')} />
+            {!rodo && <p className="px-1 text-[11px] text-amber-300">{t('participant.rodoRequired')}</p>}
+            <Button type="submit" className="mt-2 w-full justify-center" disabled={!rodo || update.isPending}>
+              {t('participant.unlock')}
+            </Button>
+          </form>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function ConsentRow({
+  checked,
+  onChange,
+  label,
+  required,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: string
+  required?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition ${
+        checked ? 'border-indigo-400/40 bg-indigo-500/10' : 'border-slate-800/70 bg-slate-900/40 hover:border-indigo-400/30'
+      }`}
+    >
+      <span
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
+          checked ? 'border-indigo-400 bg-indigo-500 text-white' : 'border-slate-600'
+        }`}
+      >
+        {checked && '✓'}
+      </span>
+      <span className="text-sm text-slate-200">
+        {label}
+        {required && <span className="text-rose-400"> *</span>}
+      </span>
+    </button>
+  )
+}
+
+// ===================== Existing sections (reused) =====================
 function ConsentsSection({ profile }: { profile: MyProfileDto }) {
   const { t } = useTranslation()
   const update = useUpdateConsents()
@@ -91,25 +367,11 @@ function ConsentsSection({ profile }: { profile: MyProfileDto }) {
 
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('participant.consents')}</h2>
-      <form onSubmit={save} className="space-y-2 text-sm">
-        <label className="flex items-start gap-2">
-          <input type="checkbox" checked={rodo} onChange={(e) => setRodo(e.target.checked)} className="mt-1" />
-          <span>{t('participant.rodo')} *</span>
-        </label>
-        <label className="flex items-start gap-2">
-          <input type="checkbox" checked={photo} onChange={(e) => setPhoto(e.target.checked)} className="mt-1" />
-          <span>{t('participant.photo')}</span>
-        </label>
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            checked={networking}
-            onChange={(e) => setNetworking(e.target.checked)}
-            className="mt-1"
-          />
-          <span>{t('participant.networking')}</span>
-        </label>
+      <h2 className="mb-3 font-semibold text-white">{t('participant.consents')}</h2>
+      <form onSubmit={save} className="space-y-2.5">
+        <ConsentRow checked={rodo} onChange={setRodo} required label={t('participant.rodo')} />
+        <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />
+        <ConsentRow checked={networking} onChange={setNetworking} label={t('participant.networking')} />
         <Button type="submit" disabled={!rodo || update.isPending}>
           {t('common.save')}
         </Button>
@@ -146,13 +408,13 @@ function PreferencesSection({ profile }: { profile: MyProfileDto }) {
 
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('participant.preferences')}</h2>
+      <h2 className="mb-3 font-semibold text-white">{t('participant.preferences')}</h2>
       <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
         <Field label={t('participant.language')}>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100"
           >
             <option value="pl">PL</option>
             <option value="en">EN</option>
@@ -164,7 +426,7 @@ function PreferencesSection({ profile }: { profile: MyProfileDto }) {
         <Field label={t('participant.shirt')}>
           <Input value={shirt} onChange={(e) => setShirt(e.target.value)} />
         </Field>
-        <label className="flex items-center gap-2 self-end text-sm">
+        <label className="flex items-center gap-2 self-end text-sm text-slate-200">
           <input type="checkbox" checked={transfer} onChange={(e) => setTransfer(e.target.checked)} />
           {t('participant.transfer')}
         </label>
@@ -204,8 +466,8 @@ function LogisticsSection({ profile }: { profile: MyProfileDto }) {
 
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('logistics.title')}</h2>
-      <div className="space-y-1 text-sm">
+      <h2 className="mb-3 font-semibold text-white">{t('logistics.title')}</h2>
+      <div className="space-y-1 text-sm text-slate-200">
         {profile.tableName && (
           <p>
             <span className="text-slate-500">{t('logistics.table')}:</span> {profile.tableName}
@@ -227,7 +489,7 @@ function LogisticsSection({ profile }: { profile: MyProfileDto }) {
       {transfers && transfers.length > 0 && (
         <ul className="mt-3 space-y-1 text-sm">
           {transfers.map((tr) => (
-            <li key={tr.id} className="rounded-lg border border-slate-100 p-2">
+            <li key={tr.id} className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-2 text-slate-200">
               <span className="font-medium">{tr.name}</span> · {new Date(tr.departureTime).toLocaleString()} ·{' '}
               {tr.meetingPoint}
             </li>
@@ -245,8 +507,6 @@ function QuizzesSection() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [score, setScore] = useState<number | null>(null)
 
-  if (!quizzes || quizzes.length === 0) return null
-
   async function open(quizId: string) {
     setScore(null)
     setAnswers({})
@@ -259,13 +519,22 @@ function QuizzesSection() {
     setScore(result.score)
   }
 
+  if (!quizzes || quizzes.length === 0) {
+    return (
+      <Card>
+        <h2 className="mb-2 font-semibold text-white">{t('engagement.quizzes')}</h2>
+        <p className="text-sm text-slate-500">{t('participant.quizzesEmpty')}</p>
+      </Card>
+    )
+  }
+
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('engagement.quizzes')}</h2>
+      <h2 className="mb-3 font-semibold text-white">{t('engagement.quizzes')}</h2>
       {!take ? (
         <ul className="space-y-1 text-sm">
           {quizzes.map((q) => (
-            <li key={q.id} className="flex items-center justify-between">
+            <li key={q.id} className="flex items-center justify-between text-slate-200">
               <span>{q.title}</span>
               <Button variant="ghost" onClick={() => open(q.id)}>
                 {t('engagement.takeQuiz')}
@@ -275,7 +544,7 @@ function QuizzesSection() {
         </ul>
       ) : score !== null ? (
         <div className="space-y-2">
-          <p className="font-medium">
+          <p className="font-medium text-white">
             {t('engagement.yourScore')}: {score} / {take.questions.length}
           </p>
           <Button variant="ghost" onClick={() => setTake(null)}>
@@ -284,12 +553,12 @@ function QuizzesSection() {
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="font-semibold">{take.title}</p>
+          <p className="font-semibold text-white">{take.title}</p>
           {take.questions.map((q) => (
             <div key={q.id}>
-              <p className="text-sm font-medium">{q.text}</p>
+              <p className="text-sm font-medium text-slate-200">{q.text}</p>
               {q.options.map((opt, i) => (
-                <label key={i} className="flex items-center gap-2 text-sm">
+                <label key={i} className="flex items-center gap-2 text-sm text-slate-300">
                   <input
                     type="radio"
                     name={q.id}
@@ -324,17 +593,17 @@ function NetworkingSection() {
 
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('engagement.networking')}</h2>
+      <h2 className="mb-3 font-semibold text-white">{t('engagement.networking')}</h2>
       <form onSubmit={addContact} className="mb-3 flex gap-2">
         <Input value={token} onChange={(e) => setToken(e.target.value)} placeholder={t('engagement.scanToken')} />
         <Button type="submit" disabled={add.isPending}>
           {t('engagement.addContact')}
         </Button>
       </form>
-      {add.isError && <p className="mb-2 text-sm text-red-600">{t('engagement.contactError')}</p>}
+      {add.isError && <p className="mb-2 text-sm text-red-400">{t('engagement.contactError')}</p>}
       <ul className="space-y-1 text-sm">
         {(contacts ?? []).map((c, i) => (
-          <li key={i} className="flex justify-between">
+          <li key={i} className="flex justify-between text-slate-200">
             <span>{c.name}</span>
             <span className="text-slate-500">{c.email}</span>
           </li>
@@ -349,16 +618,23 @@ function GallerySection() {
   const { t } = useTranslation()
   const { data: photos } = useMyGallery()
 
-  if (!photos || photos.length === 0) return null
-
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('gallery.title')}</h2>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {photos.map((p) => (
-          <Thumb key={p.id} path={`/api/me/gallery/${p.id}/file`} alt={p.fileName} />
-        ))}
-      </div>
+      <h2 className="mb-3 font-semibold text-white">{t('gallery.title')}</h2>
+      {!photos || photos.length === 0 ? (
+        <div className="flex flex-col items-center py-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 text-xl ring-1 ring-inset ring-indigo-400/40">
+            📸
+          </div>
+          <p className="mt-3 text-sm text-slate-400">{t('participant.galleryEmpty')}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {photos.map((p) => (
+            <Thumb key={p.id} path={`/api/me/gallery/${p.id}/file`} alt={p.fileName} />
+          ))}
+        </div>
+      )}
     </Card>
   )
 }
@@ -377,9 +653,9 @@ function FeedbackSection() {
 
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('feedback.title')}</h2>
+      <h2 className="mb-3 font-semibold text-white">{t('feedback.title')}</h2>
       {submit.isSuccess ? (
-        <p className="text-sm text-emerald-700">{t('feedback.thanks')}</p>
+        <p className="text-sm text-emerald-300">{t('feedback.thanks')}</p>
       ) : (
         <form onSubmit={send} className="space-y-3">
           <div className="flex gap-1">
@@ -388,7 +664,7 @@ function FeedbackSection() {
                 key={n}
                 type="button"
                 onClick={() => setRating(n)}
-                className={`text-2xl ${n <= rating ? 'text-amber-400' : 'text-slate-300'}`}
+                className={`text-3xl ${n <= rating ? 'text-amber-400' : 'text-slate-600'}`}
                 aria-label={`${n}`}
               >
                 ★
@@ -412,17 +688,17 @@ function AgendaSection() {
 
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">{t('agenda.title')}</h2>
+      <h2 className="mb-3 font-semibold text-white">{t('agenda.title')}</h2>
       {isLoading ? (
         <p className="text-slate-500">{t('common.loading')}</p>
       ) : (items ?? []).length === 0 ? (
-        <p className="text-slate-500">{t('agenda.empty')}</p>
+        <p className="text-slate-500">{t('participant.agendaSoon')}</p>
       ) : (
         <ul className="space-y-2">
           {(items ?? []).map((item) => (
-            <li key={item.id} className="rounded-lg border border-slate-100 p-3">
-              <p className="font-medium">{isEn ? item.titleEn : item.titlePl}</p>
-              <p className="text-sm text-slate-500">
+            <li key={item.id} className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
+              <p className="font-medium text-white">{isEn ? item.titleEn : item.titlePl}</p>
+              <p className="text-sm text-slate-400">
                 {new Date(item.startsAt).toLocaleString()} · {AgendaItemTypeName[item.type]}
                 {item.locationName ? ` · ${item.locationName}` : ''}
               </p>

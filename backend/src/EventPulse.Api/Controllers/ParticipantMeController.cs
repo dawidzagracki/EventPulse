@@ -7,6 +7,7 @@ using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Logistics;
 using EventPulse.Modules.Participants.Application.Feedback;
 using EventPulse.Modules.Participants.Application.Me;
+using EventPulse.Modules.Participants.Application.Qr;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,15 +21,31 @@ namespace EventPulse.Api.Controllers;
 public sealed class ParticipantMeController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public ParticipantMeController(IMediator mediator) => _mediator = mediator;
+    public ParticipantMeController(IMediator mediator, IConfiguration configuration)
+    {
+        _mediator = mediator;
+        _configuration = configuration;
+    }
 
     private Guid ParticipantId => Guid.Parse(User.FindFirstValue("sub")!);
     private Guid EventId => Guid.Parse(User.FindFirstValue(AppClaims.EventId)!);
 
+    private string ParticipantLinkBaseUrl =>
+        _configuration["App:ParticipantLinkBaseUrl"] ?? "http://localhost:5173/p";
+
     [HttpGet]
     public async Task<ActionResult<MyProfileDto>> Profile(CancellationToken ct)
         => Ok(await _mediator.Send(new GetMyProfileQuery(ParticipantId), ct));
+
+    /// <summary>The logged-in participant's own check-in QR (PNG), to show at the gate.</summary>
+    [HttpGet("qr")]
+    public async Task<IActionResult> MyQr(CancellationToken ct)
+    {
+        var png = await _mediator.Send(new GetParticipantQrQuery(ParticipantId, ParticipantLinkBaseUrl), ct);
+        return File(png, "image/png");
+    }
 
     [HttpPost("consents")]
     public async Task<ActionResult<MyProfileDto>> Consents(ConsentsBody body, CancellationToken ct)
