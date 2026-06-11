@@ -359,7 +359,17 @@
     "checkedOutOk": "WYPUSZCZONO",
     "sentToServer": "Zapisano",
     "totalScans": "Zeskanowano",
-    "lastScanAt": "o {{time}}"
+    "lastScanAt": "o {{time}}",
+    "tutTitle1": "Trzymaj telefon stabilnie",
+    "tutBody1": "Trzymaj urządzenie ok. 20–30 cm od kodu QR. Upewnij się, że światło pada na ekran uczestnika — odbicia spowalniają.",
+    "tutTitle2": "Skanuj szybko",
+    "tutBody2": "Po skanie usłyszysz dźwięk i poczujesz wibrację. Nie musisz nic klikać — kolejka działa offline.",
+    "tutTitle3": "Kolory mają znaczenie",
+    "tutBody3": "🟢 zielony = wpuszczono · 🟡 żółty = już był · 🔴 czerwony = nieznany kod. Sprawdź imię w nagłówku.",
+    "tutNext": "Dalej",
+    "tutBack": "Wstecz",
+    "tutSkip": "Pomiń",
+    "tutDone": "Zaczynam"
   },
   "dashboard": {
     "title": "Dashboard",

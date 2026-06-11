@@ -35,10 +35,16 @@ public sealed class QuizHub : Hub
         if (!Guid.TryParse(quizId, out var id)) return;
         await Groups.AddToGroupAsync(Context.ConnectionId, Group(id));
 
-        var session = _registry.Get(id);
+        var session = await _registry.GetAsync(id);
         if (session is not null && ParticipantId is { } pid)
         {
-            session.RegisterPlayer(pid, await LookupNameAsync(pid));
+            var name = await LookupNameAsync(pid);
+            var (updated, _) = await _registry.MutateAsync(id, s =>
+            {
+                s.RegisterPlayer(pid, name);
+                return 0;
+            });
+            session = updated;
         }
 
         await Clients.Caller.SendAsync("state", new
@@ -54,12 +60,21 @@ public sealed class QuizHub : Hub
     public async Task SubmitAnswer(string quizId, int optionIndex)
     {
         if (!Guid.TryParse(quizId, out var id)) return;
-        var session = _registry.Get(id);
-        if (session is null || ParticipantId is not { } pid) return;
+        if (ParticipantId is not { } pid) return;
 
-        if (session.Answer(pid, optionIndex, DateTimeOffset.UtcNow))
+        try
         {
-            await Clients.Group(Group(id)).SendAsync("answerCount", session.AnsweredCount, session.PlayerCount);
+            var (session, accepted) = await _registry.MutateAsync(id, s =>
+                s.Answer(pid, optionIndex, DateTimeOffset.UtcNow));
+
+            if (accepted)
+            {
+                await Clients.Group(Group(id)).SendAsync("answerCount", session.AnsweredCount, session.PlayerCount);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Session ended between Join and answer — silently drop, the client UI handles "finished".
         }
     }
 

@@ -100,6 +100,32 @@ export function EventDetailPage() {
       </Link>
       {!isClient && (
         <button
+          onClick={async () => {
+            try {
+              const res = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}/api/events/${eventId}/operator-link`,
+                {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${useAuthStore.getState().accessToken}` },
+                },
+              )
+              if (!res.ok) throw new Error()
+              const data = await res.json() as { accessToken: string }
+              const url = `${window.location.origin}/op/${data.accessToken}`
+              await navigator.clipboard.writeText(url)
+              alert(`Link operatora skopiowany do schowka:\n${url}`)
+            } catch {
+              alert('Nie udało się wygenerować linku operatora.')
+            }
+          }}
+          className="inline-flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-300 transition hover:bg-sky-500/20"
+          title="Wygeneruj link dla hostessy / ochrony"
+        >
+          🔗 Link operatora
+        </button>
+      )}
+      {!isClient && (
+        <button
           onClick={handleDelete}
           disabled={deleteEvent.isPending}
           className="inline-flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"

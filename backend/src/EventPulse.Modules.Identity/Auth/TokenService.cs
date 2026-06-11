@@ -22,9 +22,12 @@ public sealed class TokenService : ITokenService
         Guid? eventId = null)
     {
         var now = DateTimeOffset.UtcNow;
-        var expiresAt = principalType == PrincipalType.Participant
-            ? now.AddHours(_options.ParticipantTokenHours)
-            : now.AddMinutes(_options.AccessTokenMinutes);
+        var expiresAt = principalType switch
+        {
+            PrincipalType.Participant => now.AddHours(_options.ParticipantTokenHours),
+            PrincipalType.Operator => now.AddHours(24), // long-lived event-shift token
+            _ => now.AddMinutes(_options.AccessTokenMinutes),
+        };
 
         var claims = new List<Claim>
         {

@@ -11,4 +11,10 @@ public interface ICurrentUser
 
     /// <summary>True when the caller is a Client end-user (not Agency staff).</summary>
     bool IsClient => string.Equals(PrincipalType, "Client", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>True when the caller is a short-lived QR-scanner Operator session.</summary>
+    bool IsOperator => string.Equals(PrincipalType, "Operator", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Event id the token is scoped to (Operator sessions only).</summary>
+    Guid? EventId { get; }
 }

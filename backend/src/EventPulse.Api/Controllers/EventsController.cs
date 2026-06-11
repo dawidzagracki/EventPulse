@@ -4,9 +4,11 @@ using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Events.Application.Update;
 using EventPulse.Modules.Events.Domain;
 using EventPulse.Modules.Identity.Auth;
+using EventPulse.Modules.Identity.Domain;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventPulse.Api.Controllers;
 
@@ -21,6 +23,33 @@ public sealed class EventsController : ControllerBase
     private readonly IMediator _mediator;
 
     public EventsController(IMediator mediator) => _mediator = mediator;
+
+    /// <summary>
+    /// Mints a short-lived JWT scoped to one event for QR-operator hostessy/ochronę.
+    /// Agency-only: the staff member then shares the resulting URL with the operator.
+    /// </summary>
+    [HttpPost("{id:guid}/operator-link")]
+    [Authorize(Policy = AuthPolicies.Agency)]
+    public async Task<ActionResult<OperatorLinkResult>> CreateOperatorLink(
+        Guid id,
+        [FromServices] ITokenService tokens,
+        [FromServices] EventPulse.Infrastructure.Persistence.AppDbContext db,
+        CancellationToken ct)
+    {
+        var ev = await _mediator.Send(new GetEventByIdQuery(id), ct);
+        var tenantId = await db.Set<Event>().Where(e => e.Id == id).Select(e => e.TenantId).FirstAsync(ct);
+        // Operator JWT inherits the event's tenant so scans land in the right tenant scope.
+        var (token, expiresAt) = tokens.CreateAccessToken(
+            principalId: Guid.NewGuid(), // synthetic — operator has no user record
+            principalType: PrincipalType.Operator,
+            tenantId: tenantId,
+            email: $"operator+{id:N}@eventpulse.local",
+            role: null,
+            eventId: id);
+        return Ok(new OperatorLinkResult(token, expiresAt, ev.Id, ev.Name));
+    }
+
+    public sealed record OperatorLinkResult(string AccessToken, DateTimeOffset ExpiresAt, Guid EventId, string EventName);
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<EventDto>>> List(

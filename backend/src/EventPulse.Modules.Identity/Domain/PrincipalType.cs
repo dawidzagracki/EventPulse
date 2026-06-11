@@ -6,4 +6,5 @@ public enum PrincipalType
     Agency = 0,
     Client = 1,
     Participant = 2,
+    Operator = 3,
 }

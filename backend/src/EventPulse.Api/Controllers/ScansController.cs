@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EventPulse.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = AuthPolicies.Agency)]
+[Authorize(Policy = AuthPolicies.ScannerAccess)]
 public sealed class ScansController : ControllerBase
 {
     private readonly IMediator _mediator;

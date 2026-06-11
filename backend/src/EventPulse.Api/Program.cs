@@ -99,6 +99,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthPolicies.Client, p => p.RequireClaim(AppClaims.PrincipalType, "Client"));
     options.AddPolicy(AuthPolicies.Participant, p => p.RequireClaim(AppClaims.PrincipalType, "Participant"));
     options.AddPolicy(AuthPolicies.AgencyOrClient, p => p.RequireClaim(AppClaims.PrincipalType, "Agency", "Client"));
+    options.AddPolicy(AuthPolicies.ScannerAccess, p => p.RequireClaim(AppClaims.PrincipalType, "Agency", "Client", "Operator"));
 });
 
 const string CorsPolicy = "frontend";
@@ -113,11 +114,18 @@ var redis = builder.Configuration.GetConnectionString("Redis");
 if (!string.IsNullOrWhiteSpace(redis))
 {
     signalr.AddStackExchangeRedis(redis); // backplane for horizontal scaling
+    var mux = StackExchange.Redis.ConnectionMultiplexer.Connect(redis);
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(mux);
+    builder.Services.AddSingleton<EventPulse.Api.LiveQuiz.IQuizSessionBackplane, EventPulse.Api.LiveQuiz.RedisQuizSessionBackplane>();
+}
+else
+{
+    builder.Services.AddSingleton<EventPulse.Api.LiveQuiz.IQuizSessionBackplane, EventPulse.Api.LiveQuiz.InMemoryQuizSessionBackplane>();
 }
 
 builder.Services.AddScoped<IEventNotifier, SignalREventNotifier>();
 
-// Live quiz sessions live in-process (singleton registry) and broadcast over QuizHub.
+// Live quiz registry — state goes through the configured backplane (in-memory or Redis).
 builder.Services.AddSingleton<EventPulse.Api.LiveQuiz.LiveQuizRegistry>();
 
 builder.Services.AddRateLimiter(options =>

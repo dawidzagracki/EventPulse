@@ -44,5 +44,6 @@ public sealed class AuthController : ControllerBase
         tenantId = User.FindFirst(AppClaims.TenantId)?.Value,
         principalType = User.FindFirst(AppClaims.PrincipalType)?.Value,
         role = User.FindFirst(AppClaims.Role)?.Value,
+        eventId = User.FindFirst(AppClaims.EventId)?.Value,
     });
 }

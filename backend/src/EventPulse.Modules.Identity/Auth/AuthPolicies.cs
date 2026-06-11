@@ -6,4 +6,7 @@ public static class AuthPolicies
     public const string Client = "Client";
     public const string Participant = "Participant";
     public const string AgencyOrClient = "AgencyOrClient";
+
+    /// <summary>QR-scanner stations: Agency or Client (full admin) plus short-lived Operator sessions.</summary>
+    public const string ScannerAccess = "ScannerAccess";
 }

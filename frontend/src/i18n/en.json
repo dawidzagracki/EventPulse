@@ -359,7 +359,17 @@
     "checkedOutOk": "CHECKED OUT",
     "sentToServer": "Saved",
     "totalScans": "Scanned",
-    "lastScanAt": "at {{time}}"
+    "lastScanAt": "at {{time}}",
+    "tutTitle1": "Hold your phone steady",
+    "tutBody1": "Keep the device 20–30 cm from the QR code. Make sure light reaches the participant's screen — reflections slow you down.",
+    "tutTitle2": "Scan fast",
+    "tutBody2": "You'll hear a beep and feel a vibration after each scan. No tap needed — the queue works offline.",
+    "tutTitle3": "Colors mean something",
+    "tutBody3": "🟢 green = let in · 🟡 amber = already in · 🔴 red = unknown code. Check the name in the header.",
+    "tutNext": "Next",
+    "tutBack": "Back",
+    "tutSkip": "Skip",
+    "tutDone": "Let's go"
   },
   "dashboard": {
     "title": "Dashboard",

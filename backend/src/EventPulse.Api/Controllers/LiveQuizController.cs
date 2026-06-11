@@ -55,7 +55,7 @@ public sealed class LiveQuizController : ControllerBase
                 q.CorrectIndex))
             .ToList();
 
-        _registry.Start(quizId, quiz.Title, live);
+        await _registry.StartAsync(quizId, quiz.Title, live, ct);
         await _hub.Clients.Group(QuizHub.Group(quizId))
             .SendAsync("started", new { title = quiz.Title, questionCount = live.Count }, ct);
 
@@ -67,16 +67,19 @@ public sealed class LiveQuizController : ControllerBase
     public async Task<IActionResult> Next(Guid eventId, Guid quizId, CancellationToken ct)
     {
         await _mediator.Send(new GetEventByIdQuery(eventId), ct);
-        var session = _registry.Get(quizId) ?? throw new ConflictException("Quiz session not started.");
 
-        session.Next(DateTimeOffset.UtcNow);
+        var (session, _) = await _registry.MutateAsync(quizId, s =>
+        {
+            s.Next(DateTimeOffset.UtcNow);
+            return 0;
+        }, ct);
 
         if (session.Finished)
         {
             await PersistResultsAsync(eventId, quizId, session, ct);
             await _hub.Clients.Group(QuizHub.Group(quizId))
                 .SendAsync("finished", new { leaderboard = session.Leaderboard() }, ct);
-            _registry.End(quizId);
+            await _registry.EndAsync(quizId, ct);
             return Ok(new { finished = true });
         }
 
@@ -97,9 +100,13 @@ public sealed class LiveQuizController : ControllerBase
     public async Task<IActionResult> Reveal(Guid eventId, Guid quizId, CancellationToken ct)
     {
         await _mediator.Send(new GetEventByIdQuery(eventId), ct);
-        var session = _registry.Get(quizId) ?? throw new ConflictException("Quiz session not started.");
 
-        session.Reveal();
+        var (session, _) = await _registry.MutateAsync(quizId, s =>
+        {
+            s.Reveal();
+            return 0;
+        }, ct);
+
         await _hub.Clients.Group(QuizHub.Group(quizId)).SendAsync("reveal", new
         {
             correctIndex = session.Current?.CorrectIndex ?? -1,
@@ -114,13 +121,13 @@ public sealed class LiveQuizController : ControllerBase
     public async Task<IActionResult> End(Guid eventId, Guid quizId, CancellationToken ct)
     {
         await _mediator.Send(new GetEventByIdQuery(eventId), ct);
-        var session = _registry.Get(quizId);
+        var session = await _registry.GetAsync(quizId, ct);
         if (session is not null)
         {
             await PersistResultsAsync(eventId, quizId, session, ct);
             await _hub.Clients.Group(QuizHub.Group(quizId))
                 .SendAsync("finished", new { leaderboard = session.Leaderboard() }, ct);
-            _registry.End(quizId);
+            await _registry.EndAsync(quizId, ct);
         }
 
         return Ok();

@@ -37,6 +37,12 @@ public sealed class GetEventByIdHandler : IRequestHandler<GetEventByIdQuery, Eve
             }
         }
 
+        // Operator tokens are pinned to a single event id.
+        if (_currentUser.IsOperator && _currentUser.EventId != ev.Id)
+        {
+            throw new NotFoundException("Event not found.");
+        }
+
         return EventDto.From(ev);
     }
 }

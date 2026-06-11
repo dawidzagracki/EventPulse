@@ -15,6 +15,7 @@ type Feedback =
   | { kind: 'queued' }
 
 const stationKey = (eventId: string) => `ep.scanner.station.${eventId}`
+const tutorialKey = 'ep.scanner.tutorialSeen'
 
 // Module-scope clock read so the component body stays "pure" for the linter
 // (these are only ever called from event handlers / async callbacks).
@@ -32,6 +33,7 @@ export function ScannerPage() {
   const { t } = useTranslation()
 
   const [station, setStation] = useState<string | null>(() => localStorage.getItem(stationKey(eventId)))
+  const [showTutorial, setShowTutorial] = useState<boolean>(() => !localStorage.getItem(tutorialKey))
   const [kind, setKind] = useState<number>(ScanKind.CheckIn)
   const [modeLocked, setModeLocked] = useState(false)
   const [pending, setPending] = useState(0)
@@ -218,6 +220,16 @@ export function ScannerPage() {
 
   return (
     <div className="relative min-h-screen bg-slate-950">
+      {/* First-run tutorial */}
+      {showTutorial && (
+        <ScannerTutorial
+          onDone={() => {
+            localStorage.setItem(tutorialKey, '1')
+            setShowTutorial(false)
+          }}
+        />
+      )}
+
       {/* Feedback overlay */}
       {fb && <FeedbackOverlay fb={fb} onDismiss={() => setFb(null)} />}
 
@@ -502,5 +514,73 @@ function FeedbackOverlay({ fb, onDismiss }: { fb: Feedback; onDismiss: () => voi
 
       <p className="mt-8 text-sm uppercase tracking-[0.2em] text-white/70">{t('scanner.scanNext')} →</p>
     </button>
+  )
+}
+
+// ============ First-run tutorial (3 slides) ============
+
+function ScannerTutorial({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation()
+  const [step, setStep] = useState(0)
+  const slides = [
+    {
+      emoji: '📱',
+      title: t('scanner.tutTitle1'),
+      body: t('scanner.tutBody1'),
+    },
+    {
+      emoji: '⚡',
+      title: t('scanner.tutTitle2'),
+      body: t('scanner.tutBody2'),
+    },
+    {
+      emoji: '🎨',
+      title: t('scanner.tutTitle3'),
+      body: t('scanner.tutBody3'),
+    },
+  ]
+  const last = step === slides.length - 1
+  const s = slides[step]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-6 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/95 p-6 shadow-2xl shadow-indigo-500/10">
+        <button
+          onClick={onDone}
+          className="absolute right-4 top-4 text-xs text-slate-500 hover:text-slate-300"
+        >
+          {t('scanner.tutSkip')}
+        </button>
+
+        <div className="mb-4 text-center text-6xl">{s.emoji}</div>
+        <h2 className="text-center text-xl font-bold text-white">{s.title}</h2>
+        <p className="mt-3 text-center text-sm text-slate-300">{s.body}</p>
+
+        <div className="mt-6 flex items-center justify-center gap-1.5">
+          {slides.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i === step ? 'w-6 bg-indigo-400' : 'w-1.5 bg-slate-700'
+              }`}
+            />
+          ))}
+        </div>
+
+        <div className="mt-6 flex gap-2">
+          {step > 0 && (
+            <Button variant="ghost" onClick={() => setStep((s) => s - 1)} className="flex-1">
+              {t('scanner.tutBack')}
+            </Button>
+          )}
+          <Button
+            onClick={() => (last ? onDone() : setStep((s) => s + 1))}
+            className="flex-1"
+          >
+            {last ? t('scanner.tutDone') : t('scanner.tutNext')}
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }
