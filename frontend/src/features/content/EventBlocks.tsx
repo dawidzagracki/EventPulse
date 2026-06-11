@@ -14,6 +14,8 @@ export interface BlockContext {
   lang: 'pl' | 'en'
   agenda?: AgendaItemDto[]
   galleryUrls?: string[]
+  contests?: { id: string; name: string; mode: number }[]
+  quizzes?: { id: string; title: string }[]
   startsAt?: string
   /** When set, the block is rendered inside the editor and text becomes contentEditable. */
   edit?: EditMode
@@ -663,6 +665,75 @@ function SpacerBlock({ block }: { block: PageBlock }) {
   return <div id={`block-${block.id}`} style={{ height: h }} />
 }
 
+function ContestsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
+  const items = ctx.contests ?? []
+  const stl = getBlockStyle(block)
+  const primary = stl.accentColor ?? ctx.branding.primaryColor
+  return (
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
+      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>
+        <E block={block} k="title" ctx={ctx} placeholder="Konkursy" />
+      </h2>
+      {items.length === 0 ? (
+        <p className="mt-6 text-slate-500">
+          {ctx.lang === 'en' ? 'Contests will appear here.' : 'Konkursy pojawią się tutaj.'}
+        </p>
+      ) : (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((c) => (
+            <div key={c.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl text-xl text-white" style={{ background: primary }}>
+                🏆
+              </div>
+              <p className="mt-3 text-lg font-semibold text-slate-900">{c.name}</p>
+              <p className="text-sm text-slate-500">
+                {c.mode === 1 ? (ctx.lang === 'en' ? 'Time trial' : 'Na czas') : ctx.lang === 'en' ? 'Points' : 'Na punkty'}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function QuizzesBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
+  const items = ctx.quizzes ?? []
+  const stl = getBlockStyle(block)
+  const primary = stl.accentColor ?? ctx.branding.primaryColor
+  return (
+    <section
+      id={`block-${block.id}`}
+      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={stl.style}
+    >
+      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>
+        <E block={block} k="title" ctx={ctx} placeholder="Quizy" />
+      </h2>
+      {items.length === 0 ? (
+        <p className="mt-6 text-slate-500">
+          {ctx.lang === 'en' ? 'Quizzes will appear here.' : 'Quizy pojawią się tutaj.'}
+        </p>
+      ) : (
+        <ul className="mt-8 space-y-3">
+          {items.map((q) => (
+            <li key={q.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg text-white" style={{ background: primary }}>
+                🎯
+              </span>
+              <span className="text-base font-semibold text-slate-900">{q.title}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 const RENDERERS: Record<string, React.FC<{ block: PageBlock; ctx: BlockContext }>> = {
   hero: HeroBlock,
   description: DescriptionBlock,
@@ -676,6 +747,8 @@ const RENDERERS: Record<string, React.FC<{ block: PageBlock; ctx: BlockContext }
   sponsors: SponsorsBlock,
   cta: CtaBlock,
   spacer: SpacerBlock,
+  contests: ContestsBlock,
+  quizzes: QuizzesBlock,
   stats: StatsBlock,
   features: FeaturesBlock,
   testimonial: TestimonialBlock,

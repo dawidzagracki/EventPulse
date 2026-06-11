@@ -10,6 +10,7 @@ import {
   useVersions,
 } from './api'
 import { useEvent } from '../events/api'
+import { useContests, useQuizzes } from '../engagement/api'
 import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
 import { useDragAutoScroll } from './useDragAutoScroll'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, blockSchema, type BlockCategory } from './blockSchema'
@@ -93,6 +94,8 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   const restore = useRestoreVersion(eventId)
   const { data: versions } = useVersions(eventId)
   const { data: event } = useEvent(eventId)
+  const { data: contests } = useContests(eventId)
+  const { data: quizzes } = useQuizzes(eventId)
 
   const blocksHistory = useHistoryState<PageBlock[]>(page.content.blocks ?? [])
   const blocks = blocksHistory.value
@@ -299,11 +302,13 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       lang,
       agenda: [],
       galleryUrls: [],
+      contests: (contests ?? []).map((c) => ({ id: c.id, name: c.name, mode: c.mode })),
+      quizzes: (quizzes ?? []).map((q) => ({ id: q.id, title: q.title })),
       startsAt: event?.startsAt,
       edit: { onTextChange: setText },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eventId, branding, lang, event?.startsAt],
+    [eventId, branding, lang, event?.startsAt, contests, quizzes],
   )
 
   return (

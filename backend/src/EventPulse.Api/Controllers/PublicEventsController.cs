@@ -1,5 +1,6 @@
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Agenda.Domain;
+using EventPulse.Modules.Engagement;
 using EventPulse.Modules.Events.Domain;
 using EventPulse.Modules.Gallery;
 using EventPulse.Shared.Application;
@@ -39,6 +40,54 @@ public sealed class PublicEventsController : ControllerBase
     {
         var stored = await _mediator.Send(new PublicPhotoFileQuery(eventId, photoId), ct);
         return File(stored.Content, stored.ContentType);
+    }
+
+    [HttpGet("contests")]
+    public async Task<ActionResult<IReadOnlyList<PublicContestDto>>> Contests(Guid eventId, CancellationToken ct)
+        => Ok(await _mediator.Send(new PublicContestsQuery(eventId), ct));
+
+    [HttpGet("quizzes")]
+    public async Task<ActionResult<IReadOnlyList<PublicQuizDto>>> Quizzes(Guid eventId, CancellationToken ct)
+        => Ok(await _mediator.Send(new PublicQuizzesQuery(eventId), ct));
+}
+
+public sealed record PublicContestDto(Guid Id, string Name, int Mode);
+
+public sealed record PublicContestsQuery(Guid EventId) : IRequest<IReadOnlyList<PublicContestDto>>;
+
+public sealed class PublicContestsHandler(IAppDbContext db) : IRequestHandler<PublicContestsQuery, IReadOnlyList<PublicContestDto>>
+{
+    public async Task<IReadOnlyList<PublicContestDto>> Handle(PublicContestsQuery request, CancellationToken ct)
+    {
+        var allowed = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
+            .AnyAsync(e => e.Id == request.EventId && e.Status >= EventStatus.Published, ct);
+        if (!allowed) throw new NotFoundException("Event not available.");
+
+        return await db.Set<Contest>().AsNoTracking().IgnoreQueryFilters()
+            .Where(c => c.EventId == request.EventId)
+            .OrderBy(c => c.Name)
+            .Select(c => new PublicContestDto(c.Id, c.Name, (int)c.Mode))
+            .ToListAsync(ct);
+    }
+}
+
+public sealed record PublicQuizDto(Guid Id, string Title);
+
+public sealed record PublicQuizzesQuery(Guid EventId) : IRequest<IReadOnlyList<PublicQuizDto>>;
+
+public sealed class PublicQuizzesHandler(IAppDbContext db) : IRequestHandler<PublicQuizzesQuery, IReadOnlyList<PublicQuizDto>>
+{
+    public async Task<IReadOnlyList<PublicQuizDto>> Handle(PublicQuizzesQuery request, CancellationToken ct)
+    {
+        var allowed = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
+            .AnyAsync(e => e.Id == request.EventId && e.Status >= EventStatus.Published, ct);
+        if (!allowed) throw new NotFoundException("Event not available.");
+
+        return await db.Set<Quiz>().AsNoTracking().IgnoreQueryFilters()
+            .Where(q => q.EventId == request.EventId)
+            .OrderBy(q => q.Title)
+            .Select(q => new PublicQuizDto(q.Id, q.Title))
+            .ToListAsync(ct);
     }
 }
 

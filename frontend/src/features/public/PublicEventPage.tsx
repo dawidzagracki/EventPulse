@@ -62,6 +62,8 @@ export function PublicEventPage() {
   const event = usePublic<PublicEvent>('public-event', eventId, '')
   const agenda = usePublic<AgendaItemDto[]>('public-agenda', eventId, '/agenda', !!event.data)
   const gallery = usePublic<PublicPhoto[]>('public-gallery', eventId, '/gallery', !!event.data)
+  const contests = usePublic<{ id: string; name: string; mode: number }[]>('public-contests', eventId, '/contests', !!event.data)
+  const quizzes = usePublic<{ id: string; title: string }[]>('public-quizzes', eventId, '/quizzes', !!event.data)
 
   useEffect(() => {
     if (page.data?.seo.title) document.title = page.data.seo.title
@@ -106,6 +108,8 @@ export function PublicEventPage() {
     lang,
     agenda: agenda.data ?? [],
     galleryUrls: (gallery.data ?? []).map((p) => `${baseURL}/api/public/events/${eventId}/gallery/${p.id}/file`),
+    contests: contests.data ?? [],
+    quizzes: quizzes.data ?? [],
     startsAt: event.data?.startsAt,
   }
 
@@ -180,6 +184,8 @@ function blockTypeFallbackLabel(type: string, lang: 'pl' | 'en'): string {
     video: ['Wideo', 'Video'],
     sponsors: ['Partnerzy', 'Sponsors'],
     cta: ['Dołącz', 'Join'],
+    contests: ['Konkursy', 'Contests'],
+    quizzes: ['Quizy', 'Quizzes'],
     stats: ['Liczby', 'Stats'],
     features: ['Co Cię czeka', 'Features'],
     testimonial: ['Opinia', 'Testimonial'],
