@@ -5,6 +5,7 @@ import {
   useMyAgenda,
   useMyProfile,
   useMyTransfers,
+  useRsvp,
   useSubmitFeedback,
   useUpdateConsents,
   useUpdatePreferences,
@@ -161,6 +162,8 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
       <p className="text-xs uppercase tracking-[0.2em] text-violet-300/80">{t('dashboard.live')}</p>
       <h1 className="mt-1 text-2xl font-bold text-white">{t('participant.hello', { name: profile.firstName })}</h1>
 
+      <RsvpRow profile={profile} />
+
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {/* What's next */}
         <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
@@ -193,6 +196,55 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
             </p>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ===================== RSVP row =====================
+function RsvpRow({ profile }: { profile: MyProfileDto }) {
+  const { t } = useTranslation()
+  const rsvp = useRsvp()
+  // 2 = Confirmed, 3 = Declined.
+  const confirmed = profile.status === 2
+  const declined = profile.status === 3
+  const decided = confirmed || declined
+
+  if (decided) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-800/70 bg-slate-950/40 px-3 py-2">
+        <span className={`text-sm font-medium ${confirmed ? 'text-emerald-300' : 'text-slate-400'}`}>
+          {confirmed ? t('participant.rsvpConfirmed') : t('participant.rsvpDeclined')}
+        </span>
+        <button
+          onClick={() => rsvp.mutate(!confirmed)}
+          disabled={rsvp.isPending}
+          className="ml-auto text-xs text-indigo-300 underline-offset-2 hover:underline disabled:opacity-50"
+        >
+          {t('participant.rsvpChange')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-indigo-400/30 bg-indigo-500/10 p-3">
+      <p className="mb-2 text-sm font-medium text-white">{t('participant.rsvpQuestion')}</p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => rsvp.mutate(true)}
+          disabled={rsvp.isPending}
+          className="flex-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:opacity-95 disabled:opacity-50"
+        >
+          ✓ {t('participant.rsvpYes')}
+        </button>
+        <button
+          onClick={() => rsvp.mutate(false)}
+          disabled={rsvp.isPending}
+          className="flex-1 rounded-lg border border-slate-700/60 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-rose-400/40 hover:text-rose-300 disabled:opacity-50"
+        >
+          {t('participant.rsvpNo')}
+        </button>
       </div>
     </div>
   )

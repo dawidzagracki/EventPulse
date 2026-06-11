@@ -52,6 +52,11 @@ public sealed class ParticipantMeController : ControllerBase
         => Ok(await _mediator.Send(
             new AcceptConsentsCommand(ParticipantId, body.RodoAccepted, body.PhotoConsent, body.NetworkingConsent), ct));
 
+    /// <summary>RSVP — confirm attendance or decline (spec §3.2).</summary>
+    [HttpPost("rsvp")]
+    public async Task<ActionResult<MyProfileDto>> Rsvp(RsvpBody body, CancellationToken ct)
+        => Ok(await _mediator.Send(new RsvpCommand(ParticipantId, body.Attending), ct));
+
     [HttpPut("preferences")]
     public async Task<ActionResult<MyProfileDto>> Preferences(PreferencesBody body, CancellationToken ct)
         => Ok(await _mediator.Send(new UpdateMyPreferencesCommand(
@@ -124,6 +129,8 @@ public sealed class ParticipantMeController : ControllerBase
     public sealed record FeedbackBody(int Rating, string? Comment);
 
     public sealed record ConsentsBody(bool RodoAccepted, bool PhotoConsent, bool NetworkingConsent);
+
+    public sealed record RsvpBody(bool Attending);
 
     public sealed record PreferencesBody(
         string? Language,

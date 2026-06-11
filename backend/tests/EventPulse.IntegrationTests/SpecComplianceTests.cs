@@ -114,6 +114,27 @@ public class SpecComplianceTests : IClassFixture<ApiFactory>
         Assert.False(secondItem.GetProperty("previousAt").ValueKind == JsonValueKind.Null);
     }
 
+    // ── PA-4: participant RSVP confirms / declines attendance ──
+    [Fact]
+    public async Task Participant_can_rsvp()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        var token = await AddParticipantTokenAsync(admin, eventId);
+
+        var login = await _factory.CreateClient().PostAsJsonAsync("/api/auth/participant", new { token });
+        var session = await login.Content.ReadFromJsonAsync<JsonElement>();
+        var me = _factory.CreateClient();
+        me.DefaultRequestHeaders.Authorization = new("Bearer", session.GetProperty("accessToken").GetString());
+
+        var confirm = await me.PostAsJsonAsync("/api/me/rsvp", new { attending = true });
+        confirm.EnsureSuccessStatusCode();
+        Assert.Equal(2, (await confirm.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("status").GetInt32()); // Confirmed
+
+        var decline = await me.PostAsJsonAsync("/api/me/rsvp", new { attending = false });
+        Assert.Equal(3, (await decline.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("status").GetInt32()); // Declined
+    }
+
     // ── PA-2: participant can fetch their own entry QR as a PNG ──
     [Fact]
     public async Task My_qr_returns_png()

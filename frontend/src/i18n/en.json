@@ -220,7 +220,13 @@
     "unlock": "Unlock the app",
     "galleryEmpty": "Photos will appear after the event",
     "quizzesEmpty": "No quizzes — check back later",
-    "agendaSoon": "The agenda will be published soon"
+    "agendaSoon": "The agenda will be published soon",
+    "rsvpQuestion": "Will you attend?",
+    "rsvpYes": "I'll be there",
+    "rsvpNo": "Can't make it",
+    "rsvpConfirmed": "Attendance confirmed ✓",
+    "rsvpDeclined": "Marked as not attending",
+    "rsvpChange": "Change"
   },
   "page": {
     "title": "Page",

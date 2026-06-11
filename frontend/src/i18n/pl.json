@@ -220,7 +220,13 @@
     "unlock": "Odblokuj aplikację",
     "galleryEmpty": "Zdjęcia pojawią się po wydarzeniu",
     "quizzesEmpty": "Brak quizów — sprawdź później",
-    "agendaSoon": "Agenda zostanie wkrótce opublikowana"
+    "agendaSoon": "Agenda zostanie wkrótce opublikowana",
+    "rsvpQuestion": "Będziesz na wydarzeniu?",
+    "rsvpYes": "Potwierdzam",
+    "rsvpNo": "Nie będę",
+    "rsvpConfirmed": "Potwierdzono obecność ✓",
+    "rsvpDeclined": "Zgłoszono nieobecność",
+    "rsvpChange": "Zmień"
   },
   "page": {
     "title": "Strona",

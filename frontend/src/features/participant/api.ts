@@ -28,6 +28,15 @@ export function useUpdateConsents() {
   })
 }
 
+export function useRsvp() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (attending: boolean) =>
+      (await api.post<MyProfileDto>('/api/me/rsvp', { attending })).data,
+    onSuccess: (data) => qc.setQueryData(['me'], data),
+  })
+}
+
 export interface PreferencesInput {
   language: string
   dietaryPreferences: string | null
