@@ -111,7 +111,7 @@ public sealed class ParticipantsController : ControllerBase
     {
         var ev = await EnsureEventInTenantAsync(eventId, ct);
         var result = await _mediator.Send(
-            new SendInvitationsCommand(eventId, ev.Name, ParticipantLinkBaseUrl, onlyNotInvited), ct);
+            new SendInvitationsCommand(eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, onlyNotInvited), ct);
         return Ok(result);
     }
 

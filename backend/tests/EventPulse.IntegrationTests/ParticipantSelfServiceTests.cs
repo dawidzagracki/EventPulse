@@ -111,14 +111,21 @@ public class ParticipantSelfServiceTests : IClassFixture<ApiFactory>
         });
         var eventId = (await createEvent.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
+        var email = $"bob-{Guid.NewGuid():N}@x.com";
         await admin.PostAsJsonAsync($"/api/events/{eventId}/participants",
-            new { firstName = "Bob", lastName = "Guest", email = $"bob-{Guid.NewGuid():N}@x.com" });
+            new { firstName = "Bob", lastName = "Guest", email });
 
         var resp = await admin.PostAsync($"/api/events/{eventId}/participants/invitations?onlyNotInvited=true", null);
         resp.EnsureSuccessStatusCode();
         var result = await resp.Content.ReadFromJsonAsync<JsonElement>();
 
         Assert.Equal(1, result.GetProperty("sentCount").GetInt32());
-        Assert.Contains(_factory.SentEmails, m => m.Subject.Contains("Invite") || m.HtmlBody.Contains("Invite"));
+
+        // The invitation is personalised: greets Bob by name, names the event,
+        // and carries the personal token link (spec §2.4 placeholders).
+        var mail = Assert.Single(_factory.SentEmails, m => m.ToEmail == email);
+        Assert.Contains("Bob", mail.HtmlBody);
+        Assert.Contains("Invite", mail.Subject);
+        Assert.Contains("href=", mail.HtmlBody);
     }
 }
