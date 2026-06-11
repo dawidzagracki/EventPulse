@@ -15,8 +15,11 @@ Dokument mapuje **wszystkie ścieżki użytkownika** w aplikacji, w odniesieniu 
 | Administrator / Pracownik | `Agency` | `/login` (e-mail + hasło) | `/events` |
 | Klient końcowy | `Client` | `/login` (e-mail + hasło) | dashboard swojego eventu |
 | Gość wydarzenia | `Participant` | `/p/{token}` (kod QR = login) | `/me` |
+| Operator QR | `Operator` | `/op/{token}` (link magic 24h) | `/events/{id}/scanner` |
 
 ## Pliki
+
+> **[📘 FLOWS.md](../FLOWS.md)** — **kompletna mapa flow per-persona** (A Agency / B Client / C Participant / D Operator / E Anonim / cross-cutting). Dokument źródłowy "jak to działa".
 
 | Plik | Zakres (sekcje spec) |
 |---|---|
