@@ -47,6 +47,8 @@
     "past": "Past",
     "open": "Open",
     "preview": "Public preview",
+    "delete": "Delete event",
+    "deleteConfirm": "Delete this event permanently? This cannot be undone.",
     "noMatch": "No events match your filters.",
     "newWizardLead": "Just the basics — you'll add participants, agenda and the page later",
     "sectionBasics": "Basics",

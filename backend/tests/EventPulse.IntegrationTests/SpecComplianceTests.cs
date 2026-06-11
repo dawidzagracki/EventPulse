@@ -210,4 +210,18 @@ public class SpecComplianceTests : IClassFixture<ApiFactory>
         var ev = await admin.GetFromJsonAsync<JsonElement>($"/api/events/{eventId}");
         Assert.Equal(4, ev.GetProperty("status").GetInt32());
     }
+
+    // ── AE-5: an event can be permanently deleted ──
+    [Fact]
+    public async Task Event_can_be_deleted()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+
+        var del = await admin.DeleteAsync($"/api/events/{eventId}");
+        Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
+
+        var get = await admin.GetAsync($"/api/events/{eventId}");
+        Assert.Equal(HttpStatusCode.NotFound, get.StatusCode);
+    }
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useEvent } from './api'
+import { useEvent, useDeleteEvent } from './api'
 import { prettifyEventName } from './eventName'
 import { OverviewTab } from './OverviewTab'
 import { ParticipantsTab } from '../participants/ParticipantsTab'
@@ -51,10 +51,18 @@ function statusTone(status: number) {
 export function EventDetailPage() {
   const { eventId = '' } = useParams()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { data: event, isLoading } = useEvent(eventId)
   const principalType = useAuthStore((s) => s.principalType)
   const isClient = principalType === 'Client'
+  const deleteEvent = useDeleteEvent(eventId)
   const [tab, setTab] = useState<Tab>('dashboard')
+
+  async function handleDelete() {
+    if (!window.confirm(t('events.deleteConfirm'))) return
+    await deleteEvent.mutateAsync()
+    navigate('/events', { replace: true })
+  }
 
   const allTabs = [
     { id: 'dashboard', label: t('dashboard.title'), icon: 'dashboard' },
@@ -90,6 +98,16 @@ export function EventDetailPage() {
         <Icon name="qr" className="h-4 w-4" />
         {t('scanner.title')}
       </Link>
+      {!isClient && (
+        <button
+          onClick={handleDelete}
+          disabled={deleteEvent.isPending}
+          className="inline-flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"
+          title={t('events.delete')}
+        >
+          ✕ {t('events.delete')}
+        </button>
+      )}
     </>
   ) : null
 

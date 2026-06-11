@@ -54,3 +54,16 @@ export function useUpdateEvent(eventId: string) {
     },
   })
 }
+
+export function useDeleteEvent(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      await api.delete(`/api/events/${eventId}`)
+    },
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ['events', eventId] })
+      qc.invalidateQueries({ queryKey: KEY })
+    },
+  })
+}

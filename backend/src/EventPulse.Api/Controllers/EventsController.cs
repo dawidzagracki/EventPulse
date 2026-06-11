@@ -12,7 +12,10 @@ namespace EventPulse.Api.Controllers;
 
 [ApiController]
 [Route("api/events")]
-[Authorize(Policy = AuthPolicies.Agency)]
+// Class-level: Agency staff OR the assigned Client (mini-admin of one event).
+// Query handlers scope a Client to their own events. Mutations that a Client
+// must not perform (create/delete) carry an extra Agency-only [Authorize].
+[Authorize(Policy = AuthPolicies.AgencyOrClient)]
 public sealed class EventsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -31,6 +34,7 @@ public sealed class EventsController : ControllerBase
         => Ok(await _mediator.Send(new GetEventByIdQuery(id), ct));
 
     [HttpPost]
+    [Authorize(Policy = AuthPolicies.Agency)]
     public async Task<ActionResult<EventDto>> Create(CreateEventCommand command, CancellationToken ct)
     {
         var created = await _mediator.Send(command, ct);
@@ -48,6 +52,14 @@ public sealed class EventsController : ControllerBase
     [HttpPost("{id:guid}/status")]
     public async Task<ActionResult<EventDto>> ChangeStatus(Guid id, ChangeStatusBody body, CancellationToken ct)
         => Ok(await _mediator.Send(new ChangeEventStatusCommand(id, body.NewStatus), ct));
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthPolicies.Agency)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteEventCommand(id), ct);
+        return NoContent();
+    }
 
     public sealed record UpdateEventBody(
         string Name,

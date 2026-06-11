@@ -16,7 +16,9 @@ namespace EventPulse.Api.Controllers;
 
 [ApiController]
 [Route("api/events/{eventId:guid}/participants")]
-[Authorize(Policy = AuthPolicies.Agency)]
+// Agency staff OR the assigned Client (mini-admin). Event ownership is verified
+// per-request via GetEventByIdQuery, which scopes a Client to their own event.
+[Authorize(Policy = AuthPolicies.AgencyOrClient)]
 public sealed class ParticipantsController : ControllerBase
 {
     private const string XlsxContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

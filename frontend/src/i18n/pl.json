@@ -47,6 +47,8 @@
     "past": "Zakończone",
     "open": "Otwórz",
     "preview": "Podgląd publiczny",
+    "delete": "Usuń wydarzenie",
+    "deleteConfirm": "Usunąć to wydarzenie na zawsze? Tej operacji nie można cofnąć.",
     "noMatch": "Brak wydarzeń pasujących do filtrów.",
     "newWizardLead": "Wypełnij podstawy — resztę (uczestników, agendę, stronę) ustawisz później",
     "sectionBasics": "Podstawy",
