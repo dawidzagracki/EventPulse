@@ -140,6 +140,7 @@
     "empty": "No participants",
     "chooseFile": "Choose .xlsx file",
     "changeFile": "Change file",
+    "export": "Export Excel",
     "search": "Search participants…",
     "all": "All",
     "select": "Select a participant from the list",

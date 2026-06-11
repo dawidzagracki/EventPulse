@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   downloadTemplate,
+  exportParticipants,
   openParticipantQr,
   useAddParticipant,
   useImportParticipants,
@@ -112,6 +113,10 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
         <Button variant="ghost" onClick={() => inviteMut.mutate()} disabled={inviteMut.isPending}>
           <Icon name="sparkles" className="h-3.5 w-3.5" />
           {t('participants.invite')}
+        </Button>
+        <Button variant="ghost" onClick={() => void exportParticipants(eventId)} disabled={stats.total === 0}>
+          <Icon name="document" className="h-3.5 w-3.5" />
+          {t('participants.export')}
         </Button>
         <Button className="ml-auto" onClick={() => setView({ kind: 'new' })}>
           <Icon name="plus" className="h-4 w-4" />

@@ -211,6 +211,26 @@ public class SpecComplianceTests : IClassFixture<ApiFactory>
         Assert.Equal(4, ev.GetProperty("status").GetInt32());
     }
 
+    // ── DR-7 / §5.3: participants can be exported to .xlsx ──
+    [Fact]
+    public async Task Participants_can_be_exported_to_xlsx()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        await AddParticipantTokenAsync(admin, eventId, "Export", "Me");
+
+        var resp = await admin.GetAsync($"/api/events/{eventId}/participants/export");
+        resp.EnsureSuccessStatusCode();
+        Assert.Equal(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            resp.Content.Headers.ContentType?.MediaType);
+        var bytes = await resp.Content.ReadAsByteArrayAsync();
+        // XLSX is a ZIP — first two bytes are "PK".
+        Assert.True(bytes.Length > 100);
+        Assert.Equal((byte)'P', bytes[0]);
+        Assert.Equal((byte)'K', bytes[1]);
+    }
+
     // ── AE-5: an event can be permanently deleted ──
     [Fact]
     public async Task Event_can_be_deleted()

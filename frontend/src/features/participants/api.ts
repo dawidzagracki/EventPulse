@@ -61,3 +61,8 @@ export async function openParticipantQr(eventId: string, participantId: string) 
   const url = URL.createObjectURL(res.data as Blob)
   window.open(url, '_blank')
 }
+
+export async function exportParticipants(eventId: string) {
+  const res = await api.get(`/api/events/${eventId}/participants/export`, { responseType: 'blob' })
+  saveBlob(res.data as Blob, 'eventpulse-uczestnicy.xlsx')
+}

@@ -3,6 +3,7 @@ using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Participants.Application;
 using EventPulse.Modules.Participants.Application.Commands;
+using EventPulse.Modules.Participants.Application.Export;
 using EventPulse.Modules.Participants.Application.Import;
 using EventPulse.Modules.Participants.Application.Invitations;
 using EventPulse.Modules.Participants.Application.Qr;
@@ -35,6 +36,15 @@ public sealed class ParticipantsController : ControllerBase
     [HttpGet("template")]
     public IActionResult DownloadTemplate()
         => File(ImportTemplate.Build(), XlsxContentType, "eventpulse-uczestnicy-szablon.xlsx");
+
+    /// <summary>Exports all participants (with statuses + check-in/out times) to .xlsx (spec §5.3).</summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(Guid eventId, CancellationToken ct)
+    {
+        await EnsureEventInTenantAsync(eventId, ct);
+        var bytes = await _mediator.Send(new ExportParticipantsQuery(eventId), ct);
+        return File(bytes, XlsxContentType, "eventpulse-uczestnicy.xlsx");
+    }
 
     [HttpPost("import")]
     public async Task<ActionResult<ImportResultDto>> Import(
