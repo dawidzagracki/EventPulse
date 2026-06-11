@@ -11,14 +11,31 @@ public sealed record GetEventByIdQuery(Guid Id) : IRequest<EventDto>;
 public sealed class GetEventByIdHandler : IRequestHandler<GetEventByIdQuery, EventDto>
 {
     private readonly IAppDbContext _db;
+    private readonly ICurrentUser _currentUser;
 
-    public GetEventByIdHandler(IAppDbContext db) => _db = db;
+    public GetEventByIdHandler(IAppDbContext db, ICurrentUser currentUser)
+    {
+        _db = db;
+        _currentUser = currentUser;
+    }
 
     public async Task<EventDto> Handle(GetEventByIdQuery request, CancellationToken cancellationToken)
     {
         var ev = await _db.Set<Event>().AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Event not found.");
+
+        // A Client may only open their own event. Treat anything else as "not found"
+        // so we don't leak the existence of other clients' events.
+        if (_currentUser.IsClient)
+        {
+            var email = _currentUser.Email?.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(ev.ClientEmail)
+                || !string.Equals(ev.ClientEmail, email, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotFoundException("Event not found.");
+            }
+        }
 
         return EventDto.From(ev);
     }

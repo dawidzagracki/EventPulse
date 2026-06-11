@@ -15,4 +15,7 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor) : ICur
     }
 
     public string? PrincipalType => accessor.HttpContext?.User?.FindFirst(AppClaims.PrincipalType)?.Value;
+
+    // MapInboundClaims is disabled, so the JWT "email" claim is preserved verbatim.
+    public string? Email => accessor.HttpContext?.User?.FindFirst("email")?.Value;
 }

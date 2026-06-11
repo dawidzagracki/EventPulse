@@ -1,6 +1,10 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EventPulse.Infrastructure.Persistence;
+using EventPulse.Modules.Events.Domain;
+using EventPulse.Modules.Identity.Auth;
+using EventPulse.Modules.Identity.Domain;
 using EventPulse.Modules.Participants.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -130,6 +134,63 @@ public class SpecComplianceTests : IClassFixture<ApiFactory>
         Assert.Equal("image/png", qr.Content.Headers.ContentType?.MediaType);
         var bytes = await qr.Content.ReadAsByteArrayAsync();
         Assert.True(bytes.Length > 100); // a real PNG, not an empty body
+    }
+
+    // ── CC-7 / DR-8: a Client only sees and can open events assigned to their e-mail ──
+    [Fact]
+    public async Task Client_only_sees_assigned_event()
+    {
+        var admin = await AdminClientAsync();
+        var clientEmail = $"client-{Guid.NewGuid():N}@co.com";
+
+        // Event A is assigned to the client; event B belongs to someone else.
+        var ownResp = await admin.PostAsJsonAsync("/api/events", new
+        {
+            name = $"Client Own {Guid.NewGuid():N}",
+            startsAt = DateTimeOffset.UtcNow,
+            endsAt = DateTimeOffset.UtcNow.AddHours(3),
+            clientEmail,
+        });
+        var ownId = (await ownResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var otherId = await CreateEventAsync(admin); // no clientEmail → not theirs
+
+        // Seed an activated ClientUser in the same tenant as the events.
+        const string password = "Client123!";
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+            var tenantId = (await db.Set<Event>().IgnoreQueryFilters().FirstAsync(e => e.Id == ownId)).TenantId;
+            db.Set<ClientUser>().Add(new ClientUser
+            {
+                Email = clientEmail,
+                DisplayName = "Test Client",
+                PasswordHash = hasher.Hash(password),
+                TenantId = tenantId,
+                IsActive = true,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Log in as the client.
+        var client = _factory.CreateClient();
+        var login = await client.PostAsJsonAsync("/api/auth/login", new { email = clientEmail, password });
+        login.EnsureSuccessStatusCode();
+        var tokens = await login.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Client", tokens.GetProperty("principalType").GetString());
+        client.DefaultRequestHeaders.Authorization = new("Bearer", tokens.GetProperty("accessToken").GetString());
+
+        // List returns only their event.
+        var list = await client.GetFromJsonAsync<JsonElement>("/api/events");
+        var ids = list.EnumerateArray().Select(e => e.GetProperty("id").GetGuid()).ToList();
+        Assert.Contains(ownId, ids);
+        Assert.DoesNotContain(otherId, ids);
+
+        // Opening their own event works; opening someone else's is 404 (no existence leak).
+        var ownGet = await client.GetAsync($"/api/events/{ownId}");
+        Assert.Equal(HttpStatusCode.OK, ownGet.StatusCode);
+        var otherGet = await client.GetAsync($"/api/events/{otherId}");
+        Assert.Equal(HttpStatusCode.NotFound, otherGet.StatusCode);
     }
 
     // ── AE-4: an event can be archived by walking the lifecycle transitions ──
