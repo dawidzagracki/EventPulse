@@ -37,6 +37,21 @@ export function useRsvp() {
   })
 }
 
+export interface SelfScanResult {
+  stationCode: string
+  duplicate: boolean
+}
+
+/** Guest records presence at a station they scanned. clientId makes it idempotent. */
+export async function recordStationScan(stationCode: string): Promise<SelfScanResult> {
+  const { data } = await api.post<SelfScanResult>('/api/me/scans', {
+    stationCode,
+    clientId: crypto.randomUUID(),
+    occurredAt: new Date().toISOString(),
+  })
+  return data
+}
+
 export interface PreferencesInput {
   language: string
   dietaryPreferences: string | null

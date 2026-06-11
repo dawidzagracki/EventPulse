@@ -8,6 +8,7 @@ using EventPulse.Modules.Logistics;
 using EventPulse.Modules.Participants.Application.Feedback;
 using EventPulse.Modules.Participants.Application.Me;
 using EventPulse.Modules.Participants.Application.Qr;
+using EventPulse.Modules.Scanning.Application;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -56,6 +57,13 @@ public sealed class ParticipantMeController : ControllerBase
     [HttpPost("rsvp")]
     public async Task<ActionResult<MyProfileDto>> Rsvp(RsvpBody body, CancellationToken ct)
         => Ok(await _mediator.Send(new RsvpCommand(ParticipantId, body.Attending), ct));
+
+    /// <summary>Guest self-records presence at a station they scanned (spec §3.2).</summary>
+    [HttpPost("scans")]
+    public async Task<ActionResult<SelfStationScanResult>> ScanStation(SelfScanBody body, CancellationToken ct)
+        => Ok(await _mediator.Send(new SelfStationScanCommand(
+            EventId, ParticipantId, body.StationCode,
+            body.ClientId ?? Guid.NewGuid(), body.OccurredAt ?? DateTimeOffset.UtcNow), ct));
 
     [HttpPut("preferences")]
     public async Task<ActionResult<MyProfileDto>> Preferences(PreferencesBody body, CancellationToken ct)
@@ -131,6 +139,8 @@ public sealed class ParticipantMeController : ControllerBase
     public sealed record ConsentsBody(bool RodoAccepted, bool PhotoConsent, bool NetworkingConsent);
 
     public sealed record RsvpBody(bool Attending);
+
+    public sealed record SelfScanBody(string StationCode, Guid? ClientId, DateTimeOffset? OccurredAt);
 
     public sealed record PreferencesBody(
         string? Language,

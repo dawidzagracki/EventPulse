@@ -226,7 +226,14 @@
     "rsvpNo": "Can't make it",
     "rsvpConfirmed": "Attendance confirmed ✓",
     "rsvpDeclined": "Marked as not attending",
-    "rsvpChange": "Change"
+    "rsvpChange": "Change",
+    "stationScan": "Scan a station",
+    "stationScanHint": "Scan the QR at a station to confirm your presence",
+    "stationScanOpen": "Open scanner",
+    "stationScanClose": "Close",
+    "stationScanned": "Recorded: {{name}}",
+    "stationScanDup": "You already scanned this station",
+    "stationCamUnavailable": "Camera unavailable on this device"
   },
   "page": {
     "title": "Page",

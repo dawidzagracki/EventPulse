@@ -226,7 +226,14 @@
     "rsvpNo": "Nie będę",
     "rsvpConfirmed": "Potwierdzono obecność ✓",
     "rsvpDeclined": "Zgłoszono nieobecność",
-    "rsvpChange": "Zmień"
+    "rsvpChange": "Zmień",
+    "stationScan": "Skanuj stanowisko",
+    "stationScanHint": "Zeskanuj kod QR na stanowisku, aby potwierdzić obecność",
+    "stationScanOpen": "Otwórz skaner",
+    "stationScanClose": "Zamknij",
+    "stationScanned": "Zarejestrowano: {{name}}",
+    "stationScanDup": "Już zeskanowano to stanowisko",
+    "stationCamUnavailable": "Kamera niedostępna na tym urządzeniu"
   },
   "page": {
     "title": "Strona",

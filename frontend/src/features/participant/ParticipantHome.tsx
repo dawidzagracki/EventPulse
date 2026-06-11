@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -16,6 +16,7 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher'
 import { Logo } from '../../components/Logo'
 import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
+import { recordStationScan } from './api'
 import { useMyGallery } from '../gallery/api'
 import { fetchPhotoUrl } from '../gallery/api'
 import { Thumb } from '../gallery/Thumb'
@@ -90,6 +91,7 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         )}
         {tab === 'activities' && (
           <div className="space-y-5">
+            <StationScanSection />
             <QuizzesSection />
             <NetworkingSection />
             <AiAssistantSection />
@@ -198,6 +200,131 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
         )}
       </div>
     </div>
+  )
+}
+
+// ===================== Station scanner (guest) =====================
+// Extract a station code from scanned QR text. Accepts "station:CODE",
+// a URL with ?station=CODE, or treats the whole trimmed text as the code.
+function parseStationCode(raw: string): string {
+  const t = raw.trim()
+  const prefix = t.match(/^station:(.+)$/i)
+  if (prefix) return prefix[1].trim()
+  try {
+    const u = new URL(t)
+    const q = u.searchParams.get('station')
+    if (q) return q
+  } catch {
+    /* not a URL */
+  }
+  return t
+}
+
+function StationScanSection() {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [result, setResult] = useState<{ name: string; dup: boolean } | null>(null)
+  const [camOk, setCamOk] = useState<boolean | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const busyRef = useRef(false)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    let stream: MediaStream | undefined
+    let timer: number | undefined
+
+    async function start() {
+      const w = window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => { detect: (v: HTMLVideoElement) => Promise<{ rawValue: string }[]> } }
+      if (!w.BarcodeDetector || !navigator.mediaDevices?.getUserMedia) {
+        setCamOk(false)
+        return
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        if (cancelled) {
+          stream.getTracks().forEach((tr) => tr.stop())
+          return
+        }
+        const video = videoRef.current!
+        video.srcObject = stream
+        await video.play()
+        setCamOk(true)
+        const detector = new w.BarcodeDetector({ formats: ['qr_code'] })
+        const tick = async () => {
+          if (cancelled) return
+          try {
+            const codes = await detector.detect(video)
+            if (codes[0]?.rawValue && !busyRef.current) {
+              busyRef.current = true
+              const code = parseStationCode(codes[0].rawValue)
+              try {
+                const r = await recordStationScan(code)
+                setResult({ name: r.stationCode, dup: r.duplicate })
+                setOpen(false)
+              } finally {
+                window.setTimeout(() => (busyRef.current = false), 1500)
+              }
+              return
+            }
+          } catch {
+            /* transient */
+          }
+          timer = window.setTimeout(() => void tick(), 400)
+        }
+        void tick()
+      } catch {
+        setCamOk(false)
+      }
+    }
+    void start()
+    return () => {
+      cancelled = true
+      if (timer) window.clearTimeout(timer)
+      stream?.getTracks().forEach((tr) => tr.stop())
+    }
+  }, [open])
+
+  return (
+    <Card>
+      <h2 className="mb-1 font-semibold text-white">{t('participant.stationScan')}</h2>
+      <p className="mb-3 text-sm text-slate-400">{t('participant.stationScanHint')}</p>
+
+      {result && (
+        <p
+          className={`mb-3 rounded-lg px-3 py-2 text-sm ${
+            result.dup ? 'bg-amber-400/15 text-amber-300' : 'bg-emerald-400/15 text-emerald-300'
+          }`}
+        >
+          {result.dup ? t('participant.stationScanDup') : t('participant.stationScanned', { name: result.name })}
+        </p>
+      )}
+
+      {!open ? (
+        <Button onClick={() => { setResult(null); setOpen(true) }}>
+          📷 {t('participant.stationScanOpen')}
+        </Button>
+      ) : (
+        <div className="space-y-2">
+          <div className="relative overflow-hidden rounded-xl bg-black">
+            <video ref={videoRef} className="aspect-square w-full object-cover" muted playsInline />
+            {camOk && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-40 w-40 rounded-2xl border-2 border-white/70" />
+              </div>
+            )}
+            {camOk === false && (
+              <div className="flex aspect-square w-full items-center justify-center p-6 text-center text-sm text-slate-400">
+                {t('participant.stationCamUnavailable')}
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            {t('participant.stationScanClose')}
+          </Button>
+        </div>
+      )}
+    </Card>
   )
 }
 
