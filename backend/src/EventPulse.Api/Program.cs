@@ -117,6 +117,9 @@ if (!string.IsNullOrWhiteSpace(redis))
 
 builder.Services.AddScoped<IEventNotifier, SignalREventNotifier>();
 
+// Live quiz sessions live in-process (singleton registry) and broadcast over QuizHub.
+builder.Services.AddSingleton<EventPulse.Api.LiveQuiz.LiveQuizRegistry>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -173,6 +176,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<EventHub>("/hubs/event");
+app.MapHub<QuizHub>("/hubs/quiz");
 
 app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
 {

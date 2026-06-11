@@ -56,6 +56,23 @@ export async function quizRanking(eventId: string, quizId: string) {
   return (await api.get<RankingEntry[]>(`/api/events/${eventId}/quizzes/${quizId}/ranking`)).data
 }
 
+// ---- Live quiz host controls ----
+const livePath = (eventId: string, quizId: string) =>
+  `/api/events/${eventId}/quizzes/${quizId}/live`
+
+export async function liveQuizStart(eventId: string, quizId: string) {
+  return (await api.post<{ questionCount: number }>(`${livePath(eventId, quizId)}/start`)).data
+}
+export async function liveQuizNext(eventId: string, quizId: string) {
+  return (await api.post<{ index?: number; finished?: boolean }>(`${livePath(eventId, quizId)}/next`)).data
+}
+export async function liveQuizReveal(eventId: string, quizId: string) {
+  await api.post(`${livePath(eventId, quizId)}/reveal`)
+}
+export async function liveQuizEnd(eventId: string, quizId: string) {
+  await api.post(`${livePath(eventId, quizId)}/end`)
+}
+
 // ---- Participant ----
 
 export function useMyQuizzes() {

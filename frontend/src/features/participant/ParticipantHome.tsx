@@ -17,6 +17,7 @@ import { Logo } from '../../components/Logo'
 import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { recordStationScan } from './api'
+import { createQuizConnection } from '../../lib/signalr'
 import { useMyGallery } from '../gallery/api'
 import { fetchPhotoUrl } from '../gallery/api'
 import { Thumb } from '../gallery/Thumb'
@@ -685,6 +686,7 @@ function QuizzesSection() {
   const [take, setTake] = useState<QuizTakeDto | null>(null)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [score, setScore] = useState<number | null>(null)
+  const [liveQuizId, setLiveQuizId] = useState<string | null>(null)
 
   async function open(quizId: string) {
     setScore(null)
@@ -707,14 +709,21 @@ function QuizzesSection() {
     )
   }
 
+  if (liveQuizId) {
+    return <LiveQuizPlayerCard quizId={liveQuizId} onExit={() => setLiveQuizId(null)} />
+  }
+
   return (
     <Card>
       <h2 className="mb-3 font-semibold text-white">{t('engagement.quizzes')}</h2>
       {!take ? (
         <ul className="space-y-1 text-sm">
           {quizzes.map((q) => (
-            <li key={q.id} className="flex items-center justify-between text-slate-200">
-              <span>{q.title}</span>
+            <li key={q.id} className="flex items-center justify-between gap-2 text-slate-200">
+              <span className="flex-1 truncate">{q.title}</span>
+              <Button variant="ghost" onClick={() => setLiveQuizId(q.id)}>
+                🔴 {t('engagement.liveTab')}
+              </Button>
               <Button variant="ghost" onClick={() => open(q.id)}>
                 {t('engagement.takeQuiz')}
               </Button>
@@ -884,6 +893,156 @@ function AgendaSection() {
             </li>
           ))}
         </ul>
+      )}
+    </Card>
+  )
+}
+
+// ============ Participant-side LIVE quiz player ============
+
+interface LiveBoardEntry { name: string; score: number }
+interface LiveQuestion { index: number; questionCount: number; text: string; options: string[] }
+
+function LiveQuizPlayerCard({ quizId, onExit }: { quizId: string; onExit: () => void }) {
+  const { t } = useTranslation()
+  const [phase, setPhase] = useState<'connecting' | 'lobby' | 'asking' | 'revealed' | 'finished'>('connecting')
+  const [question, setQuestion] = useState<LiveQuestion | null>(null)
+  const [correctIndex, setCorrectIndex] = useState<number | null>(null)
+  const [pickedIndex, setPickedIndex] = useState<number | null>(null)
+  const [board, setBoard] = useState<LiveBoardEntry[]>([])
+  const connRef = useRef<ReturnType<typeof createQuizConnection> | null>(null)
+
+  useEffect(() => {
+    const conn = createQuizConnection()
+    connRef.current = conn
+
+    conn.on('state', (s: { phase: string; question: LiveQuestion | null }) => {
+      if (s.phase === 'finished') setPhase('finished')
+      else if (s.question) {
+        setQuestion(s.question)
+        setPhase(s.phase === 'revealed' ? 'revealed' : 'asking')
+      } else {
+        setPhase('lobby')
+      }
+    })
+    conn.on('started', () => {
+      setPhase('lobby')
+      setQuestion(null)
+      setBoard([])
+    })
+    conn.on('question', (q: LiveQuestion) => {
+      setQuestion(q)
+      setCorrectIndex(null)
+      setPickedIndex(null)
+      setPhase('asking')
+    })
+    conn.on('reveal', (p: { correctIndex: number; leaderboard: LiveBoardEntry[] }) => {
+      setCorrectIndex(p.correctIndex)
+      setBoard(p.leaderboard)
+      setPhase('revealed')
+    })
+    conn.on('finished', (p: { leaderboard: LiveBoardEntry[] }) => {
+      setBoard(p.leaderboard)
+      setPhase('finished')
+    })
+
+    conn.start()
+      .then(() => conn.invoke('JoinQuiz', quizId))
+      .then(() => setPhase((p) => (p === 'connecting' ? 'lobby' : p)))
+      .catch(() => setPhase('lobby'))
+
+    return () => { void conn.stop() }
+  }, [quizId])
+
+  async function pick(i: number) {
+    if (pickedIndex !== null || phase !== 'asking') return
+    setPickedIndex(i)
+    try { await connRef.current?.invoke('SubmitAnswer', quizId, i) } catch { /* host sees count anyway */ }
+  }
+
+  const colors = ['from-rose-500 to-red-500', 'from-sky-500 to-blue-500', 'from-amber-400 to-yellow-500', 'from-emerald-500 to-green-500']
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center gap-2 rounded-full bg-rose-500/15 px-2.5 py-1 text-[11px] font-semibold text-rose-300 ring-1 ring-inset ring-rose-400/30">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-400" />
+          </span>
+          LIVE
+        </span>
+        <button onClick={onExit} className="text-xs text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      {phase === 'connecting' && <p className="mt-4 text-sm text-slate-400">…</p>}
+
+      {phase === 'lobby' && (
+        <p className="mt-4 text-sm text-slate-300">{t('engagement.liveWaitingHost')}</p>
+      )}
+
+      {(phase === 'asking' || phase === 'revealed') && question && (
+        <>
+          <p className="mt-3 text-[11px] uppercase tracking-wider text-slate-500">
+            {question.index + 1} / {question.questionCount}
+          </p>
+          <p className="mt-1 text-xl font-bold text-white">{question.text}</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {question.options.map((opt, i) => {
+              const reveal = phase === 'revealed'
+              const isPicked = pickedIndex === i
+              const isCorrect = correctIndex === i
+              const bg = reveal
+                ? isCorrect
+                  ? 'from-emerald-500 to-green-500'
+                  : isPicked
+                    ? 'from-rose-600 to-red-700 opacity-80'
+                    : 'from-slate-700 to-slate-800 opacity-60'
+                : colors[i % colors.length]
+              return (
+                <button
+                  key={i}
+                  onClick={() => pick(i)}
+                  disabled={phase !== 'asking' || pickedIndex !== null}
+                  className={`bg-gradient-to-br ${bg} relative rounded-xl px-4 py-5 text-left text-white shadow-lg transition active:scale-[0.98] disabled:cursor-not-allowed`}
+                >
+                  <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                    {String.fromCharCode(65 + i)}
+                  </span>
+                  <span className="text-base font-semibold">{opt}</span>
+                  {isPicked && phase === 'asking' && (
+                    <span className="absolute right-3 top-3 text-[10px] font-bold uppercase">✓ {t('engagement.liveAnsweredOk')}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {phase === 'revealed' && (
+            <p className="mt-3 text-xs text-slate-400">{t('engagement.liveWaitingNext')}</p>
+          )}
+        </>
+      )}
+
+      {phase === 'finished' && (
+        <>
+          <h3 className="mt-3 text-sm font-semibold text-white">🏆 {t('engagement.liveFinished')}</h3>
+          <ol className="mt-3 space-y-1.5">
+            {board.map((r, i) => (
+              <li
+                key={`${r.name}-${i}`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+                  i < 3 ? 'bg-gradient-to-r from-amber-500/10 to-transparent' : 'bg-slate-800/30'
+                }`}
+              >
+                <span className="w-7 text-center text-sm">
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-xs font-bold text-slate-400">#{i + 1}</span>}
+                </span>
+                <span className="flex-1 truncate text-sm text-white">{r.name}</span>
+                <span className="font-mono text-sm font-semibold tabular-nums text-amber-300">{r.score}</span>
+              </li>
+            ))}
+          </ol>
+        </>
       )}
     </Card>
   )

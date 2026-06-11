@@ -11,3 +11,12 @@ export function createEventConnection(): signalR.HubConnection {
     .withAutomaticReconnect()
     .build()
 }
+
+export function createQuizConnection(): signalR.HubConnection {
+  return new signalR.HubConnectionBuilder()
+    .withUrl(`${baseURL}/hubs/quiz`, {
+      accessTokenFactory: () => useAuthStore.getState().accessToken ?? '',
+    })
+    .withAutomaticReconnect()
+    .build()
+}

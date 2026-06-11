@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   contestRanking,
+  liveQuizEnd,
+  liveQuizNext,
+  liveQuizReveal,
+  liveQuizStart,
   quizRanking,
   useAddQuestion,
   useContests,
@@ -10,6 +14,7 @@ import {
   useCreateQuiz,
   useQuizzes,
 } from './api'
+import { createQuizConnection } from '../../lib/signalr'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
 import type { ContestDto, QuizDto, RankingEntry } from '../../types/api'
@@ -478,7 +483,7 @@ interface QuizQuestion {
 function QuizDetail({ eventId, quiz }: { eventId: string; quiz: QuizDto }) {
   const { t } = useTranslation()
   const addQuestion = useAddQuestion(eventId)
-  const [tab, setTab] = useState<'questions' | 'ranking'>('questions')
+  const [tab, setTab] = useState<'questions' | 'live' | 'ranking'>('questions')
   // Local list of just-added questions for instant feedback. Backend has no
   // GET /questions endpoint so this keeps the editor session-friendly.
   const [recentQuestions, setRecentQuestions] = useState<QuizQuestion[]>([])
@@ -522,6 +527,14 @@ function QuizDetail({ eventId, quiz }: { eventId: string; quiz: QuizDto }) {
             }`}
           >
             {t('engagement.currentQuestions')}
+          </button>
+          <button
+            onClick={() => setTab('live')}
+            className={`flex-1 rounded px-3 py-1.5 text-xs font-medium transition ${
+              tab === 'live' ? 'bg-rose-500/30 text-white ring-1 ring-inset ring-rose-400/40' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            🔴 {t('engagement.liveTab')}
           </button>
           <button
             onClick={() => setTab('ranking')}
@@ -571,6 +584,8 @@ function QuizDetail({ eventId, quiz }: { eventId: string; quiz: QuizDto }) {
           <AddQuestionForm onSave={handleSaveQuestion} isSaving={addQuestion.isPending} />
         </>
       )}
+
+      {tab === 'live' && <LiveQuizHost eventId={eventId} quiz={quiz} />}
 
       {tab === 'ranking' && <RankingPanel rows={ranking ?? []} loading={isLoading} />}
     </div>
@@ -758,5 +773,189 @@ function RankingPanel({ rows, loading }: { rows: RankingEntry[]; loading: boolea
         ))}
       </ol>
     </Card>
+  )
+}
+
+// ============ LiveQuizHost — host-controlled Kahoot ============
+
+interface LiveBoardEntry { name: string; score: number }
+interface LiveQuestion { index: number; questionCount: number; text: string; options: string[] }
+
+function LiveQuizHost({ eventId, quiz }: { eventId: string; quiz: QuizDto }) {
+  const { t } = useTranslation()
+  const [phase, setPhase] = useState<'idle' | 'lobby' | 'asking' | 'revealed' | 'finished'>('idle')
+  const [questionCount, setQuestionCount] = useState(0)
+  const [question, setQuestion] = useState<LiveQuestion | null>(null)
+  const [correctIndex, setCorrectIndex] = useState<number | null>(null)
+  const [board, setBoard] = useState<LiveBoardEntry[]>([])
+  const [players, setPlayers] = useState<{ answered: number; total: number }>({ answered: 0, total: 0 })
+  const [busy, setBusy] = useState(false)
+  const connRef = useRef<ReturnType<typeof createQuizConnection> | null>(null)
+
+  // Maintain a SignalR connection for the host so they see live answer counts.
+  useEffect(() => {
+    const conn = createQuizConnection()
+    connRef.current = conn
+
+    conn.on('started', (p: { title: string; questionCount: number }) => {
+      setPhase('lobby')
+      setQuestionCount(p.questionCount)
+      setQuestion(null)
+      setCorrectIndex(null)
+      setBoard([])
+    })
+    conn.on('question', (q: LiveQuestion) => {
+      setQuestion(q)
+      setCorrectIndex(null)
+      setPlayers({ answered: 0, total: players.total })
+      setPhase('asking')
+    })
+    conn.on('reveal', (p: { correctIndex: number; leaderboard: LiveBoardEntry[] }) => {
+      setCorrectIndex(p.correctIndex)
+      setBoard(p.leaderboard)
+      setPhase('revealed')
+    })
+    conn.on('finished', (p: { leaderboard: LiveBoardEntry[] }) => {
+      setBoard(p.leaderboard)
+      setPhase('finished')
+    })
+    conn.on('answerCount', (answered: number, total: number) => setPlayers({ answered, total }))
+
+    conn.start().then(() => conn.invoke('JoinQuiz', quiz.id)).catch(() => {
+      /* the host UI still works without live updates */
+    })
+
+    return () => { void conn.stop() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz.id])
+
+  async function call(action: () => Promise<unknown>) {
+    setBusy(true)
+    try { await action() } finally { setBusy(false) }
+  }
+
+  if (phase === 'idle') {
+    return (
+      <Card>
+        <h3 className="mb-2 text-sm font-semibold text-white">{t('engagement.liveTitle')}</h3>
+        <p className="mb-4 text-sm text-slate-400">{t('engagement.liveHint')}</p>
+        <Button onClick={() => call(() => liveQuizStart(eventId, quiz.id))} disabled={busy}>
+          ▶ {t('engagement.liveStart')}
+        </Button>
+      </Card>
+    )
+  }
+
+  if (phase === 'finished') {
+    return (
+      <Card>
+        <h3 className="mb-3 text-sm font-semibold text-white">🏆 {t('engagement.liveFinished')}</h3>
+        <Leaderboard entries={board} />
+        <Button className="mt-3" variant="ghost" onClick={() => setPhase('idle')}>
+          {t('common.cancel')}
+        </Button>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-2 rounded-full bg-rose-500/15 px-2.5 py-1 text-[11px] font-semibold text-rose-300 ring-1 ring-inset ring-rose-400/30">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-400" />
+            </span>
+            LIVE
+          </span>
+          <span className="text-xs text-slate-400">
+            {question ? `${question.index + 1} / ${questionCount}` : `${t('engagement.liveLobby')}`}
+          </span>
+        </div>
+
+        {question ? (
+          <>
+            <p className="mt-4 text-xl font-bold text-white">{question.text}</p>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+              {question.options.map((opt, i) => {
+                const isCorrect = correctIndex === i
+                return (
+                  <li
+                    key={i}
+                    className={`rounded-lg border px-3 py-2 text-sm transition ${
+                      isCorrect
+                        ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-200'
+                    }`}
+                  >
+                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-white">
+                      {String.fromCharCode(65 + i)}
+                    </span>
+                    {opt}
+                    {isCorrect && ' ✓'}
+                  </li>
+                )
+              })}
+            </ul>
+            {phase === 'asking' && (
+              <p className="mt-3 text-xs text-slate-400">
+                {t('engagement.liveAnswered')}: <span className="font-mono text-white">{players.answered}</span>
+                {players.total > 0 && ` / ${players.total}`}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="mt-4 text-sm text-slate-400">{t('engagement.liveLobbyHint')}</p>
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {phase === 'asking' && (
+            <Button onClick={() => call(() => liveQuizReveal(eventId, quiz.id))} disabled={busy}>
+              👁 {t('engagement.liveReveal')}
+            </Button>
+          )}
+          {(phase === 'lobby' || phase === 'revealed') && (
+            <Button onClick={() => call(() => liveQuizNext(eventId, quiz.id))} disabled={busy}>
+              ▶ {t('engagement.liveNext')}
+            </Button>
+          )}
+          <Button variant="ghost" onClick={() => call(() => liveQuizEnd(eventId, quiz.id))} disabled={busy}>
+            ⏹ {t('engagement.liveEnd')}
+          </Button>
+        </div>
+      </Card>
+
+      {board.length > 0 && (
+        <Card>
+          <h4 className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+            {t('engagement.ranking')}
+          </h4>
+          <Leaderboard entries={board} />
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function Leaderboard({ entries }: { entries: LiveBoardEntry[] }) {
+  const top3 = ['🥇', '🥈', '🥉']
+  return (
+    <ol className="space-y-1.5">
+      {entries.map((r, i) => (
+        <li
+          key={`${r.name}-${i}`}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+            i < 3 ? 'bg-gradient-to-r from-amber-500/10 to-transparent' : 'bg-slate-800/30'
+          }`}
+        >
+          <span className="flex h-7 w-7 items-center justify-center text-sm">
+            {i < 3 ? top3[i] : <span className="text-xs font-bold text-slate-400">#{i + 1}</span>}
+          </span>
+          <span className="flex-1 truncate text-sm text-white">{r.name}</span>
+          <span className="font-mono text-sm font-semibold tabular-nums text-amber-300">{r.score}</span>
+        </li>
+      ))}
+    </ol>
   )
 }

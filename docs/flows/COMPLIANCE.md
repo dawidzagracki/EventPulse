@@ -9,7 +9,7 @@ Status: ✅ zaimplementowane i przetestowane · 🟡 zaimplementowane / części
 | Unikalny URL/slug podstrony | ✅ | tamże (slug) |
 | Edycja | ✅ | `useUpdateEvent` + PUT; domena `EventDomainTests` |
 | Archiwizacja | ✅ | `SpecComplianceTests.Event_can_be_archived_via_status` (nowy) |
-| **Usunięcie** | ❌ | brak `HttpDelete`. Rekom.: dodać soft-delete lub jawny DELETE |
+| **Usunięcie** | ✅ | `DeleteEventCommand` + `DELETE /api/events/{id}` (Agency-only) |
 | Dashboard z listą wszystkich wydarzeń + statusy | ✅ | `Create_then_get_and_list`, izolacja w `TenantIsolationTests` |
 
 ## §2.2 Kreator stron
@@ -61,7 +61,7 @@ Status: ✅ zaimplementowane i przetestowane · 🟡 zaimplementowane / części
 |---|---|---|
 | Tworzenie pytań + poprawna odpowiedź | ✅ | `Quiz_take_hides_answers_and_scores_submission` |
 | Punktacja (poprawność + czas) | ✅ | tamże |
-| **Tryb LIVE: host startuje, wszyscy widzą pytanie naraz, ranking po każdym pytaniu** | ❌ | obecnie quiz **asynchroniczny**. Rekom.: SignalR „QuizHub" (host→broadcast pytania, live ranking) |
+| **Tryb LIVE: host startuje, wszyscy widzą pytanie naraz, ranking po każdym pytaniu** | ✅ | `LiveQuizController` + `QuizHub` (SignalR) + `LiveQuizSession`; testy w `LiveQuizSessionTests` |
 
 ## §3 Widok uczestnika
 | Wymaganie | Status | Test |
@@ -70,8 +70,8 @@ Status: ✅ zaimplementowane i przetestowane · 🟡 zaimplementowane / części
 | Bramka RODO | ✅ | `Full_participant_onboarding_flow` |
 | Strona/agenda/lokalizacja | ✅ | `Participant_sees_common_items_but_not_other_groups` |
 | Mój QR (do pokazania na bramce) | ✅ | `SpecComplianceTests.My_qr_returns_png` (nowy) |
-| **RSVP (potwierdź/rezygnuj jako akcja)** | 🟡 | status + zgody w onboardingu; brak osobnego przycisku RSVP |
-| **Skaner QR stanowisk u gościa (kamera)** | ❌ | gość nie ma skanera kamery stanowisk. Rekom.: kamera w app uczestnika |
+| **RSVP (potwierdź/rezygnuj jako akcja)** | ✅ | `RsvpCommand` + `POST /api/me/rsvp` + RsvpRow w aplikacji uczestnika |
+| **Skaner QR stanowisk u gościa (kamera)** | ✅ | `SelfStationScanCommand` + `POST /api/me/scans` + `StationScanSection` (BarcodeDetector) |
 | Udział w quizach / rankingi | ✅ | `Quiz_take...`, `Contest_results_and_ranking` |
 
 ## §4 Dashboard i raporty
@@ -83,8 +83,8 @@ Status: ✅ zaimplementowane i przetestowane · 🟡 zaimplementowane / części
 | Rankingi konkurencji + wyniki quizów | ✅ | `Contest_results_and_ranking`, `Quiz_take...` |
 | Feedback + podsumowanie | ✅ | `Feedback_then_summary_and_pdf_report` |
 | Raport PDF | ✅ | tamże |
-| **Eksport do Excel (uczestnicy/odpowiedzi)** | ❌ | brak endpointu eksportu XLSX. Rekom.: `GET /participants/export` |
-| Dostęp klienta końcowego | 🟡/❌ | patrz §6 niżej (scoping klienta) |
+| **Eksport do Excel (uczestnicy/odpowiedzi)** | ✅ | `ExportParticipantsQuery` (ClosedXML, 16 kolumn) + `GET /api/events/{id}/participants/export` |
+| Dostęp klienta końcowego | ✅ | `ListEventsQuery`/`GetEventByIdQuery` filtrują po `ClientEmail`; `AgencyOrClient` na kontrolerach |
 
 ## §6 Techniczne / bezpieczeństwo
 | Wymaganie | Status | Test |
