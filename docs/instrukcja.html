@@ -483,10 +483,24 @@
 
 <div id="lb"><img src="" alt=""></div>
 <script>
+  // Lightbox
   const lb=document.getElementById('lb'),lbi=lb.querySelector('img');
   document.querySelectorAll('figure img').forEach(im=>im.addEventListener('click',()=>{lbi.src=im.src;lb.style.display='grid';}));
   lb.addEventListener('click',()=>lb.style.display='none');
   document.addEventListener('keydown',e=>{if(e.key==='Escape')lb.style.display='none';});
+
+  // Robust in-page navigation — works even when the default #hash jump is
+  // blocked (e.g. inside a sandboxed preview panel / iframe).
+  document.querySelectorAll('nav a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',e=>{
+      const id=a.getAttribute('href').slice(1);
+      const t=document.getElementById(id);
+      if(!t)return;
+      e.preventDefault();
+      t.scrollIntoView({behavior:'smooth',block:'start'});
+      history.replaceState(null,'','#'+id);
+    });
+  });
 </script>
 </body>
 </html>
