@@ -1,5 +1,8 @@
 {
-  "app": { "name": "EventPulse", "menu": "Menu" },
+  "app": {
+    "name": "EventPulse",
+    "menu": "Menu"
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",
@@ -488,7 +491,21 @@
     "questionText": "Question text",
     "questionPlaceholder": "e.g. When was the first edition of the conference held?",
     "selectQuiz": "Select a quiz to add a question",
-    "currentQuestions": "Questions in this quiz"
+    "currentQuestions": "Questions in this quiz",
+    "liveTitle": "Live quiz",
+    "liveHint": "Everyone sees questions at the same time — faster answers score more.",
+    "liveStart": "Start quiz",
+    "liveNext": "Next question",
+    "liveReveal": "Reveal answer",
+    "liveEnd": "End",
+    "liveLobby": "Lobby",
+    "liveLobbyHint": "Participants are joining. Click \"Next question\" to begin.",
+    "liveFinished": "Done! Final standings:",
+    "liveAnswered": "Answered",
+    "liveTab": "Live",
+    "liveWaitingHost": "Waiting for the host…",
+    "liveAnsweredOk": "Sent!",
+    "liveWaitingNext": "Waiting for the next question…"
   },
   "gallery": {
     "title": "Gallery",

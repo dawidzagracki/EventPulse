@@ -48,3 +48,6 @@ logs/
 
 # ---- Claude Code local settings ----
 .claude/settings.local.json
+
+# Local screenshot tooling (playwright-core, logs, seeded tokens)
+tooling/

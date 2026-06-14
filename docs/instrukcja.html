@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EventPulse — Instrukcja i mapa przepływów</title>
+<style>
+  :root{
+    --bg:#070710; --bg2:#0c0c1a; --panel:#11111f; --panel2:#161629;
+    --line:rgba(148,163,184,.14); --line2:rgba(148,163,184,.26);
+    --txt:#e7e9f3; --muted:#9aa3bd; --faint:#6b7390;
+    --indigo:#6366f1; --violet:#8b5cf6; --fuchsia:#d946ef;
+    --emerald:#34d399; --amber:#fbbf24; --rose:#fb7185; --sky:#38bdf8;
+    --grad:linear-gradient(135deg,#6366f1,#8b5cf6,#d946ef);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:
+      radial-gradient(1200px 700px at 85% -10%,rgba(139,92,246,.18),transparent 60%),
+      radial-gradient(900px 600px at -10% 10%,rgba(99,102,241,.16),transparent 55%),
+      var(--bg);
+    color:var(--txt);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  .wrap{display:grid;grid-template-columns:272px 1fr;max-width:1280px;margin:0 auto;gap:0;}
+  /* sidebar */
+  aside{position:sticky;top:0;height:100vh;overflow-y:auto;padding:26px 18px;border-right:1px solid var(--line);background:rgba(10,10,20,.55);backdrop-filter:blur(8px);}
+  aside .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  aside .logo{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;font-weight:800;color:#fff;box-shadow:0 6px 20px rgba(139,92,246,.45)}
+  aside h1{font-size:15px;margin:0;letter-spacing:.2px}
+  aside .sub{font-size:11px;color:var(--faint);margin-top:1px}
+  nav .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.18em;color:var(--faint);margin:18px 8px 6px}
+  nav a{display:block;padding:7px 11px;border-radius:9px;color:var(--muted);text-decoration:none;font-size:13.5px;transition:.15s;border:1px solid transparent}
+  nav a:hover{color:#fff;background:rgba(139,92,246,.10)}
+  nav a.persona{font-weight:600;color:#cdd2e6}
+  /* main */
+  main{padding:46px 52px 120px;min-width:0}
+  .hero{position:relative;border:1px solid var(--line);border-radius:26px;padding:46px 44px;overflow:hidden;background:linear-gradient(135deg,rgba(99,102,241,.16),rgba(217,70,239,.10));margin-bottom:34px}
+  .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 90% 0%,rgba(217,70,239,.22),transparent 60%);pointer-events:none}
+  .hero .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--violet);font-weight:700}
+  .hero h2{font-size:40px;line-height:1.1;margin:10px 0 12px;background:linear-gradient(120deg,#fff,#c7b6ff 60%,#f0a6ff);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  .hero p{max-width:640px;color:#cdd2e6;margin:0}
+  .hero .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;padding:6px 13px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:#dfe3f2}
+  .dot{width:7px;height:7px;border-radius:50%}
+  /* info boxes */
+  .note{border:1px solid var(--line);border-left:3px solid var(--violet);background:var(--panel);border-radius:12px;padding:16px 18px;margin:22px 0}
+  .note b{color:#fff}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+  .creds{display:flex;gap:26px;flex-wrap:wrap;margin-top:12px;font-size:13.5px}
+  .creds code{background:#000;border:1px solid var(--line2);border-radius:7px;padding:3px 9px;color:#e7c9ff;font-size:13px}
+  /* persona header */
+  .persona-h{display:flex;align-items:center;gap:16px;margin:56px 0 6px;padding-top:14px}
+  .persona-h .ic{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;font-size:26px;border:1px solid var(--line2);background:var(--panel2)}
+  .persona-h h3{font-size:27px;margin:0;font-weight:800}
+  .persona-h .d{color:var(--muted);font-size:14px;margin-top:2px}
+  .persona-rule{height:1px;background:linear-gradient(90deg,var(--violet),transparent);margin:6px 0 26px;border:0}
+  /* flow card */
+  .flow{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,var(--panel),rgba(12,12,26,.6));margin:22px 0;overflow:hidden;position:relative}
+  .flow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--grad)}
+  .flow .head{padding:20px 24px 6px;display:flex;align-items:flex-start;gap:14px}
+  .flow .num{flex:none;width:34px;height:34px;border-radius:10px;background:rgba(139,92,246,.16);border:1px solid rgba(139,92,246,.4);display:grid;place-items:center;font-weight:700;font-size:14px;color:#d9c9ff}
+  .flow .ttl{flex:1;min-width:0}
+  .flow .ttl h4{margin:0;font-size:18.5px;font-weight:700}
+  .flow .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .chip{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:600;letter-spacing:.02em}
+  .chip.api{background:rgba(56,189,248,.12);color:#7dd3fc;border:1px solid rgba(56,189,248,.3)}
+  .chip.role{background:rgba(139,92,246,.14);color:#c9b6ff;border:1px solid rgba(139,92,246,.32)}
+  .chip.warn{background:rgba(251,113,133,.12);color:#fda4af;border:1px solid rgba(251,113,133,.3)}
+  .flow .body{padding:6px 24px 22px;display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .flow .body.solo{grid-template-columns:1fr}
+  .flow .body.mobile{grid-template-columns:1.25fr .75fr}
+  .steps{margin:8px 0 0;padding:0;list-style:none;counter-reset:s}
+  .steps li{position:relative;padding:8px 0 8px 34px;border-bottom:1px dashed var(--line);counter-increment:s;font-size:14.5px;color:#dde1f0}
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:7px;width:22px;height:22px;border-radius:7px;background:var(--panel2);border:1px solid var(--line2);display:grid;place-items:center;font-size:11.5px;color:var(--violet);font-weight:700}
+  .steps b{color:#fff}
+  .steps .k{background:#000;border:1px solid var(--line2);border-radius:6px;padding:1px 7px;font-size:12.5px;color:#e7c9ff;white-space:nowrap}
+  .tip{font-size:13px;color:var(--muted);margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.22)}
+  .tip.warn{background:rgba(251,113,133,.07);border-color:rgba(251,113,133,.22)}
+  figure{margin:0}
+  figure img{width:100%;display:block;border-radius:13px;border:1px solid var(--line2);cursor:zoom-in;background:#000;box-shadow:0 18px 50px rgba(0,0,0,.5);transition:.2s}
+  figure img:hover{border-color:var(--violet)}
+  figure.phone img{max-width:300px;margin:0 auto}
+  figcaption{font-size:12px;color:var(--faint);text-align:center;margin-top:8px}
+  /* lightbox */
+  #lb{position:fixed;inset:0;background:rgba(4,4,10,.92);display:none;place-items:center;z-index:99;padding:30px;cursor:zoom-out}
+  #lb img{max-width:96vw;max-height:92vh;border-radius:10px;border:1px solid var(--line2)}
+  footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line);color:var(--faint);font-size:13px}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr}aside{display:none}main{padding:30px 20px 80px}.flow .body,.flow .body.mobile{grid-template-columns:1fr}.hero h2{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside>
+    <div class="brand">
+      <div class="logo">E</div>
+      <div><h1>EventPulse</h1><div class="sub">Instrukcja &amp; mapa flow</div></div>
+    </div>
+    <nav>
+      <div class="grp">Start</div>
+      <a href="#intro">Jak czytać ten dokument</a>
+      <a href="#role">Role i logowanie</a>
+      <div class="grp">Persony</div>
+      <a class="persona" href="#agency">👔 Organizator (Agency)</a>
+      <a href="#a-login">· Logowanie i lista</a>
+      <a href="#a-dash">· Dashboard eventu</a>
+      <a href="#a-part">· Uczestnicy</a>
+      <a href="#a-agenda">· Agenda</a>
+      <a href="#a-page">· Kreator strony</a>
+      <a href="#a-quiz">· Quiz na żywo (host)</a>
+      <a href="#a-more">· Logistyka · Galeria · Audyt</a>
+      <a href="#a-op">· Link operatora</a>
+      <a class="persona" href="#client">🤝 Klient</a>
+      <a class="persona" href="#participant">🎫 Uczestnik (mobile)</a>
+      <a href="#c-home">· Wejście i zgody RODO</a>
+      <a href="#c-sections">· Sekcje aplikacji</a>
+      <a class="persona" href="#operator">🔆 Operator QR (mobile)</a>
+      <a href="#d-link">· Magic-link</a>
+      <a href="#d-station">· Wybór stanowiska</a>
+      <a href="#d-scan">· Skanowanie</a>
+      <a class="persona" href="#public">🌐 Strona publiczna</a>
+      <div class="grp">Dodatki</div>
+      <a href="#cheat">Ściąga / FAQ</a>
+    </nav>
+  </aside>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">Dokumentacja produktowa</div>
+      <h2>EventPulse — jak to działa, krok po kroku</h2>
+      <p>Kompletny przewodnik po wszystkich przepływach w aplikacji, ze zrzutami z działającego systemu. Służy zarówno jako <b>instrukcja obsługi</b> („gdzie kliknąć, żeby…"), jak i <b>mapa wszystkich ścieżek</b> dla każdej roli użytkownika.</p>
+      <div class="meta">
+        <span class="pill"><span class="dot" style="background:var(--violet)"></span> 5 person</span>
+        <span class="pill"><span class="dot" style="background:var(--sky)"></span> 20+ przepływów</span>
+        <span class="pill"><span class="dot" style="background:var(--emerald)"></span> zrzuty z live aplikacji</span>
+        <span class="pill"><span class="dot" style="background:var(--amber)"></span> PL / EN</span>
+      </div>
+    </section>
+
+    <section id="intro">
+      <div class="note">
+        <b>Jak czytać ten dokument.</b> Każdy przepływ to ponumerowana karta: po lewej masz kroki („kliknij&nbsp;<span class="k">Przycisk</span>"), po prawej zrzut ekranu pokazujący dokładnie ten ekran. Kliknij dowolny obrazek, żeby powiększyć.
+        <div class="legend">
+          <span><span class="chip role">ROLA</span> kto wykonuje</span>
+          <span><span class="chip api">/api/…</span> endpoint w tle</span>
+          <span><span class="chip warn">UWAGA</span> ścieżka błędu / wyjątek</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="role">
+      <div class="persona-h"><div class="ic">🔑</div><div><h3>Role i logowanie</h3><div class="d">Cztery typy kont — każde z innym punktem wejścia i zakresem.</div></div></div>
+      <hr class="persona-rule"/>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr style="text-align:left;color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.1em">
+          <th style="padding:10px 12px;border-bottom:1px solid var(--line)">Rola</th>
+          <th style="padding:10px 12px;border-bottom:1px solid var(--line)">Wejście</th>
+          <th style="padding:10px 12px;border-bottom:1px solid var(--line)">Główny ekran</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><b>👔 Organizator</b> (Agency)</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><span class="k">/login</span> e-mail + hasło</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">lista wydarzeń</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><b>🤝 Klient</b></td><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><span class="k">/login</span> e-mail + hasło</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">dashboard swojego eventu</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><b>🎫 Uczestnik</b></td><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><span class="k">/p/{token}</span> z maila / QR</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">aplikacja uczestnika</td></tr>
+          <tr><td style="padding:10px 12px"><b>🔆 Operator QR</b></td><td style="padding:10px 12px"><span class="k">/op/{token}</span> link 24h</td><td style="padding:10px 12px">skaner</td></tr>
+        </tbody>
+      </table>
+      <div class="creds">
+        <span>Konto demo organizatora: <code>admin@falp.local</code> / <code>Admin123!</code></span>
+      </div>
+    </section>
+
+    <!-- ========================= AGENCY ========================= -->
+    <div class="persona-h" id="agency"><div class="ic">👔</div><div><h3>Persona A — Organizator (Agency)</h3><div class="d">Pełny panel administracyjny: wydarzenia, uczestnicy, strona, aktywności, dashboard.</div></div></div>
+    <hr class="persona-rule"/>
+
+    <div class="flow" id="a-login">
+      <div class="head"><div class="num">1</div><div class="ttl"><h4>Logowanie</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip api">POST /api/auth/login</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Wejdź na <span class="k">/login</span>.</li>
+            <li>Wpisz <b>e-mail</b> i <b>hasło</b> organizatora.</li>
+            <li>Kliknij <span class="k">Zaloguj</span> — wylądujesz na liście wydarzeń.</li>
+          </ol>
+          <div class="tip">Ten sam ekran logują się też Klienci — system sam rozpozna rolę po koncie i pokaże odpowiedni widok.</div>
+        </div>
+        <figure><img src="assets/screens/01-login.png" alt="Ekran logowania"><figcaption>Ekran logowania — e-mail, hasło, przycisk „Zaloguj".</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="head"><div class="num">2</div><div class="ttl"><h4>Lista wydarzeń</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip api">GET /api/events</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Po zalogowaniu widzisz wszystkie swoje wydarzenia jako kafelki ze statusem.</li>
+            <li>Filtruj po statusie (Szkice / Opublikowane / Na żywo) lub <b>wyszukaj</b> po nazwie.</li>
+            <li>Kliknij <span class="k">+ Nowe wydarzenie</span>, aby utworzyć kolejne; albo kliknij kafelek, aby otworzyć event.</li>
+          </ol>
+        </div>
+        <figure><img src="assets/screens/02-events-list.png" alt="Lista wydarzeń"><figcaption>Lista wydarzeń z licznikami statusów i wyszukiwarką.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="a-dash">
+      <div class="head"><div class="num">3</div><div class="ttl"><h4>Dashboard wydarzenia</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip role">Klient</span><span class="chip api">GET /api/events/{id}/dashboard</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Otwórz wydarzenie — domyślnie pokazuje się <b>Dashboard</b>.</li>
+            <li>U góry: odliczanie do startu, status, oraz akcje: <span class="k">Skaner QR</span>, <span class="k">Link operatora</span>, <span class="k">Pobierz raport PDF</span>, <span class="k">Usuń wydarzenie</span>.</li>
+            <li>KPI: <b>Obecni</b>, <b>Frekwencja</b>, <b>Potwierdzeni</b>, <b>Nieobecni</b> — odświeżają się na żywo po każdym skanie.</li>
+            <li><b>Lejek frekwencji</b> i <b>Aktywność na stanowiskach</b> pokazują przebieg eventu w czasie rzeczywistym.</li>
+          </ol>
+          <div class="tip">„Aktywność na żywo" i stacje aktualizują się przez SignalR — nie musisz odświeżać strony.</div>
+        </div>
+        <figure><img src="assets/screens/03-dashboard.png" alt="Dashboard wydarzenia"><figcaption>Dashboard: countdown, KPI, lejek frekwencji, szybkie akcje, aktywność live.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="a-part">
+      <div class="head"><div class="num">4</div><div class="ttl"><h4>Uczestnicy — import, statusy, eksport</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip role">Klient</span><span class="chip api">/api/events/{id}/participants</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Zakładka <span class="k">Uczestnicy</span> w menu po lewej.</li>
+            <li><span class="k">Pokaż import</span> → wgraj plik Excel/CSV; zobaczysz podgląd z walidacją i duplikatami, potem zatwierdź.</li>
+            <li><span class="k">+ Dodaj ręcznie</span> dla pojedynczego gościa.</li>
+            <li>Filtry statusu: <b>Wszyscy / Invited / Confirmed / Checked-in / No-show</b>.</li>
+            <li><span class="k">Wyślij zaproszenia</span> — maile z linkiem i kodem QR. <span class="k">Eksport Excel</span> pobiera pełną listę (16 kolumn).</li>
+            <li>Kliknij gościa → panel z danymi, statusem, kodem QR i akcjami.</li>
+          </ol>
+        </div>
+        <figure><img src="assets/screens/04-participants.png" alt="Lista uczestników"><figcaption>Uczestnicy: pasek narzędzi (import / zaproszenia / eksport), filtry statusu, lista z awatarami.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="a-agenda">
+      <div class="head"><div class="num">5</div><div class="ttl"><h4>Agenda</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip api">/api/events/{id}/agenda</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Zakładka <span class="k">Agenda</span>.</li>
+            <li><span class="k">Dodaj punkt agendy</span> — tytuł (PL/EN), czas, typ (prezentacja, posiłek, atrakcja…), opcjonalnie „wymaga skanu QR".</li>
+            <li>Punkty pojawiają się w aplikacji uczestnika i na publicznej stronie.</li>
+          </ol>
+          <div class="tip">Edycja punktu wysyła powiadomienie do uczestników (kolejka outbox → e-mail).</div>
+        </div>
+        <figure><img src="assets/screens/05-agenda.png" alt="Agenda"><figcaption>Zakładka Agenda — punkty programu z typami i flagą check-in.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="a-page">
+      <div class="head"><div class="num">6</div><div class="ttl"><h4>Kreator strony (Page Builder)</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip role">Klient</span><span class="chip api">/api/events/{id}/page</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Zakładka <span class="k">Strona</span>.</li>
+            <li>Przeciągnij bloki z palety po lewej (Sekcja powitalna, Opis, FAQ, Zespół, Galeria, Agenda, Mapa, Partnerzy, Odliczanie, <b>Konkursy</b>, <b>Quizy</b>…) na płótno.</li>
+            <li>Kliknij blok, aby edytować treść; ustaw <span class="k">Branding</span> (kolory, logo) i język.</li>
+            <li><span class="k">Zapisz wersję roboczą</span>, potem <span class="k">Publikuj</span>, żeby strona była widoczna publicznie.</li>
+          </ol>
+          <div class="tip">Bloki „Konkursy" i „Quizy" zaciągają dane automatycznie z modułu Aktywności.</div>
+        </div>
+        <figure><img src="assets/screens/06-pagebuilder.png" alt="Kreator strony"><figcaption>Page Builder: paleta bloków, panel warstw, płótno, branding i publikacja.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="a-quiz">
+      <div class="head"><div class="num">7</div><div class="ttl"><h4>Quiz na żywo — panel prowadzącego (Kahoot)</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip role">Klient</span><span class="chip api">/api/…/quizzes/{id}/live</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Zakładka <span class="k">Aktywności</span> → podzakładka <span class="k">Quizy</span> → otwórz quiz.</li>
+            <li>Dodaj pytania w zakładce <span class="k">Pytania w quizie</span>.</li>
+            <li>Przejdź do zakładki <span class="k">🔴 Na żywo</span> i kliknij <span class="k">Rozpocznij quiz</span> — wszyscy uczestnicy zobaczą pytanie jednocześnie.</li>
+            <li>Steruj: <span class="k">Następne pytanie</span> → <span class="k">Pokaż odpowiedź</span> (z rankingiem) → … → <span class="k">Zakończ</span>.</li>
+          </ol>
+          <div class="tip">Punktacja nagradza poprawność <b>i szybkość</b> (bonus maleje przez 20 s). Widzisz licznik odpowiedzi na żywo.</div>
+        </div>
+        <div style="display:grid;gap:14px">
+          <figure><img src="assets/screens/08-quiz-detail.png" alt="Quiz — pytania"><figcaption>Zakładka „Pytania w quizie" — dodawanie pytań i odpowiedzi.</figcaption></figure>
+          <figure><img src="assets/screens/09-quiz-live-host.png" alt="Quiz na żywo — host"><figcaption>Zakładka „Na żywo" z przyciskiem „Rozpocznij quiz".</figcaption></figure>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow" id="a-more">
+      <div class="head"><div class="num">8</div><div class="ttl"><h4>Logistyka · Galeria · Audyt</h4>
+        <div class="chips"><span class="chip role">Agency</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li><span class="k">Logistyka</span> — pokoje, stoły, transfery i przypisania uczestników.</li>
+            <li><span class="k">Galeria</span> — zdjęcia z eventu; uczestnik widzi je tylko jeśli wyraził zgodę RODO na wizerunek.</li>
+            <li><span class="k">Audyt</span> — log wszystkich zmian w systemie (kto, co, kiedy). Tylko organizator.</li>
+          </ol>
+        </div>
+        <div style="display:grid;gap:14px">
+          <figure><img src="assets/screens/10-logistics.png" alt="Logistyka"><figcaption>Logistyka — pokoje, stoły, transfery.</figcaption></figure>
+          <figure><img src="assets/screens/11-gallery.png" alt="Galeria"><figcaption>Galeria — zdjęcia chronione zgodą RODO.</figcaption></figure>
+          <figure><img src="assets/screens/12-audit.png" alt="Audyt"><figcaption>Audyt — log zmian (tylko organizator).</figcaption></figure>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow" id="a-op">
+      <div class="head"><div class="num">9</div><div class="ttl"><h4>Wygenerowanie linku operatora</h4>
+        <div class="chips"><span class="chip role">Agency</span><span class="chip api">POST /api/events/{id}/operator-link</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Otwórz wydarzenie i kliknij <span class="k">🔗 Link operatora</span> (prawy górny róg).</li>
+            <li>System tworzy <b>jednorazowy link ważny 24h</b>, przypięty do tego eventu, i kopiuje go do schowka.</li>
+            <li>Wyślij link hostessie / ochronie — otworzy skaner bez logowania do panelu.</li>
+          </ol>
+          <div class="tip warn"><b>Bezpieczeństwo:</b> token operatora działa tylko dla tego jednego eventu i tylko dla skanera — nie da się z niego wejść do panelu administracyjnego.</div>
+        </div>
+        <figure><img src="assets/screens/03-dashboard.png" alt="Pasek akcji z przyciskiem Link operatora"><figcaption>Pasek akcji wydarzenia (góra dashboardu) — „Link operatora" obok „Skaner QR".</figcaption></figure>
+      </div>
+    </div>
+
+    <!-- ========================= CLIENT ========================= -->
+    <div class="persona-h" id="client"><div class="ic">🤝</div><div><h3>Persona B — Klient</h3><div class="d">Mini-admin jednego wydarzenia. Widzi tylko swój event i skrócone menu.</div></div></div>
+    <hr class="persona-rule"/>
+
+    <div class="flow">
+      <div class="head"><div class="num">1</div><div class="ttl"><h4>Logowanie klienta i tryb klienta</h4>
+        <div class="chips"><span class="chip role">Klient</span><span class="chip api">GET /api/events (scoped)</span></div></div></div>
+      <div class="body solo">
+        <div>
+          <ol class="steps">
+            <li>Klient loguje się na tym samym ekranie <span class="k">/login</span>.</li>
+            <li>System pokazuje <b>tylko jego wydarzenie</b> — przy jednym evencie od razu przenosi na jego Dashboard.</li>
+            <li>Menu jest skrócone (Dashboard, Przegląd, Strona, Uczestnicy, Galeria); Logistyka/Aktywności/Audyt są ukryte.</li>
+            <li>W pasku widać oznaczenie <b>„Tryb klienta"</b>.</li>
+          </ol>
+          <div class="tip warn"><b>Bezpieczeństwo:</b> próba otwarcia cudzego eventu po adresie URL zwraca „nie znaleziono" — klient nie pozna nawet, że taki event istnieje. Nie może też tworzyć ani usuwać wydarzeń.</div>
+          <div class="tip">Wygląd ekranów jest identyczny jak u organizatora (te same zrzuty powyżej), różni się jedynie zakresem menu i danych.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= PARTICIPANT ========================= -->
+    <div class="persona-h" id="participant"><div class="ic">🎫</div><div><h3>Persona C — Uczestnik (mobile)</h3><div class="d">Gość wchodzi z linku w mailu. Aplikacja jest projektowana pod telefon.</div></div></div>
+    <hr class="persona-rule"/>
+
+    <div class="flow" id="c-home">
+      <div class="head"><div class="num">1</div><div class="ttl"><h4>Wejście z linku i bramka RODO</h4>
+        <div class="chips"><span class="chip role">Uczestnik</span><span class="chip api">POST /api/auth/participant</span></div></div></div>
+      <div class="body mobile">
+        <div>
+          <ol class="steps">
+            <li>Gość klika link <span class="k">/p/{token}</span> z maila (lub skanuje swój QR).</li>
+            <li>Aplikacja loguje go automatycznie — bez hasła — i wita po imieniu.</li>
+            <li>Najpierw musi zaakceptować <b>zgody RODO</b>: przetwarzanie danych (wymagane), wizerunek, widoczność dla innych.</li>
+            <li>Kliknięcie <span class="k">Odblokuj aplikację</span> odsłania pozostałe sekcje.</li>
+          </ol>
+          <div class="tip">Sesja trwa długo i sama się odnawia — gość nie zostanie wylogowany w trakcie eventu.</div>
+        </div>
+        <figure class="phone"><img src="assets/screens/20-participant-home.png" alt="Aplikacja uczestnika — RODO"><figcaption>Powitanie + bramka zgód RODO.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="c-sections">
+      <div class="head"><div class="num">2</div><div class="ttl"><h4>Sekcje aplikacji: agenda, Mój QR, preferencje, quizy</h4>
+        <div class="chips"><span class="chip role">Uczestnik</span><span class="chip api">/api/me/…</span></div></div></div>
+      <div class="body mobile">
+        <div>
+          <ol class="steps">
+            <li>Dolna nawigacja: <b>Agenda · Mój QR · Aktywności · Galeria · Profil</b>.</li>
+            <li><b>Mój QR</b> — pełnoekranowy kod do pokazania na bramce (z opcją rozjaśnienia ekranu).</li>
+            <li><b>Profil/Preferencje</b> — język, dieta, koszulka, transfer, godzina przylotu, RSVP (potwierdź/rezygnuj).</li>
+            <li><b>Aktywności</b> — quizy (zwykłe i <b>na żywo</b>), konkursy, networking, skaner stanowisk.</li>
+            <li>W quizie na żywo gość dotyka kolorowego kafla odpowiedzi; po „Pokaż odpowiedź" widzi wynik i ranking.</li>
+          </ol>
+        </div>
+        <figure class="phone"><img src="assets/screens/22-participant-scroll2.png" alt="Sekcje aplikacji uczestnika"><figcaption>Dalsze sekcje aplikacji uczestnika (przewinięcie w dół).</figcaption></figure>
+      </div>
+    </div>
+
+    <!-- ========================= OPERATOR ========================= -->
+    <div class="persona-h" id="operator"><div class="ic">🔆</div><div><h3>Persona D — Operator QR (mobile)</h3><div class="d">Hostessa / ochrona przy bramce. Tylko skaner, bez dostępu do panelu.</div></div></div>
+    <hr class="persona-rule"/>
+
+    <div class="flow" id="d-link">
+      <div class="head"><div class="num">1</div><div class="ttl"><h4>Wejście przez magic-link</h4>
+        <div class="chips"><span class="chip role">Operator</span><span class="chip api">/op/{token}</span></div></div></div>
+      <div class="body solo">
+        <div>
+          <ol class="steps">
+            <li>Operator otwiera link <span class="k">/op/{token}</span> otrzymany od organizatora ([A-9] powyżej).</li>
+            <li>Aplikacja sama loguje go jako operatora i przenosi do skanera tego eventu.</li>
+            <li>Przy pierwszym uruchomieniu pojawia się krótki <b>tutorial (3 ekrany)</b>: jak trzymać telefon, jak skanować szybko, co oznaczają kolory.</li>
+          </ol>
+          <div class="tip warn">Zły lub wygasły link → ekran „Nie można otworzyć skanera". Operator nie ma dostępu do żadnego innego ekranu.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow" id="d-station">
+      <div class="head"><div class="num">2</div><div class="ttl"><h4>Wybór stanowiska</h4>
+        <div class="chips"><span class="chip role">Operator</span></div></div></div>
+      <div class="body mobile">
+        <div>
+          <ol class="steps">
+            <li>Ekran <b>„Gdzie skanujesz?"</b> — wybierz stanowisko: <span class="k">Wejście</span>, <span class="k">Bar</span>, <span class="k">Sala główna</span>, <span class="k">Konkurs</span> lub <span class="k">+ Inne…</span>.</li>
+            <li>Wybór zapamiętuje się — skany będą przypisane do tego stanowiska na dashboardzie.</li>
+          </ol>
+        </div>
+        <figure class="phone"><img src="assets/screens/30-operator-station.png" alt="Wybór stanowiska"><figcaption>„Gdzie skanujesz?" — picker stanowiska.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="flow" id="d-scan">
+      <div class="head"><div class="num">3</div><div class="ttl"><h4>Skanowanie kodów</h4>
+        <div class="chips"><span class="chip role">Operator</span><span class="chip api">POST /api/events/{id}/scans/batch</span></div></div></div>
+      <div class="body mobile">
+        <div>
+          <ol class="steps">
+            <li>Wybierz tryb <span class="k">Wejście</span> / <span class="k">Wyjście</span> (można zablokować kłódką, żeby nie przełączyć przez pomyłkę).</li>
+            <li>Skieruj kamerę na kod QR gościa.</li>
+            <li>Po skanie: <b>zielony błysk</b> + imię = wpuszczono; <b>żółty</b> = już był (z godziną); <b>czerwony</b> = nieznany kod. Plus dźwięk i wibracja.</li>
+            <li>Licznik <b>Zeskanowano</b> i status <b>Online/Offline</b> u góry.</li>
+          </ol>
+          <div class="tip">Działa <b>offline</b> — skany kolejkują się lokalnie i synchronizują po odzyskaniu sieci (bez duplikatów). Gdy kamera jest niedostępna, można wpisać kod ręcznie.</div>
+        </div>
+        <figure class="phone"><img src="assets/screens/32-operator-scanner.png" alt="Skaner operatora"><figcaption>Skaner: stanowisko, tryb wejście/wyjście z kłódką, licznik, status online.</figcaption></figure>
+      </div>
+    </div>
+
+    <!-- ========================= PUBLIC ========================= -->
+    <div class="persona-h" id="public"><div class="ic">🌐</div><div><h3>Persona E — Strona publiczna</h3><div class="d">Każdy, bez logowania. Strona zbudowana w kreatorze.</div></div></div>
+    <hr class="persona-rule"/>
+
+    <div class="flow">
+      <div class="head"><div class="num">1</div><div class="ttl"><h4>Publiczna strona wydarzenia</h4>
+        <div class="chips"><span class="chip api">GET /api/public/events/{id}</span></div></div></div>
+      <div class="body">
+        <div>
+          <ol class="steps">
+            <li>Adres <span class="k">/public/events/{id}</span> — dostępny bez logowania.</li>
+            <li>Renderuje bloki z kreatora: hero, opis, agenda, zespół, galeria, mapa, FAQ, sponsorzy, formularz RSVP, quizy/konkursy.</li>
+            <li>Dopóki organizator nie kliknie <b>Publikuj</b>, goście widzą ekran „Strona jeszcze niepublikowana".</li>
+          </ol>
+        </div>
+        <figure><img src="assets/screens/13-public.png" alt="Strona publiczna"><figcaption>Opublikowana strona wydarzenia (szablon „gala"): hero + sekcje.</figcaption></figure>
+      </div>
+    </div>
+
+    <!-- ========================= CHEAT ========================= -->
+    <div class="persona-h" id="cheat"><div class="ic">⚡</div><div><h3>Ściąga / FAQ</h3><div class="d">Najczęstsze „jak zrobić…".</div></div></div>
+    <hr class="persona-rule"/>
+    <div class="flow"><div class="body solo"><div>
+      <ol class="steps">
+        <li><b>Jak dodać uczestników masowo?</b> Wydarzenie → Uczestnicy → <span class="k">Pokaż import</span> → wgraj Excel → zatwierdź podgląd.</li>
+        <li><b>Jak wysłać zaproszenia?</b> Uczestnicy → <span class="k">Wyślij zaproszenia</span> (mail z linkiem + QR).</li>
+        <li><b>Jak dać hostessie skaner bez konta?</b> Wydarzenie → <span class="k">Link operatora</span> → wyślij skopiowany link.</li>
+        <li><b>Jak uruchomić quiz na żywo?</b> Aktywności → Quizy → otwórz quiz → <span class="k">Na żywo</span> → <span class="k">Rozpocznij quiz</span>.</li>
+        <li><b>Jak opublikować stronę?</b> Strona → ułóż bloki → <span class="k">Publikuj</span>.</li>
+        <li><b>Jak pobrać raport?</b> Dashboard → <span class="k">Pobierz raport PDF</span>; dane uczestników → <span class="k">Eksport Excel</span>.</li>
+        <li><b>Jak usunąć wydarzenie?</b> Dashboard → <span class="k">Usuń wydarzenie</span> (tylko organizator, operacja nieodwracalna).</li>
+      </ol>
+    </div></div></div>
+
+    <footer>
+      EventPulse — dokumentacja przepływów. Zrzuty wykonane z działającej aplikacji (środowisko lokalne).
+      Szczegółowa, techniczna mapa flow (endpointy, testy, ścieżki błędów): <span class="k">docs/FLOWS.md</span>.
+    </footer>
+  </main>
+</div>
+
+<div id="lb"><img src="" alt=""></div>
+<script>
+  const lb=document.getElementById('lb'),lbi=lb.querySelector('img');
+  document.querySelectorAll('figure img').forEach(im=>im.addEventListener('click',()=>{lbi.src=im.src;lb.style.display='grid';}));
+  lb.addEventListener('click',()=>lb.style.display='none');
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')lb.style.display='none';});
+</script>
+</body>
+</html>
