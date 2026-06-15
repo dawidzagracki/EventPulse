@@ -591,6 +591,15 @@
     "operatorCopy": "Kopiuj link",
     "operatorCopied": "Skopiowano!",
     "operatorExpires": "Ważny 24h, tylko dla tego wydarzenia",
-    "operatorNoEvents": "Najpierw utwórz wydarzenie"
+    "operatorNoEvents": "Najpierw utwórz wydarzenie",
+    "edit": "Edytuj",
+    "resetPassword": "Resetuj hasło",
+    "newPasswordOptional": "Nowe hasło (zostaw puste, by nie zmieniać)",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "activeAccount": "Konto aktywne",
+    "inactive": "Nieaktywne",
+    "updated": "Zapisano zmiany",
+    "cannotEditSelf": "Nie możesz zmienić własnej roli ani dezaktywować swojego konta"
   }
 }

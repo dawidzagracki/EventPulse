@@ -591,6 +591,15 @@
     "operatorCopy": "Copy link",
     "operatorCopied": "Copied!",
     "operatorExpires": "Valid 24h, this event only",
-    "operatorNoEvents": "Create an event first"
+    "operatorNoEvents": "Create an event first",
+    "edit": "Edit",
+    "resetPassword": "Reset password",
+    "newPasswordOptional": "New password (leave empty to keep current)",
+    "save": "Save",
+    "cancel": "Cancel",
+    "activeAccount": "Account active",
+    "inactive": "Inactive",
+    "updated": "Changes saved",
+    "cannotEditSelf": "You can't change your own role or deactivate your own account"
   }
 }

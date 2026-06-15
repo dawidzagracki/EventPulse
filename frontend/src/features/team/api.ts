@@ -62,6 +62,37 @@ export function useCreateClient() {
   })
 }
 
+export interface UpdateAdminRequest {
+  displayName: string
+  role: 'Admin' | 'EventStaff'
+  isActive: boolean
+  newPassword?: string
+}
+
+export interface UpdateClientRequest {
+  displayName: string
+  isActive: boolean
+  newPassword?: string
+}
+
+export function useUpdateAdmin() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: UpdateAdminRequest }) =>
+      (await api.put<AdminDto>(`/api/team/admins/${id}`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'admins'] }),
+  })
+}
+
+export function useUpdateClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: UpdateClientRequest }) =>
+      (await api.put<ClientDto>(`/api/team/clients/${id}`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'clients'] }),
+  })
+}
+
 export interface OperatorLinkResult {
   accessToken: string
   expiresAt: string

@@ -5,8 +5,8 @@ import { Button, Card, Field, Input, Select, Badge } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { useEvents } from '../events/api'
 import {
-  useAdmins, useClients, useCreateAdmin, useCreateClient, generateOperatorLink,
-  type CreateAdminRequest, type CreateClientRequest,
+  useAdmins, useClients, useCreateAdmin, useCreateClient, useUpdateAdmin, useUpdateClient, generateOperatorLink,
+  type CreateAdminRequest, type CreateClientRequest, type AdminDto, type ClientDto,
 } from './api'
 
 function errMsg(e: unknown): string {
@@ -66,12 +66,64 @@ function AdminsCard() {
       )}
       {done && <Done msg={done} />}
       <ul className="mt-4 space-y-2">
-        {(admins ?? []).map(a => (
-          <Row key={a.id} grad="from-violet-500/30 to-fuchsia-500/30 ring-violet-400/40" name={a.displayName} sub={a.email}
-            badge={<Badge tone="accent">{t('team.roleAdmin')}</Badge>} />
-        ))}
+        {(admins ?? []).map(a => <AdminRow key={a.id} admin={a} />)}
       </ul>
     </Card>
+  )
+}
+
+function AdminRow({ admin }: { admin: AdminDto }) {
+  const { t } = useTranslation()
+  const update = useUpdateAdmin()
+  const [editing, setEditing] = useState(false)
+  const [displayName, setDisplayName] = useState(admin.displayName)
+  const [role, setRole] = useState<'Admin' | 'EventStaff'>(admin.role === 'EventStaff' ? 'EventStaff' : 'Admin')
+  const [isActive, setIsActive] = useState(admin.isActive)
+  const [newPassword, setNewPassword] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+
+  async function save() {
+    setErr(null)
+    try {
+      await update.mutateAsync({ id: admin.id, body: { displayName, role, isActive, newPassword: newPassword || undefined } })
+      setNewPassword(''); setEditing(false)
+    } catch (e) { setErr(errMsg(e)) }
+  }
+
+  if (!editing) {
+    return (
+      <Row grad="from-violet-500/30 to-fuchsia-500/30 ring-violet-400/40" name={admin.displayName} sub={admin.email}
+        badge={
+          <div className="flex items-center gap-2">
+            {!admin.isActive && <Badge tone="warning">{t('team.inactive')}</Badge>}
+            <Badge tone="accent">{admin.role === 'Admin' ? t('team.roleAdmin') : t('team.roleStaff')}</Badge>
+            <button onClick={() => setEditing(true)} className="text-xs text-slate-400 hover:text-white">{t('team.edit')}</button>
+          </div>
+        } />
+    )
+  }
+
+  return (
+    <li className="rounded-lg border border-violet-500/30 bg-slate-950/50 p-3">
+      <div className="space-y-2">
+        <Input value={displayName} onChange={e => setDisplayName(e.target.value)} />
+        <div className="flex gap-2">
+          <Select value={role} onChange={e => setRole(e.target.value as 'Admin' | 'EventStaff')} className="flex-1">
+            <option value="Admin">{t('team.roleAdmin')}</option>
+            <option value="EventStaff">{t('team.roleStaff')}</option>
+          </Select>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} /> {t('team.activeAccount')}
+          </label>
+        </div>
+        <Input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={t('team.newPasswordOptional')} />
+        {err && <p className="text-xs text-rose-300">{err}</p>}
+        <div className="flex gap-2">
+          <Button onClick={save} disabled={update.isPending} className="flex-1 justify-center">{t('team.save')}</Button>
+          <Button variant="ghost" onClick={() => { setEditing(false); setErr(null) }}>{t('team.cancel')}</Button>
+        </div>
+      </div>
+    </li>
   )
 }
 
@@ -111,12 +163,57 @@ function ClientsCard() {
       {done && <Done msg={done} />}
       <ul className="mt-4 space-y-2">
         {(clients ?? []).length === 0 && <Empty msg={t('team.noClients')} />}
-        {(clients ?? []).map(c => (
-          <Row key={c.id} grad="from-sky-500/30 to-cyan-500/30 ring-sky-400/40" name={c.displayName} sub={c.email}
-            badge={<Badge tone={c.isActivated ? 'success' : 'warning'}>{c.isActivated ? t('team.active') : t('team.pending')}</Badge>} />
-        ))}
+        {(clients ?? []).map(c => <ClientRow key={c.id} client={c} />)}
       </ul>
     </Card>
+  )
+}
+
+function ClientRow({ client }: { client: ClientDto }) {
+  const { t } = useTranslation()
+  const update = useUpdateClient()
+  const [editing, setEditing] = useState(false)
+  const [displayName, setDisplayName] = useState(client.displayName)
+  const [isActive, setIsActive] = useState(client.isActive)
+  const [newPassword, setNewPassword] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+
+  async function save() {
+    setErr(null)
+    try {
+      await update.mutateAsync({ id: client.id, body: { displayName, isActive, newPassword: newPassword || undefined } })
+      setNewPassword(''); setEditing(false)
+    } catch (e) { setErr(errMsg(e)) }
+  }
+
+  if (!editing) {
+    return (
+      <Row grad="from-sky-500/30 to-cyan-500/30 ring-sky-400/40" name={client.displayName} sub={client.email}
+        badge={
+          <div className="flex items-center gap-2">
+            {!client.isActive && <Badge tone="warning">{t('team.inactive')}</Badge>}
+            <Badge tone={client.isActivated ? 'success' : 'warning'}>{client.isActivated ? t('team.active') : t('team.pending')}</Badge>
+            <button onClick={() => setEditing(true)} className="text-xs text-slate-400 hover:text-white">{t('team.edit')}</button>
+          </div>
+        } />
+    )
+  }
+
+  return (
+    <li className="rounded-lg border border-sky-500/30 bg-slate-950/50 p-3">
+      <div className="space-y-2">
+        <Input value={displayName} onChange={e => setDisplayName(e.target.value)} />
+        <label className="flex items-center gap-2 text-xs text-slate-300">
+          <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} /> {t('team.activeAccount')}
+        </label>
+        <Input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={t('team.newPasswordOptional')} />
+        {err && <p className="text-xs text-rose-300">{err}</p>}
+        <div className="flex gap-2">
+          <Button onClick={save} disabled={update.isPending} className="flex-1 justify-center">{t('team.save')}</Button>
+          <Button variant="ghost" onClick={() => { setEditing(false); setErr(null) }}>{t('team.cancel')}</Button>
+        </div>
+      </div>
+    </li>
   )
 }
 
