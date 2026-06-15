@@ -157,8 +157,8 @@ namespace EventPulse.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)");
 
                     b.Property<string>("BackgroundColor")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
