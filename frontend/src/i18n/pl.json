@@ -250,7 +250,20 @@
     "liveTab": "Na żywo",
     "liveWaitingHost": "Czekamy na prowadzącego…",
     "liveAnsweredOk": "Wysłano!",
-    "liveWaitingNext": "Czekaj na kolejne pytanie…"
+    "liveWaitingNext": "Czekaj na kolejne pytanie…",
+    "evYourEvent": "Twoje wydarzenie",
+    "evWhen": "Kiedy",
+    "evWhere": "Gdzie",
+    "evStatus": "Status",
+    "evInDays": "za {{days}} dni",
+    "evInHours": "za {{hours}} godz.",
+    "evStarted": "Trwa",
+    "evLiveNow": "Na żywo",
+    "evStDraft": "Szkic",
+    "evStPublished": "Opublikowane",
+    "evStLive": "Na żywo",
+    "evStCompleted": "Zakończone",
+    "evStArchived": "Zarchiwizowane"
   },
   "page": {
     "title": "Strona",

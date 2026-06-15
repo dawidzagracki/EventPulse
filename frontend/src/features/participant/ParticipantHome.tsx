@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   useMyAgenda,
+  useMyEvent,
   useMyProfile,
   useMyTransfers,
   useRsvp,
@@ -87,6 +88,7 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         {tab === 'agenda' && (
           <div className="space-y-5">
             <GreetingHero profile={profile} />
+            <EventSummaryCard />
             <AgendaSection />
           </div>
         )}
@@ -200,6 +202,70 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ===================== Mini event summary (in-app) =====================
+const EVENT_STATUS_KEY = ['evStDraft', 'evStPublished', 'evStLive', 'evStCompleted', 'evStArchived'] as const
+
+function EventSummaryCard() {
+  const { t, i18n } = useTranslation()
+  const { data: ev } = useMyEvent()
+  if (!ev) return null
+
+  const start = new Date(ev.startsAt)
+  const end = new Date(ev.endsAt)
+  const diffMs = start.getTime() - nowMs()
+  const days = Math.floor(diffMs / 86_400_000)
+  const hours = Math.floor((diffMs % 86_400_000) / 3_600_000)
+  const live = ev.status === 2
+  const countdown = live
+    ? t('participant.evLiveNow')
+    : diffMs <= 0
+      ? t('participant.evStarted')
+      : days >= 1
+        ? t('participant.evInDays', { days })
+        : t('participant.evInHours', { hours: Math.max(1, hours) })
+
+  const sameDay = start.toDateString() === end.toDateString()
+  const dateStr = sameDay
+    ? `${start.toLocaleDateString(i18n.language, { day: 'numeric', month: 'long', year: 'numeric' })} · ${start.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}`
+    : `${start.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })}`
+
+  const statusLabel = t(`participant.${EVENT_STATUS_KEY[ev.status] ?? 'evStDraft'}`)
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/50">
+      <div className="relative bg-gradient-to-br from-indigo-500/25 via-violet-500/15 to-fuchsia-500/10 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300/80">{t('participant.evYourEvent')}</p>
+            <h2 className="mt-1 truncate text-xl font-bold text-white">{ev.name}</h2>
+          </div>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${live ? 'bg-rose-500/15 text-rose-300 ring-rose-400/30' : 'bg-indigo-500/15 text-indigo-200 ring-indigo-400/30'}`}>
+            {live && <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-rose-400 align-middle" />}
+            {countdown}
+          </span>
+        </div>
+      </div>
+      <div className="grid gap-px bg-slate-800/60 sm:grid-cols-3">
+        <InfoCell label={t('participant.evWhen')} value={dateStr} />
+        <InfoCell label={t('participant.evWhere')} value={ev.location || '—'} />
+        <InfoCell label={t('participant.evStatus')} value={statusLabel || EVENT_STATUS_KEY[ev.status] || '—'} />
+      </div>
+      {ev.description && (
+        <p className="border-t border-slate-800/60 bg-slate-950/30 px-5 py-3 text-sm text-slate-300">{ev.description}</p>
+      )}
+    </div>
+  )
+}
+
+function InfoCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-slate-900/60 px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-white">{value}</p>
     </div>
   )
 }

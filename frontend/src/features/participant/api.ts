@@ -14,6 +14,23 @@ export function useMyProfile() {
   })
 }
 
+export interface MyEventDto {
+  id: string
+  name: string
+  status: number
+  startsAt: string
+  endsAt: string
+  location: string | null
+  description: string | null
+}
+
+export function useMyEvent() {
+  return useQuery({
+    queryKey: ['me', 'event'],
+    queryFn: async () => (await api.get<MyEventDto>('/api/me/event')).data,
+  })
+}
+
 export interface ConsentsInput {
   rodoAccepted: boolean
   photoConsent: boolean

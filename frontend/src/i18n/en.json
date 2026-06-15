@@ -250,7 +250,20 @@
     "liveTab": "Live",
     "liveWaitingHost": "Waiting for the host…",
     "liveAnsweredOk": "Sent!",
-    "liveWaitingNext": "Waiting for the next question…"
+    "liveWaitingNext": "Waiting for the next question…",
+    "evYourEvent": "Your event",
+    "evWhen": "When",
+    "evWhere": "Where",
+    "evStatus": "Status",
+    "evInDays": "in {{days}} days",
+    "evInHours": "in {{hours}}h",
+    "evStarted": "In progress",
+    "evLiveNow": "Live now",
+    "evStDraft": "Draft",
+    "evStPublished": "Published",
+    "evStLive": "Live",
+    "evStCompleted": "Completed",
+    "evStArchived": "Archived"
   },
   "page": {
     "title": "Page",

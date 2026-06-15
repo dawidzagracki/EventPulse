@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Ai;
 using EventPulse.Modules.Engagement;
+using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Gallery;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Logistics;
@@ -39,6 +40,11 @@ public sealed class ParticipantMeController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<MyProfileDto>> Profile(CancellationToken ct)
         => Ok(await _mediator.Send(new GetMyProfileQuery(ParticipantId), ct));
+
+    /// <summary>Mini event summary for the in-app participant home (name, when, where, status).</summary>
+    [HttpGet("event")]
+    public async Task<ActionResult<EventSummaryDto>> MyEvent(CancellationToken ct)
+        => Ok(await _mediator.Send(new GetEventSummaryQuery(EventId), ct));
 
     /// <summary>The logged-in participant's own check-in QR (PNG), to show at the gate.</summary>
     [HttpGet("qr")]
