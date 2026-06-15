@@ -60,6 +60,14 @@ export function ParticipantHome() {
 function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('agenda')
+  const [liveQuizId, setLiveQuizId] = useState<string | null>(null)
+  const announced = useLiveQuizAnnounce(profile.eventId)
+
+  function joinAnnouncedQuiz() {
+    if (!announced) return
+    setLiveQuizId(announced.quizId)
+    setTab('activities')
+  }
 
   const tabs: { id: Tab; label: string; emoji: string }[] = [
     { id: 'agenda', label: t('participant.tabAgenda'), emoji: '📅' },
@@ -84,6 +92,24 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         </div>
       </header>
 
+      {/* Live-quiz join banner — appears when a host starts a quiz at this event. */}
+      {announced && liveQuizId !== announced.quizId && (
+        <button
+          onClick={joinAnnouncedQuiz}
+          className="sticky top-[57px] z-20 flex w-full items-center gap-3 border-b border-rose-400/30 bg-gradient-to-r from-rose-600 to-fuchsia-600 px-4 py-3 text-left text-white shadow-lg"
+        >
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/80" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">{t('participant.liveQuizBannerLabel')}</span>
+            <span className="block truncate text-sm font-bold">{announced.title}</span>
+          </span>
+          <span className="shrink-0 rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold">{t('participant.liveQuizJoin')} →</span>
+        </button>
+      )}
+
       <main className="mx-auto max-w-2xl px-4 py-5">
         {tab === 'agenda' && (
           <div className="space-y-5">
@@ -95,7 +121,7 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         {tab === 'activities' && (
           <div className="space-y-5">
             <StationScanSection />
-            <QuizzesSection />
+            <QuizzesSection liveQuizId={liveQuizId} setLiveQuizId={setLiveQuizId} />
             <NetworkingSection />
             <AiAssistantSection />
             <FeedbackSection />
@@ -746,13 +772,12 @@ function LogisticsSection({ profile }: { profile: MyProfileDto }) {
   )
 }
 
-function QuizzesSection() {
+function QuizzesSection({ liveQuizId, setLiveQuizId }: { liveQuizId: string | null; setLiveQuizId: (id: string | null) => void }) {
   const { t } = useTranslation()
   const { data: quizzes } = useMyQuizzes()
   const [take, setTake] = useState<QuizTakeDto | null>(null)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [score, setScore] = useState<number | null>(null)
-  const [liveQuizId, setLiveQuizId] = useState<string | null>(null)
 
   async function open(quizId: string) {
     setScore(null)
@@ -962,6 +987,25 @@ function AgendaSection() {
       )}
     </Card>
   )
+}
+
+// Listens on an event-wide channel so the participant is told when ANY quiz at
+// their event goes live (the host's "start" broadcasts here). Returns the live
+// quiz to surface in the join banner, or null.
+function useLiveQuizAnnounce(eventId: string) {
+  const [announced, setAnnounced] = useState<{ quizId: string; title: string } | null>(null)
+  useEffect(() => {
+    const conn = createQuizConnection()
+    conn.on('liveQuizStarted', (p: { quizId: string; title: string }) => setAnnounced(p))
+    conn.on('liveQuizEnded', (p: { quizId: string }) =>
+      setAnnounced((cur) => (cur && cur.quizId === p.quizId ? null : cur)),
+    )
+    conn.start().then(() => conn.invoke('JoinEvent', eventId)).catch(() => {
+      /* announcements are best-effort; the quiz list still works */
+    })
+    return () => { void conn.stop() }
+  }, [eventId])
+  return announced
 }
 
 // ============ Participant-side LIVE quiz player ============

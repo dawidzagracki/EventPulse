@@ -27,8 +27,20 @@ public sealed class QuizHub : Hub
 
     public static string Group(Guid quizId) => $"quiz-{quizId}";
 
+    /// <summary>Event-wide channel: every participant joins it so they can be told when ANY quiz goes live.</summary>
+    public static string EventGroup(Guid eventId) => $"event-quiz-{eventId}";
+
     private Guid? ParticipantId =>
         Guid.TryParse(Context.User?.FindFirstValue("sub"), out var id) ? id : null;
+
+    /// <summary>Participants call this on app load to receive "liveQuizStarted"/"liveQuizEnded" announcements.</summary>
+    public async Task JoinEvent(string eventId)
+    {
+        if (Guid.TryParse(eventId, out var id))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, EventGroup(id));
+        }
+    }
 
     public async Task JoinQuiz(string quizId)
     {

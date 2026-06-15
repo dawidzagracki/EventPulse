@@ -263,7 +263,9 @@
     "evStPublished": "Opublikowane",
     "evStLive": "Na żywo",
     "evStCompleted": "Zakończone",
-    "evStArchived": "Zarchiwizowane"
+    "evStArchived": "Zarchiwizowane",
+    "liveQuizBannerLabel": "Quiz na żywo właśnie się zaczął",
+    "liveQuizJoin": "Dołącz"
   },
   "page": {
     "title": "Strona",

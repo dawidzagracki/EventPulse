@@ -263,7 +263,9 @@
     "evStPublished": "Published",
     "evStLive": "Live",
     "evStCompleted": "Completed",
-    "evStArchived": "Archived"
+    "evStArchived": "Archived",
+    "liveQuizBannerLabel": "A live quiz just started",
+    "liveQuizJoin": "Join"
   },
   "page": {
     "title": "Page",

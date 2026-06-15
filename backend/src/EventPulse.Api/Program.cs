@@ -108,7 +108,8 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
     policy
         .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
         .AllowAnyHeader()
-        .AllowAnyMethod()));
+        .AllowAnyMethod()
+        .AllowCredentials())); // required for SignalR hub negotiation (EventHub, QuizHub)
 
 var signalr = builder.Services.AddSignalR();
 var redis = builder.Configuration.GetConnectionString("Redis");

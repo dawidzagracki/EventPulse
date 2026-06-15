@@ -58,6 +58,9 @@ public sealed class LiveQuizController : ControllerBase
         await _registry.StartAsync(quizId, quiz.Title, live, ct);
         await _hub.Clients.Group(QuizHub.Group(quizId))
             .SendAsync("started", new { title = quiz.Title, questionCount = live.Count }, ct);
+        // Tell everyone at the event a quiz just went live, so their app can show a "Join" banner.
+        await _hub.Clients.Group(QuizHub.EventGroup(eventId))
+            .SendAsync("liveQuizStarted", new { quizId, title = quiz.Title }, ct);
 
         return Ok(new { questionCount = live.Count });
     }
@@ -79,6 +82,7 @@ public sealed class LiveQuizController : ControllerBase
             await PersistResultsAsync(eventId, quizId, session, ct);
             await _hub.Clients.Group(QuizHub.Group(quizId))
                 .SendAsync("finished", new { leaderboard = session.Leaderboard() }, ct);
+            await _hub.Clients.Group(QuizHub.EventGroup(eventId)).SendAsync("liveQuizEnded", new { quizId }, ct);
             await _registry.EndAsync(quizId, ct);
             return Ok(new { finished = true });
         }
@@ -127,6 +131,7 @@ public sealed class LiveQuizController : ControllerBase
             await PersistResultsAsync(eventId, quizId, session, ct);
             await _hub.Clients.Group(QuizHub.Group(quizId))
                 .SendAsync("finished", new { leaderboard = session.Leaderboard() }, ct);
+            await _hub.Clients.Group(QuizHub.EventGroup(eventId)).SendAsync("liveQuizEnded", new { quizId }, ct);
             await _registry.EndAsync(quizId, ct);
         }
 
