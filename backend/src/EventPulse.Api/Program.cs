@@ -43,6 +43,7 @@ var moduleAssemblies = new[]
     typeof(EventPulse.Modules.Engagement.Contest).Assembly,
     typeof(EventPulse.Modules.Gallery.Photo).Assembly,
     typeof(EventPulse.Modules.Ai.ChatCommand).Assembly,
+    typeof(Program).Assembly, // Api assembly: public-page handlers (event/contests/quizzes) live in controllers
 };
 
 builder.Services.AddHttpContextAccessor();
