@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { extractToken, flushQueue } from './api'
 import { feedback } from './feedback'
@@ -7,6 +7,7 @@ import { enqueueScan, queueCount } from '../../lib/scanQueue'
 import { Button, Card, Input } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { ScanKind, type ScanResultItem } from '../../types/api'
+import { useAuthStore } from '../../stores/authStore'
 
 type Feedback =
   | { kind: 'ok'; item: ScanResultItem; mode: number }
@@ -31,6 +32,16 @@ const PRESET_STATIONS = [
 export function ScannerPage() {
   const { eventId = '' } = useParams()
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const principalType = useAuthStore((s) => s.principalType)
+  const logout = useAuthStore((s) => s.logout)
+  const isOperator = principalType === 'Operator'
+
+  function exitScanner() {
+    if (!confirm(t('scanner.logoutConfirm'))) return
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   const [station, setStation] = useState<string | null>(() => localStorage.getItem(stationKey(eventId)))
   const [showTutorial, setShowTutorial] = useState<boolean>(() => !localStorage.getItem(tutorialKey))
@@ -236,10 +247,20 @@ export function ScannerPage() {
       <div className="mx-auto max-w-md space-y-4 p-4">
         {/* Top status bar */}
         <div className="flex items-center justify-between gap-2">
-          <Link to={`/events/${eventId}`} className="inline-flex items-center gap-1 text-sm text-indigo-300 hover:text-indigo-200">
-            <Icon name="chevronLeft" className="h-4 w-4" />
-            {t('eventDetail.overview')}
-          </Link>
+          {isOperator ? (
+            <button
+              onClick={exitScanner}
+              className="inline-flex items-center gap-1 text-sm text-rose-300 hover:text-rose-200"
+            >
+              <Icon name="chevronLeft" className="h-4 w-4" />
+              {t('scanner.logout')}
+            </button>
+          ) : (
+            <Link to={`/events/${eventId}`} className="inline-flex items-center gap-1 text-sm text-indigo-300 hover:text-indigo-200">
+              <Icon name="chevronLeft" className="h-4 w-4" />
+              {t('eventDetail.overview')}
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${

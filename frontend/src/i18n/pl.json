@@ -385,7 +385,9 @@
     "tutNext": "Dalej",
     "tutBack": "Wstecz",
     "tutSkip": "Pomiń",
-    "tutDone": "Zaczynam"
+    "tutDone": "Zaczynam",
+    "logout": "Wyloguj",
+    "logoutConfirm": "Zakończyć sesję skanera i wylogować?"
   },
   "dashboard": {
     "title": "Dashboard",

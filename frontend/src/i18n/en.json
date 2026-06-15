@@ -385,7 +385,9 @@
     "tutNext": "Next",
     "tutBack": "Back",
     "tutSkip": "Skip",
-    "tutDone": "Let's go"
+    "tutDone": "Let's go",
+    "logout": "Log out",
+    "logoutConfirm": "End the scanner session and log out?"
   },
   "dashboard": {
     "title": "Dashboard",
