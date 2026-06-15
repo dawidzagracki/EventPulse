@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
   useApplyTemplate,
@@ -492,46 +493,59 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             </span>
           </div>
           <div>
-            <div
-              className="mx-auto space-y-3 rounded-2xl bg-[#fbfbfd] p-6 text-slate-900 shadow-2xl shadow-black/30 transition-all"
-              style={{ fontFamily: branding.fontFamily, maxWidth: DEVICE_WIDTH[device], width: '100%' }}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setSelectedId(null)
-              }}
-            >
-              {blocks.length === 0 ? (
-                <DropFirst onInsertNew={(type) => insertBlockAt(type, 0)} />
-              ) : (
-                <>
-                  <DropZone index={0} onReorder={reorder} onInsertNew={insertBlockAt} />
-                  {blocks.map((b, i) => (
-                    <div key={b.id}>
-                      <EditorFrame
-                        block={b}
-                        index={i}
-                        totalBlocks={blocks.length}
-                        selected={selectedId === b.id}
-                        onSelect={() => setSelectedId(b.id)}
-                        onMove={(dir) => moveBlock(b.id, dir)}
-                        onDelete={() => deleteBlock(b.id)}
-                        onToggleVisible={() =>
-                          patchBlock(b.id, (block) => ({ ...block, visible: block.visible === false }))
-                        }
-                      >
-                        {b.visible === false ? (
-                          <div className="rounded-3xl bg-slate-100 p-8 text-center text-slate-400">
-                            {blockLabel(b.type, lang)} — {t('page.hidden')}
-                          </div>
-                        ) : (
-                          <RenderBlock block={b} ctx={ctx} />
-                        )}
-                      </EditorFrame>
-                      <DropZone index={i + 1} onReorder={reorder} onInsertNew={insertBlockAt} />
-                    </div>
+            {device !== 'desktop' ? (
+              // Accurate device preview: an iframe whose width IS the device width, so
+              // the page's responsive breakpoints evaluate exactly as on a real phone/tablet.
+              // (Read-only — editing/drag-drop stays in the desktop canvas.)
+              <DevicePreviewFrame width={DEVICE_WIDTH[device]} fontFamily={branding.fontFamily}>
+                <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+                  {blocks.filter((b) => b.visible !== false).map((b) => (
+                    <RenderBlock key={b.id} block={b} ctx={ctx} />
                   ))}
-                </>
-              )}
-            </div>
+                </div>
+              </DevicePreviewFrame>
+            ) : (
+              <div
+                className="mx-auto space-y-3 rounded-2xl bg-[#fbfbfd] p-6 text-slate-900 shadow-2xl shadow-black/30 transition-all"
+                style={{ fontFamily: branding.fontFamily, maxWidth: DEVICE_WIDTH[device], width: '100%' }}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setSelectedId(null)
+                }}
+              >
+                {blocks.length === 0 ? (
+                  <DropFirst onInsertNew={(type) => insertBlockAt(type, 0)} />
+                ) : (
+                  <>
+                    <DropZone index={0} onReorder={reorder} onInsertNew={insertBlockAt} />
+                    {blocks.map((b, i) => (
+                      <div key={b.id}>
+                        <EditorFrame
+                          block={b}
+                          index={i}
+                          totalBlocks={blocks.length}
+                          selected={selectedId === b.id}
+                          onSelect={() => setSelectedId(b.id)}
+                          onMove={(dir) => moveBlock(b.id, dir)}
+                          onDelete={() => deleteBlock(b.id)}
+                          onToggleVisible={() =>
+                            patchBlock(b.id, (block) => ({ ...block, visible: block.visible === false }))
+                          }
+                        >
+                          {b.visible === false ? (
+                            <div className="rounded-3xl bg-slate-100 p-8 text-center text-slate-400">
+                              {blockLabel(b.type, lang)} — {t('page.hidden')}
+                            </div>
+                          ) : (
+                            <RenderBlock block={b} ctx={ctx} />
+                          )}
+                        </EditorFrame>
+                        <DropZone index={i + 1} onReorder={reorder} onInsertNew={insertBlockAt} />
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -691,6 +705,46 @@ function LayersPanel({
 // Parses the branding.backgroundColor string to detect whether it's a solid
 // color, a 2-stop gradient, or a CSS image URL — so we can drive the right
 // editor controls and serialize back into the same string.
+/**
+ * Renders children inside an iframe whose width equals the chosen device width.
+ * Because the iframe has its own viewport, the page's responsive (sm:/md:/lg:)
+ * breakpoints evaluate against the device width — so the preview matches a real
+ * phone/tablet instead of cramming desktop layout into a narrow div.
+ */
+function DevicePreviewFrame({ width, fontFamily, children }: { width: string; fontFamily?: string | null; children: React.ReactNode }) {
+  const ref = useRef<HTMLIFrameElement>(null)
+  const [body, setBody] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const doc = ref.current?.contentDocument
+    if (!doc) return
+    doc.head.innerHTML = ''
+    // Clone the app's stylesheets so Tailwind classes resolve inside the iframe.
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach((n) => doc.head.appendChild(n.cloneNode(true)))
+    const meta = doc.createElement('meta')
+    meta.setAttribute('name', 'viewport')
+    meta.setAttribute('content', 'width=device-width, initial-scale=1')
+    doc.head.appendChild(meta)
+    doc.documentElement.style.background = '#fbfbfd'
+    doc.body.style.margin = '0'
+    doc.body.style.background = '#fbfbfd'
+    doc.body.style.color = '#0f172a'
+    if (fontFamily) doc.body.style.fontFamily = fontFamily
+    setBody(doc.body)
+  }, [fontFamily])
+
+  return (
+    <iframe
+      ref={ref}
+      title="device-preview"
+      className="mx-auto block rounded-2xl bg-white shadow-2xl shadow-black/30 ring-1 ring-slate-700/40"
+      style={{ width, height: 'min(80vh, 900px)', border: 0, maxWidth: '100%' }}
+    >
+      {body && createPortal(children, body)}
+    </iframe>
+  )
+}
+
 function parseBackground(value: string | null): { mode: 'color' | 'gradient' | 'image'; color: string; gradientFrom: string; gradientTo: string; angle: number; imageUrl: string } {
   const v = (value ?? '').trim()
   if (!v) return { mode: 'color', color: '#fbfbfd', gradientFrom: '#fbfbfd', gradientTo: '#f1f5f9', angle: 135, imageUrl: '' }
