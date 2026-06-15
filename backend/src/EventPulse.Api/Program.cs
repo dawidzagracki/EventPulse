@@ -114,7 +114,11 @@ var redis = builder.Configuration.GetConnectionString("Redis");
 if (!string.IsNullOrWhiteSpace(redis))
 {
     signalr.AddStackExchangeRedis(redis); // backplane for horizontal scaling
-    var mux = StackExchange.Redis.ConnectionMultiplexer.Connect(redis);
+    // AbortOnConnectFail=false → connect lazily and keep retrying, so a momentarily
+    // unavailable Redis doesn't crash startup (matches the SignalR backplane's behaviour).
+    var redisOptions = StackExchange.Redis.ConfigurationOptions.Parse(redis);
+    redisOptions.AbortOnConnectFail = false;
+    var mux = StackExchange.Redis.ConnectionMultiplexer.Connect(redisOptions);
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(mux);
     builder.Services.AddSingleton<EventPulse.Api.LiveQuiz.IQuizSessionBackplane, EventPulse.Api.LiveQuiz.RedisQuizSessionBackplane>();
 }

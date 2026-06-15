@@ -8,9 +8,14 @@ import { ParticipantHome } from './features/participant/ParticipantHome'
 import { ScannerPage } from './features/scanner/ScannerPage'
 import { PublicEventPage } from './features/public/PublicEventPage'
 import { OperatorLandingPage } from './features/operator/OperatorLandingPage'
+import { TeamPage } from './features/team/TeamPage'
 
 const adminGuard = (element: React.ReactNode) => (
   <ProtectedRoute allow={['Agency', 'Client']}>{element}</ProtectedRoute>
+)
+
+const agencyGuard = (element: React.ReactNode) => (
+  <ProtectedRoute allow={['Agency']}>{element}</ProtectedRoute>
 )
 
 const scannerGuard = (element: React.ReactNode) => (
@@ -30,6 +35,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  { path: '/team', element: agencyGuard(<TeamPage />) },
   { path: '/events/:eventId/scanner', element: scannerGuard(<ScannerPage />) },
   { path: '/events/:eventId', element: adminGuard(<EventDetailPage />) },
   { path: '/events', element: adminGuard(<EventsListPage />) },

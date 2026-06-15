@@ -271,10 +271,21 @@ export function EventsListPage() {
       title={t('events.title')}
       subtitle={t('events.subtitle')}
       actions={
-        <Button onClick={() => setShowForm((v) => !v)}>
-          <Icon name="plus" className="h-4 w-4" />
-          {t('events.new')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {principalType === 'Agency' && (
+            <Link
+              to="/team"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+            >
+              <Icon name="users" className="h-4 w-4" />
+              {t('team.title')}
+            </Link>
+          )}
+          <Button onClick={() => setShowForm((v) => !v)}>
+            <Icon name="plus" className="h-4 w-4" />
+            {t('events.new')}
+          </Button>
+        </div>
       }
     >
       {/* Page-level decorative backdrop with aurora + mouse spotlight */}
