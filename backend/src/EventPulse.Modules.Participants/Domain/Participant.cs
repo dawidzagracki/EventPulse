@@ -9,11 +9,19 @@ public sealed class Participant : TenantEntity
 
     public required string FirstName { get; set; }
     public required string LastName { get; set; }
-    public required string Email { get; set; }
+
+    /// <summary>Unique per event for primary guests; null for accompanying persons (they have no e-mail).</summary>
+    public string? Email { get; set; }
 
     public string? Phone { get; set; }
     public string? Company { get; set; }
     public string? Position { get; set; }
+
+    /// <summary>Set when this record is an accompanying person (plus-one) added by another participant.</summary>
+    public Guid? ParentParticipantId { get; set; }
+
+    /// <summary>Age of an accompanying person (so the agency knows e.g. how many minors attend).</summary>
+    public int? Age { get; set; }
 
     public string Language { get; set; } = "pl";
 
@@ -40,6 +48,12 @@ public sealed class Participant : TenantEntity
     public bool NetworkingConsent { get; set; }
 
     public DateTimeOffset? PreferencesSubmittedAt { get; set; }
+
+    /// <summary>Answers to the event's custom fields, as a JSON object keyed by field id.</summary>
+    public string? CustomFieldsJson { get; set; }
+
+    /// <summary>Set once the participant has completed the event's custom onboarding (if any).</summary>
+    public DateTimeOffset? OnboardingCompletedAt { get; set; }
 
     public ParticipantStatus Status { get; set; } = ParticipantStatus.Invited;
 

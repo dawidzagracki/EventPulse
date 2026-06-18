@@ -1,6 +1,16 @@
 import { api } from '../../lib/api'
 import { allScans, removeScan } from '../../lib/scanQueue'
-import type { BatchScanResult } from '../../types/api'
+import type { BatchScanResult, StationDto } from '../../types/api'
+
+/** Active stations defined for the event (operator-accessible). Empty on any failure. */
+export async function fetchActiveStations(eventId: string): Promise<StationDto[]> {
+  try {
+    const { data } = await api.get<StationDto[]>(`/api/events/${eventId}/scanner/stations`)
+    return data
+  } catch {
+    return []
+  }
+}
 
 // Serialize flushes so the periodic background sync and an explicit per-scan
 // flush never run concurrently (which could otherwise "steal" the item a

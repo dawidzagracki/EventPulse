@@ -29,7 +29,7 @@ public sealed class ListParticipantsHandler : IRequestHandler<ListParticipantsQu
             query = query.Where(p =>
                 p.FirstName.ToLower().Contains(term) ||
                 p.LastName.ToLower().Contains(term) ||
-                p.Email.ToLower().Contains(term));
+                (p.Email != null && p.Email.ToLower().Contains(term)));
         }
 
         var participants = await query

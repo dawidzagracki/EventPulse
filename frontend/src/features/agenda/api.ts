@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import type { AgendaItemDto, AgendaItemInput } from '../../types/api'
+import type { AgendaItemDto, AgendaItemInput, AgendaTypeDto, AgendaTypeInput } from '../../types/api'
 
 export function useAgenda(eventId: string) {
   return useQuery({
@@ -25,5 +25,25 @@ export function useDeleteAgendaItem(eventId: string) {
       await api.delete(`/api/events/${eventId}/agenda/${id}`)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  })
+}
+
+// ---- Custom agenda types (admin-defined per event) ----
+export function useAgendaTypes(eventId: string) {
+  return useQuery({
+    queryKey: ['agenda', eventId, 'types'],
+    queryFn: async () => (await api.get<AgendaTypeDto[]>(`/api/events/${eventId}/agenda/types`)).data,
+  })
+}
+
+export function useSaveAgendaTypes(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (types: AgendaTypeInput[]) =>
+      (await api.put<AgendaTypeDto[]>(`/api/events/${eventId}/agenda/types`, { types })).data,
+    onSuccess: (data) => {
+      qc.setQueryData(['agenda', eventId, 'types'], data)
+      qc.invalidateQueries({ queryKey: ['agenda', eventId] })
+    },
   })
 }

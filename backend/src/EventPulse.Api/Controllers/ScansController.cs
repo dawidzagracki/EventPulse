@@ -31,5 +31,13 @@ public sealed class ScansController : ControllerBase
         return Ok(new { marked = count });
     }
 
+    /// <summary>Active stations the operator can scan at (reachable with an operator token).</summary>
+    [HttpGet("api/events/{eventId:guid}/scanner/stations")]
+    public async Task<ActionResult<IReadOnlyList<StationDto>>> ScannerStations(Guid eventId, CancellationToken ct)
+    {
+        await _mediator.Send(new GetEventByIdQuery(eventId), ct);
+        return Ok(await _mediator.Send(new ListActiveStationsQuery(eventId), ct));
+    }
+
     public sealed record BatchScanBody(List<ScanInput> Items);
 }

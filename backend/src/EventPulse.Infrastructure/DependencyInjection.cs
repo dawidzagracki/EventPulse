@@ -1,5 +1,6 @@
 using EventPulse.Infrastructure.Outbox;
 using EventPulse.Infrastructure.Persistence;
+using EventPulse.Infrastructure.Privacy;
 using EventPulse.Shared.Multitenancy;
 using EventPulse.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<IOutboxDispatcher, OutboxDispatcher>();
         services.AddHostedService<OutboxProcessor>();
+        services.AddHostedService<AnonymizationProcessor>();
 
         return services;
     }

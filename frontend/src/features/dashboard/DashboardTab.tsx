@@ -215,7 +215,7 @@ export function DashboardTab({ eventId }: { eventId: string }) {
                           <span className="font-medium text-slate-200">{s.code}</span>
                         </span>
                         <span className={`text-xs ${color.text}`}>
-                          {s.count} <span className="text-slate-500">· {Math.round(pct)}%</span>
+                          👤 {s.people} <span className="text-slate-500">· {s.count} {t('dashboard.scans')} · {Math.round(pct)}%</span>
                         </span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-800/80">

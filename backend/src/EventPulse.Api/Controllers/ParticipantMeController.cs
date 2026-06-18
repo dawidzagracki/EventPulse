@@ -6,6 +6,7 @@ using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Gallery;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Logistics;
+using EventPulse.Modules.Participants.Application.EventForm;
 using EventPulse.Modules.Participants.Application.Feedback;
 using EventPulse.Modules.Participants.Application.Me;
 using EventPulse.Modules.Participants.Application.Qr;
@@ -56,8 +57,17 @@ public sealed class ParticipantMeController : ControllerBase
 
     [HttpPost("consents")]
     public async Task<ActionResult<MyProfileDto>> Consents(ConsentsBody body, CancellationToken ct)
-        => Ok(await _mediator.Send(
-            new AcceptConsentsCommand(ParticipantId, body.RodoAccepted, body.PhotoConsent, body.NetworkingConsent), ct));
+    {
+        // The event may require a phone number; enforce it here (controller can see both modules).
+        var ev = await _mediator.Send(new GetEventSummaryQuery(EventId), ct);
+        if (ev.PhoneRequired && string.IsNullOrWhiteSpace(body.Phone))
+        {
+            throw new EventPulse.Shared.Application.ConflictException("Phone number is required for this event.");
+        }
+
+        return Ok(await _mediator.Send(
+            new AcceptConsentsCommand(ParticipantId, body.RodoAccepted, body.PhotoConsent, body.NetworkingConsent, body.Phone), ct));
+    }
 
     /// <summary>RSVP — confirm attendance or decline (spec §3.2).</summary>
     [HttpPost("rsvp")]
@@ -87,6 +97,72 @@ public sealed class ParticipantMeController : ControllerBase
     [HttpGet("transfers")]
     public async Task<ActionResult<IReadOnlyList<TransferDto>>> Transfers(CancellationToken ct)
         => Ok(await _mediator.Send(new ListTransfersQuery(EventId), ct));
+
+    /// <summary>The event's custom field definitions for the participant to fill in.</summary>
+    [HttpGet("custom-fields")]
+    public async Task<ActionResult<IReadOnlyList<CustomFieldDto>>> CustomFields(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListCustomFieldsQuery(EventId), ct));
+
+    [HttpPut("custom-fields")]
+    public async Task<IActionResult> SaveCustomFields(Dictionary<Guid, string> values, CancellationToken ct)
+    {
+        await _mediator.Send(new SaveMyCustomFieldsCommand(ParticipantId, values), ct);
+        return NoContent();
+    }
+
+    /// <summary>The event's onboarding steps shown before the participant enters the app.</summary>
+    [HttpGet("onboarding")]
+    public async Task<ActionResult<IReadOnlyList<OnboardingStepDto>>> Onboarding(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListOnboardingQuery(EventId), ct));
+
+    [HttpPost("onboarding/complete")]
+    public async Task<IActionResult> CompleteOnboarding(CancellationToken ct)
+    {
+        await _mediator.Send(new CompleteOnboardingCommand(ParticipantId), ct);
+        return NoContent();
+    }
+
+    // ---- Accompanying persons (plus-ones) ----
+
+    [HttpGet("companions")]
+    public async Task<ActionResult<IReadOnlyList<CompanionDto>>> Companions(CancellationToken ct)
+        => Ok(await _mediator.Send(new ListMyCompanionsQuery(ParticipantId), ct));
+
+    [HttpPost("companions")]
+    public async Task<ActionResult<CompanionDto>> AddCompanion(AddCompanionBody body, CancellationToken ct)
+    {
+        var ev = await _mediator.Send(new GetEventSummaryQuery(EventId), ct);
+        if (!ev.AllowCompanions)
+        {
+            throw new EventPulse.Shared.Application.ConflictException("Adding accompanying persons is disabled for this event.");
+        }
+
+        return Ok(await _mediator.Send(
+            new AddCompanionCommand(ParticipantId, body.FirstName, body.LastName, body.Age, ev.MaxCompanions), ct));
+    }
+
+    [HttpDelete("companions/{id:guid}")]
+    public async Task<IActionResult> DeleteCompanion(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteCompanionCommand(ParticipantId, id), ct);
+        return NoContent();
+    }
+
+    [HttpGet("companions/{id:guid}/qr")]
+    public async Task<IActionResult> CompanionQr(Guid id, CancellationToken ct)
+    {
+        // Ownership check: the companion must belong to the logged-in participant.
+        var mine = await _mediator.Send(new ListMyCompanionsQuery(ParticipantId), ct);
+        if (mine.All(c => c.Id != id))
+        {
+            return NotFound();
+        }
+
+        var png = await _mediator.Send(new GetParticipantQrQuery(id, ParticipantLinkBaseUrl), ct);
+        return File(png, "image/png");
+    }
+
+    public sealed record AddCompanionBody(string FirstName, string LastName, int? Age);
 
     [HttpPost("feedback")]
     public async Task<IActionResult> Feedback(FeedbackBody body, CancellationToken ct)
@@ -142,7 +218,7 @@ public sealed class ParticipantMeController : ControllerBase
 
     public sealed record FeedbackBody(int Rating, string? Comment);
 
-    public sealed record ConsentsBody(bool RodoAccepted, bool PhotoConsent, bool NetworkingConsent);
+    public sealed record ConsentsBody(bool RodoAccepted, bool PhotoConsent, bool NetworkingConsent, string? Phone = null);
 
     public sealed record RsvpBody(bool Attending);
 

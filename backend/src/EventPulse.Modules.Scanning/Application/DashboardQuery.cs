@@ -8,7 +8,7 @@ namespace EventPulse.Modules.Scanning.Application;
 
 public sealed record RecentCheckIn(string Name, DateTimeOffset At);
 
-public sealed record StationActivity(string Code, int Count);
+public sealed record StationActivity(string Code, int Count, int People);
 
 public sealed record DashboardDto(
     int Total,
@@ -42,14 +42,18 @@ public sealed class DashboardHandler(IAppDbContext db) : IRequestHandler<Dashboa
             .Select(p => new RecentCheckIn($"{p.FirstName} {p.LastName}", p.CheckedInAt!.Value))
             .ToList();
 
-        var stationRows = await db.Set<ScanEvent>().AsNoTracking()
+        // Distinct-people-per-station doesn't translate inside a grouped projection, so group the
+        // (code, participant) pairs in memory — bounded by the event's scan count.
+        var scanPairs = await db.Set<ScanEvent>().AsNoTracking()
             .Where(s => s.EventId == request.EventId && s.StationCode != null)
-            .GroupBy(s => s.StationCode!)
-            .Select(g => new { Code = g.Key, Count = g.Count() })
+            .Select(s => new { Code = s.StationCode!, s.ParticipantId })
+            .ToListAsync(cancellationToken);
+        var stations = scanPairs
+            .GroupBy(r => r.Code)
+            .Select(g => new StationActivity(g.Key, g.Count(), g.Select(x => x.ParticipantId).Distinct().Count()))
             .OrderByDescending(s => s.Count)
             .Take(6)
-            .ToListAsync(cancellationToken);
-        var stations = stationRows.Select(r => new StationActivity(r.Code, r.Count)).ToList();
+            .ToList();
 
         return new DashboardDto(
             Total: total,

@@ -27,6 +27,7 @@ export const router = createBrowserRouter([
   { path: '/p/:token', element: <ParticipantTokenPage /> },
   { path: '/op/:token', element: <OperatorLandingPage /> },
   { path: '/public/events/:eventId', element: <PublicEventPage /> },
+  { path: '/public/:slug', element: <PublicEventPage /> },
   {
     path: '/me',
     element: (

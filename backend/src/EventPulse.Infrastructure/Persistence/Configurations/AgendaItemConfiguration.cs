@@ -31,3 +31,20 @@ public sealed class AgendaItemConfiguration : IEntityTypeConfiguration<AgendaIte
         builder.Ignore(i => i.DomainEvents);
     }
 }
+
+public sealed class AgendaTypeConfiguration : IEntityTypeConfiguration<AgendaType>
+{
+    public void Configure(EntityTypeBuilder<AgendaType> builder)
+    {
+        builder.ToTable("agenda_types");
+        builder.HasKey(t => t.Id);
+
+        builder.Property(t => t.NamePl).HasMaxLength(100).IsRequired();
+        builder.Property(t => t.NameEn).HasMaxLength(100);
+        builder.Property(t => t.Color).HasMaxLength(32).IsRequired();
+        builder.Property(t => t.Icon).HasMaxLength(16);
+
+        builder.HasIndex(t => t.TenantId);
+        builder.HasIndex(t => new { t.EventId, t.Order });
+    }
+}

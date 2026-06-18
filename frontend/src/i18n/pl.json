@@ -9,7 +9,8 @@
     "cancel": "Anuluj",
     "create": "Utwórz",
     "logout": "Wyloguj",
-    "error": "Coś poszło nie tak"
+    "error": "Coś poszło nie tak",
+    "yes": "Tak"
   },
   "auth": {
     "loginTitle": "Zaloguj się",
@@ -125,6 +126,7 @@
   },
   "participants": {
     "title": "Uczestnicy",
+    "ageYears": "{{n}} lat",
     "import": "Import z Excela",
     "template": "Pobierz szablon",
     "invite": "Wyślij zaproszenia",
@@ -188,7 +190,14 @@
     "typeNetworking": "Networking",
     "typeOther": "Inne",
     "checkInActive": "QR włączony",
-    "checkInOff": "Bez QR"
+    "checkInOff": "Bez QR",
+    "manageTypes": "Typy agendy",
+    "customTypesTitle": "Własne typy agendy",
+    "noCustomTypes": "Brak własnych typów. Dodaj pierwszy poniżej.",
+    "addType": "Dodaj typ",
+    "typeColor": "Kolor",
+    "typeNamePl": "Nazwa (PL)",
+    "typeNameEn": "Nazwa (EN)"
   },
   "participant": {
     "invalidLink": "Nieprawidłowy lub wygasły link.",
@@ -200,8 +209,12 @@
     "preferences": "Preferencje",
     "language": "Język",
     "dietary": "Preferencje żywieniowe",
+    "dietNone": "Brak / standardowa",
+    "dietOther": "Inne (wpisz)",
+    "dietOtherPlaceholder": "Opisz swoją dietę",
     "shirt": "Rozmiar koszulki",
-    "transfer": "Transfer z lotniska",
+    "shirtNone": "— wybierz —",
+    "transfer": "Czy potrzebujesz transportu na miejsce wydarzenia?",
     "arrival": "Godzina przylotu",
     "flight": "Numer lotu",
     "wishes": "Uwagi / życzenia",
@@ -221,6 +234,17 @@
     "rodoGateLead": "Aby korzystać z aplikacji wydarzenia, potwierdź zgody poniżej.",
     "rodoRequired": "Zgoda RODO jest wymagana",
     "unlock": "Odblokuj aplikację",
+    "phone": "Numer telefonu",
+    "phoneOptional": "Numer telefonu (opcjonalnie)",
+    "phonePlaceholder": "+48 600 000 000",
+    "phoneRequiredHint": "Numer telefonu jest wymagany.",
+    "locationNoticeTitle": "Dane o Twojej obecności",
+    "locationNotice": "Informacje o Twojej obecności na stanowiskach służą wyłącznie do obsługi tego wydarzenia i NIE będą wykorzystywane po jego zakończeniu.",
+    "customFields": "Dodatkowe informacje",
+    "onboardingNext": "Dalej",
+    "onboardingBack": "Wstecz",
+    "onboardingFinish": "Rozpocznij",
+    "onboardingConfirm": "Zapoznałem(-am) się i akceptuję",
     "galleryEmpty": "Zdjęcia pojawią się po wydarzeniu",
     "quizzesEmpty": "Brak quizów — sprawdź później",
     "agendaSoon": "Agenda zostanie wkrótce opublikowana",
@@ -236,6 +260,8 @@
     "stationScanClose": "Zamknij",
     "stationScanned": "Zarejestrowano: {{name}}",
     "stationScanDup": "Już zeskanowano to stanowisko",
+    "stationLimit": "Limit osiągnięty — nie możesz zeskanować więcej na tym stanowisku",
+    "stationNotAllowed": "To stanowisko nie pozwala na samodzielne skanowanie",
     "stationCamUnavailable": "Kamera niedostępna na tym urządzeniu",
     "liveTitle": "Quiz na żywo",
     "liveHint": "Wszyscy uczestnicy zobaczą pytania jednocześnie. Im szybciej odpowiedzą, tym więcej punktów.",
@@ -288,6 +314,10 @@
     "accentColor": "Kolor akcentu",
     "logoUrl": "URL logo",
     "saveBranding": "Zapisz branding",
+    "autoBranding": "Automatyczny branding ze strony",
+    "autoBrandingFetch": "Pobierz z adresu",
+    "autoBrandingHint": "Podaj adres strony firmy — pobierzemy kolory i logo. Sprawdź i zapisz.",
+    "autoBrandingError": "Nie udało się pobrać strony. Sprawdź adres.",
     "versions": "Wersje",
     "restore": "Przywróć",
     "preview": "Podgląd",
@@ -369,6 +399,10 @@
     "alreadyOut": "JUŻ WYSZEDŁ",
     "notFoundBig": "NIEZNANY KOD",
     "notFoundHint": "Ten kod nie należy do tego wydarzenia",
+    "limitReached": "LIMIT OSIĄGNIĘTY",
+    "limitReachedHint": "Ten gość wykorzystał już limit na tym stanowisku",
+    "presenceMode": "Stanowisko (obecność)",
+    "limitPerPerson": "limit {{n}}/os.",
     "scanNext": "Skanuj kolejny",
     "table": "Stolik",
     "room": "Pokój",
@@ -407,6 +441,7 @@
     "target": "cel: {{value}}%",
     "stations": "Aktywność na stanowiskach",
     "noStations": "Brak skanów stanowisk",
+    "scans": "skanów",
     "scans": "skanów",
     "funnel": "Lejek frekwencji",
     "funnelInvited": "Zaproszeni",
@@ -526,6 +561,7 @@
   },
   "gallery": {
     "title": "Galeria",
+    "openLink": "Otwórz galerię zdjęć",
     "empty": "Brak zdjęć",
     "upload": "Dodaj zdjęcia",
     "emptyHint": "Wgraj pierwsze zdjęcia — uczestnicy zobaczą je na swojej stronie po wyrażeniu zgody",
@@ -540,6 +576,27 @@
     "title": "Asystent",
     "placeholder": "Zapytaj o agendę, pokój, transfer...",
     "send": "Zapytaj"
+  },
+  "settings": {
+    "title": "Ustawienia"
+  },
+  "stations": {
+    "title": "Stanowiska"
+  },
+  "companions": {
+    "title": "Osoby towarzyszące",
+    "hint": "Dodaj osoby, które przyjdą z Tobą — każda dostanie własny kod QR do wejścia.",
+    "ageLabel": "Wiek: {{n}}",
+    "showQr": "Pokaż QR",
+    "hideQr": "Ukryj QR",
+    "first": "Imię",
+    "last": "Nazwisko",
+    "age": "Wiek",
+    "maxReached": "Osiągnięto maksymalną liczbę osób towarzyszących.",
+    "qrHint": "Pokaż ten kod przy wejściu"
+  },
+  "eventForm": {
+    "title": "Formularz"
   },
   "audit": {
     "title": "Audyt",

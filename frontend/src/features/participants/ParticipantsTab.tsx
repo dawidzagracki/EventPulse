@@ -65,10 +65,24 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('all')
 
+  // Accompanying persons are shown nested under their host, not as top-level rows.
+  const companionsByParent = useMemo(() => {
+    const map = new Map<string, ParticipantDto[]>()
+    for (const p of participants ?? []) {
+      if (p.parentParticipantId) {
+        const arr = map.get(p.parentParticipantId) ?? []
+        arr.push(p)
+        map.set(p.parentParticipantId, arr)
+      }
+    }
+    return map
+  }, [participants])
+
   const filtered = useMemo(() => {
     const list = participants ?? []
     const q = query.trim().toLowerCase()
     return list.filter((p) => {
+      if (p.parentParticipantId) return false // companions are nested, not listed top-level
       const matchStatus =
         filter === 'all' ||
         (filter === 'invited' && p.status === 0) ||
@@ -79,7 +93,7 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
       if (!q) return true
       return (
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
-        p.email.toLowerCase().includes(q) ||
+        (p.email ?? '').toLowerCase().includes(q) ||
         (p.company ?? '').toLowerCase().includes(q)
       )
     })
@@ -196,14 +210,38 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
               <Card className="py-8 text-center text-sm text-slate-400">—</Card>
             )
           ) : (
-            filtered.map((p) => (
-              <ParticipantRow
-                key={p.id}
-                participant={p}
-                active={view.kind === 'detail' && view.participant.id === p.id}
-                onClick={() => setView({ kind: 'detail', participant: p })}
-              />
-            ))
+            filtered.map((p) => {
+              const companions = companionsByParent.get(p.id) ?? []
+              return (
+                <div key={p.id}>
+                  <ParticipantRow
+                    participant={p}
+                    active={view.kind === 'detail' && view.participant.id === p.id}
+                    onClick={() => setView({ kind: 'detail', participant: p })}
+                  />
+                  {companions.length > 0 && (
+                    <ul className="ml-5 mt-1 space-y-1 border-l border-slate-800/70 pl-3">
+                      {companions.map((c) => (
+                        <li key={c.id} className="flex items-center gap-2 text-xs text-slate-400">
+                          <span className="text-slate-600">↳</span>
+                          <span className="text-slate-200">
+                            {c.firstName} {c.lastName}
+                          </span>
+                          {c.age != null && (
+                            <span className="rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px]">
+                              {t('participants.ageYears', { n: c.age })}
+                            </span>
+                          )}
+                          {c.status >= 4 && c.status <= 5 && (
+                            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-300">✓</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })
           )}
         </div>
 
@@ -276,7 +314,7 @@ function ParticipantRow({
       }`}
     >
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(participant.email)} text-xs font-bold text-white`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(participant.email ?? participant.id)} text-xs font-bold text-white`}
       >
         {initials(participant)}
       </span>
@@ -485,7 +523,7 @@ function ParticipantDetail({ eventId, participant }: { eventId: string; particip
       {/* Header */}
       <div className="mb-4 flex items-start gap-3">
         <span
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(participant.email)} text-lg font-bold text-white shadow-lg`}
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(participant.email ?? participant.id)} text-lg font-bold text-white shadow-lg`}
         >
           {initials(participant)}
         </span>

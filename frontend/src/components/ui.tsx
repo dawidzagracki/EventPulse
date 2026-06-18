@@ -43,6 +43,52 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   )
 }
 
+/** Accessible on/off switch with an optional label + description, used across settings screens. */
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled = false,
+}: {
+  checked: boolean
+  onChange: (next: boolean) => void
+  label?: ReactNode
+  description?: ReactNode
+  disabled?: boolean
+}) {
+  const knob = (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 disabled:opacity-40 ${
+        checked ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-slate-700'
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+          checked ? 'translate-x-5' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  )
+
+  if (!label && !description) return knob
+
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="space-y-0.5">
+        {label && <p className="text-sm font-medium text-slate-200">{label}</p>}
+        {description && <p className="text-xs text-slate-500">{description}</p>}
+      </div>
+      {knob}
+    </div>
+  )
+}
+
 export function Card({
   children,
   className = '',

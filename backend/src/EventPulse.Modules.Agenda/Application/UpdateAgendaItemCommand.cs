@@ -35,6 +35,7 @@ public sealed class UpdateAgendaItemHandler : IRequestHandler<UpdateAgendaItemCo
         item.DescriptionPl = input.DescriptionPl;
         item.DescriptionEn = input.DescriptionEn;
         item.Type = input.Type;
+        item.CustomTypeId = input.CustomTypeId;
         item.LocationName = input.LocationName;
         item.LocationMapUrl = input.LocationMapUrl;
         item.SpeakerName = input.SpeakerName;

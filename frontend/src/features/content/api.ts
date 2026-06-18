@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import type { BrandingDto, PageContentDoc, PageDto, PageVersionDto } from '../../types/api'
+import type { BrandingDto, BrandingSuggestionDto, PageContentDoc, PageDto, PageVersionDto } from '../../types/api'
 
 const pageKey = (eventId: string) => ['page', eventId]
 
@@ -35,6 +35,14 @@ export function useUpdateBranding(eventId: string) {
     mutationFn: async (branding: BrandingDto) =>
       (await api.put<PageDto>(`/api/events/${eventId}/page/branding`, branding)).data,
     onSuccess: (data) => qc.setQueryData(pageKey(eventId), data),
+  })
+}
+
+/** Auto-branding: derive colours + logo from a website URL. */
+export function useExtractBranding() {
+  return useMutation({
+    mutationFn: async (url: string) =>
+      (await api.post<BrandingSuggestionDto>('/api/branding/extract', { url })).data,
   })
 }
 

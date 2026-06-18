@@ -1,9 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useCreateAgendaItem, useAgenda, useDeleteAgendaItem } from './api'
+import {
+  useCreateAgendaItem,
+  useAgenda,
+  useDeleteAgendaItem,
+  useAgendaTypes,
+  useSaveAgendaTypes,
+} from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
-import type { AgendaItemDto } from '../../types/api'
+import type { AgendaItemDto, AgendaTypeDto, AgendaTypeInput } from '../../types/api'
 
 type View = { kind: 'empty' } | { kind: 'new' } | { kind: 'detail'; item: AgendaItemDto }
 
@@ -24,8 +30,10 @@ const TYPE_META: Record<
 export function AgendaTab({ eventId }: { eventId: string }) {
   const { t, i18n } = useTranslation()
   const { data: items, isLoading } = useAgenda(eventId)
+  const { data: customTypes } = useAgendaTypes(eventId)
   const deleteMut = useDeleteAgendaItem(eventId)
   const [view, setView] = useState<View>({ kind: 'empty' })
+  const [typesOpen, setTypesOpen] = useState(false)
 
   // Group items by day and sort chronologically.
   const grouped = useMemo(() => {
@@ -47,11 +55,16 @@ export function AgendaTab({ eventId }: { eventId: string }) {
           <span className="text-sm font-semibold text-white">{t('agenda.title')}</span>
           <span className="rounded-full bg-slate-800/80 px-1.5 text-[10px] text-slate-400">{items?.length ?? 0}</span>
         </div>
-        <Button className="ml-auto" onClick={() => setView({ kind: 'new' })}>
+        <Button variant="subtle" className="ml-auto" onClick={() => setTypesOpen((v) => !v)}>
+          🏷 {t('agenda.manageTypes')}
+        </Button>
+        <Button onClick={() => setView({ kind: 'new' })}>
           <Icon name="plus" className="h-4 w-4" />
           {t('agenda.new')}
         </Button>
       </div>
+
+      {typesOpen && <AgendaTypesManager eventId={eventId} onClose={() => setTypesOpen(false)} />}
 
       {grouped.length === 0 && view.kind === 'empty' && !isLoading ? (
         <EmptyAll onNew={() => setView({ kind: 'new' })} />
@@ -59,6 +72,7 @@ export function AgendaTab({ eventId }: { eventId: string }) {
         <div className="mx-auto w-full max-w-3xl">
           <NewItemForm
             eventId={eventId}
+            customTypes={customTypes ?? []}
             onDone={(it) => setView({ kind: 'detail', item: it })}
             onCancel={() => setView({ kind: 'empty' })}
           />
@@ -118,6 +132,7 @@ export function AgendaTab({ eventId }: { eventId: string }) {
           {view.kind === 'new' && (
             <NewItemForm
               eventId={eventId}
+              customTypes={customTypes ?? []}
               onDone={(it) => setView({ kind: 'detail', item: it })}
               onCancel={() => setView({ kind: 'empty' })}
             />
@@ -173,6 +188,7 @@ function AgendaListItem({
   onClick: () => void
 }) {
   const meta = TYPE_META[item.type] ?? TYPE_META[5]
+  const custom = item.customTypeName ? { color: item.customTypeColor ?? '#6366f1', icon: item.customTypeIcon || '🏷' } : null
   const startTime = new Date(item.startsAt).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
   const endTime = new Date(item.endsAt).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
   return (
@@ -189,9 +205,10 @@ function AgendaListItem({
         <span className="text-[10px] text-slate-500">{endTime}</span>
       </div>
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${meta.gradient} text-base shadow-md`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base shadow-md ${custom ? '' : `bg-gradient-to-br ${meta.gradient}`}`}
+        style={custom ? { backgroundColor: custom.color } : undefined}
       >
-        {meta.emoji}
+        {custom ? custom.icon : meta.emoji}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-white">{item.titlePl}</p>
@@ -245,10 +262,12 @@ function EmptyDetail() {
 
 function NewItemForm({
   eventId,
+  customTypes,
   onDone,
   onCancel,
 }: {
   eventId: string
+  customTypes: AgendaTypeDto[]
   onDone: (it: AgendaItemDto) => void
   onCancel: () => void
 }) {
@@ -259,6 +278,7 @@ function NewItemForm({
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
   const [type, setType] = useState(0)
+  const [customTypeId, setCustomTypeId] = useState<string | null>(null)
   const [requiresCheckIn, setRequiresCheckIn] = useState(false)
 
   return (
@@ -282,6 +302,7 @@ function NewItemForm({
             startsAt: new Date(startsAt).toISOString(),
             endsAt: new Date(endsAt).toISOString(),
             type,
+            customTypeId,
             requiresCheckIn,
           })
           onDone(it)
@@ -294,12 +315,15 @@ function NewItemForm({
           <div className="grid grid-cols-3 gap-2">
             {Object.entries(TYPE_META).map(([id, m]) => {
               const v = Number(id)
-              const selected = type === v
+              const selected = !customTypeId && type === v
               return (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setType(v)}
+                  onClick={() => {
+                    setType(v)
+                    setCustomTypeId(null)
+                  }}
                   className={`flex flex-col items-center gap-1 rounded-lg border p-2.5 transition ${
                     selected
                       ? 'border-indigo-400/40 bg-indigo-500/10 ring-1 ring-inset ring-indigo-400/40'
@@ -310,6 +334,34 @@ function NewItemForm({
                     {m.emoji}
                   </span>
                   <span className="text-[11px] font-medium text-slate-200">{t(m.i18nKey)}</span>
+                </button>
+              )
+            })}
+            {customTypes.map((ct) => {
+              const selected = customTypeId === ct.id
+              return (
+                <button
+                  key={ct.id}
+                  type="button"
+                  onClick={() => {
+                    setCustomTypeId(ct.id)
+                    setType(5)
+                  }}
+                  className={`flex flex-col items-center gap-1 rounded-lg border p-2.5 transition ${
+                    selected ? 'ring-1 ring-inset ring-indigo-400/40' : 'hover:border-indigo-400/30'
+                  }`}
+                  style={{
+                    borderColor: selected ? ct.color : undefined,
+                    background: selected ? `${ct.color}22` : undefined,
+                  }}
+                >
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-base shadow"
+                    style={{ backgroundColor: ct.color }}
+                  >
+                    {ct.icon || '🏷'}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-200">{ct.namePl}</span>
                 </button>
               )
             })}
@@ -379,6 +431,102 @@ function NewItemForm({
   )
 }
 
+type TypeRow = AgendaTypeInput & { _key: string }
+
+function AgendaTypesManager({ eventId, onClose }: { eventId: string; onClose: () => void }) {
+  const { data, isLoading } = useAgendaTypes(eventId)
+  if (isLoading || !data) return <Card>…</Card>
+  return <AgendaTypesForm key={data.map((t) => t.id).join('-') || 'empty'} eventId={eventId} initial={data} onClose={onClose} />
+}
+
+function AgendaTypesForm({
+  eventId,
+  initial,
+  onClose,
+}: {
+  eventId: string
+  initial: AgendaTypeDto[]
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const save = useSaveAgendaTypes(eventId)
+  const [rows, setRows] = useState<TypeRow[]>(() =>
+    initial.map((x, i) => ({ _key: `${x.id}-${i}`, id: x.id, namePl: x.namePl, nameEn: x.nameEn, color: x.color, icon: x.icon })),
+  )
+
+  const update = (key: string, patch: Partial<TypeRow>) =>
+    setRows((rs) => rs.map((r) => (r._key === key ? { ...r, ...patch } : r)))
+  const add = () =>
+    setRows((rs) => [
+      ...rs,
+      { _key: `new-${rs.length}-${performance.now()}`, id: null, namePl: '', nameEn: null, color: '#6366f1', icon: '🏷' },
+    ])
+  const remove = (key: string) => setRows((rs) => rs.filter((r) => r._key !== key))
+
+  async function persist() {
+    const payload: AgendaTypeInput[] = rows
+      .filter((r) => r.namePl.trim().length > 0)
+      .map((r) => ({ id: r.id, namePl: r.namePl.trim(), nameEn: r.nameEn?.trim() || null, color: r.color, icon: r.icon?.trim() || null }))
+    await save.mutateAsync(payload)
+    onClose()
+  }
+
+  return (
+    <Card glow>
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-white">{t('agenda.customTypesTitle')}</h3>
+        <button onClick={onClose} className="text-sm text-slate-400 hover:text-white">
+          ✕
+        </button>
+      </div>
+      <div className="space-y-2">
+        {rows.length === 0 && <p className="text-sm text-slate-500">{t('agenda.noCustomTypes')}</p>}
+        {rows.map((r) => (
+          <div key={r._key} className="flex items-center gap-2">
+            <input
+              type="color"
+              value={r.color}
+              onChange={(e) => update(r._key, { color: e.target.value })}
+              className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-transparent"
+              title={t('agenda.typeColor')}
+            />
+            <Input
+              className="w-16 text-center"
+              value={r.icon ?? ''}
+              onChange={(e) => update(r._key, { icon: e.target.value })}
+              placeholder="🏷"
+            />
+            <Input
+              value={r.namePl}
+              onChange={(e) => update(r._key, { namePl: e.target.value })}
+              placeholder={t('agenda.typeNamePl')}
+            />
+            <Input
+              value={r.nameEn ?? ''}
+              onChange={(e) => update(r._key, { nameEn: e.target.value })}
+              placeholder={t('agenda.typeNameEn')}
+            />
+            <button
+              onClick={() => remove(r._key)}
+              className="shrink-0 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-sm text-rose-300 hover:bg-rose-500/20"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Button variant="subtle" onClick={add}>
+          + {t('agenda.addType')}
+        </Button>
+        <Button onClick={persist} disabled={save.isPending}>
+          {save.isPending ? '…' : t('common.save')}
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
 function ItemDetail({
   item,
   onDelete,
@@ -390,21 +538,40 @@ function ItemDetail({
 }) {
   const { t, i18n } = useTranslation()
   const meta = TYPE_META[item.type] ?? TYPE_META[5]
+  const custom = item.customTypeName
+    ? {
+        color: item.customTypeColor ?? '#6366f1',
+        icon: item.customTypeIcon || '🏷',
+        name: (i18n.resolvedLanguage === 'en' && item.customTypeNameEn) || item.customTypeName,
+      }
+    : null
   const start = new Date(item.startsAt)
   const end = new Date(item.endsAt)
   return (
     <Card>
       <div className="mb-4 flex items-start gap-3">
-        <span className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${meta.gradient} text-xl shadow-lg`}>
-          {meta.emoji}
+        <span
+          className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl shadow-lg ${custom ? '' : `bg-gradient-to-br ${meta.gradient}`}`}
+          style={custom ? { backgroundColor: custom.color } : undefined}
+        >
+          {custom ? custom.icon : meta.emoji}
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-xl font-bold text-white">{item.titlePl}</h2>
           <p className="text-xs text-slate-400">{item.titleEn}</p>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${meta.chip}`}>
-          {t(meta.i18nKey)}
-        </span>
+        {custom ? (
+          <span
+            className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
+            style={{ color: custom.color, borderColor: custom.color, backgroundColor: `${custom.color}1a` }}
+          >
+            {custom.name}
+          </span>
+        ) : (
+          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${meta.chip}`}>
+            {t(meta.i18nKey)}
+          </span>
+        )}
       </div>
 
       <div className="space-y-3">

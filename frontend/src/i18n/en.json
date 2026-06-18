@@ -9,7 +9,8 @@
     "cancel": "Cancel",
     "create": "Create",
     "logout": "Log out",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "yes": "Yes"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -125,6 +126,7 @@
   },
   "participants": {
     "title": "Participants",
+    "ageYears": "{{n}} y/o",
     "import": "Excel import",
     "template": "Download template",
     "invite": "Send invitations",
@@ -188,7 +190,14 @@
     "typeNetworking": "Networking",
     "typeOther": "Other",
     "checkInActive": "QR enabled",
-    "checkInOff": "No QR"
+    "checkInOff": "No QR",
+    "manageTypes": "Agenda types",
+    "customTypesTitle": "Custom agenda types",
+    "noCustomTypes": "No custom types yet. Add the first one below.",
+    "addType": "Add type",
+    "typeColor": "Color",
+    "typeNamePl": "Name (PL)",
+    "typeNameEn": "Name (EN)"
   },
   "participant": {
     "invalidLink": "Invalid or expired link.",
@@ -200,8 +209,12 @@
     "preferences": "Preferences",
     "language": "Language",
     "dietary": "Dietary preferences",
+    "dietNone": "None / standard",
+    "dietOther": "Other (type)",
+    "dietOtherPlaceholder": "Describe your diet",
     "shirt": "Shirt size",
-    "transfer": "Airport transfer",
+    "shirtNone": "— select —",
+    "transfer": "Do you need transport to the venue?",
     "arrival": "Arrival time",
     "flight": "Flight number",
     "wishes": "Notes / wishes",
@@ -221,6 +234,17 @@
     "rodoGateLead": "To use the event app, please confirm the consents below.",
     "rodoRequired": "GDPR consent is required",
     "unlock": "Unlock the app",
+    "phone": "Phone number",
+    "phoneOptional": "Phone number (optional)",
+    "phonePlaceholder": "+48 600 000 000",
+    "phoneRequiredHint": "A phone number is required.",
+    "locationNoticeTitle": "Your presence data",
+    "locationNotice": "Information about your presence at stations is used only to run this event and will NOT be used after it ends.",
+    "customFields": "Additional information",
+    "onboardingNext": "Next",
+    "onboardingBack": "Back",
+    "onboardingFinish": "Get started",
+    "onboardingConfirm": "I have read and accept",
     "galleryEmpty": "Photos will appear after the event",
     "quizzesEmpty": "No quizzes — check back later",
     "agendaSoon": "The agenda will be published soon",
@@ -236,6 +260,8 @@
     "stationScanClose": "Close",
     "stationScanned": "Recorded: {{name}}",
     "stationScanDup": "You already scanned this station",
+    "stationLimit": "Limit reached — you can't scan more at this station",
+    "stationNotAllowed": "This station doesn't allow self-scanning",
     "stationCamUnavailable": "Camera unavailable on this device",
     "liveTitle": "Live quiz",
     "liveHint": "Everyone sees questions at the same time — faster answers score more.",
@@ -288,6 +314,10 @@
     "accentColor": "Accent color",
     "logoUrl": "Logo URL",
     "saveBranding": "Save branding",
+    "autoBranding": "Auto-branding from a website",
+    "autoBrandingFetch": "Fetch from URL",
+    "autoBrandingHint": "Enter your company website — we'll pull colours and logo. Review and save.",
+    "autoBrandingError": "Could not fetch the page. Check the URL.",
     "versions": "Versions",
     "restore": "Restore",
     "preview": "Preview",
@@ -369,6 +399,10 @@
     "alreadyOut": "ALREADY OUT",
     "notFoundBig": "UNKNOWN CODE",
     "notFoundHint": "This code does not belong to this event",
+    "limitReached": "LIMIT REACHED",
+    "limitReachedHint": "This guest already used their limit at this station",
+    "presenceMode": "Station (presence)",
+    "limitPerPerson": "limit {{n}}/person",
     "scanNext": "Scan next",
     "table": "Table",
     "room": "Room",
@@ -407,6 +441,7 @@
     "target": "target: {{value}}%",
     "stations": "Station activity",
     "noStations": "No station scans yet",
+    "scans": "scans",
     "scans": "scans",
     "funnel": "Attendance funnel",
     "funnelInvited": "Invited",
@@ -526,6 +561,7 @@
   },
   "gallery": {
     "title": "Gallery",
+    "openLink": "Open photo gallery",
     "empty": "No photos",
     "upload": "Upload photos",
     "emptyHint": "Upload the first photos — participants who give consent will see them on their page",
@@ -540,6 +576,27 @@
     "title": "Assistant",
     "placeholder": "Ask about agenda, room, transfer...",
     "send": "Ask"
+  },
+  "settings": {
+    "title": "Settings"
+  },
+  "stations": {
+    "title": "Stations"
+  },
+  "companions": {
+    "title": "Accompanying persons",
+    "hint": "Add people coming with you — each gets their own QR code for entry.",
+    "ageLabel": "Age: {{n}}",
+    "showQr": "Show QR",
+    "hideQr": "Hide QR",
+    "first": "First name",
+    "last": "Last name",
+    "age": "Age",
+    "maxReached": "You've reached the maximum number of accompanying persons.",
+    "qrHint": "Show this code at the entrance"
+  },
+  "eventForm": {
+    "title": "Form"
   },
   "audit": {
     "title": "Audit",

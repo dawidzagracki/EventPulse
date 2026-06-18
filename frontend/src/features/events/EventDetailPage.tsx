@@ -12,6 +12,9 @@ import { LogisticsTab } from '../logistics/LogisticsTab'
 import { EngagementTab } from '../engagement/EngagementTab'
 import { GalleryTab } from '../gallery/GalleryTab'
 import { AuditTab } from '../audit/AuditTab'
+import { SettingsTab } from './SettingsTab'
+import { EventFormTab } from './EventFormTab'
+import { StationsTab } from '../stations/StationsTab'
 import { AppShell, type NavItem } from '../../components/AppShell'
 import { Badge } from '../../components/ui'
 import { Icon } from '../../components/Icon'
@@ -20,7 +23,7 @@ import { EventStatus, EventStatusName } from '../../types/api'
 
 // Clients get a focused subset — the tabs they actually care about when
 // reviewing their event. Agency staff see everything.
-const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'page', 'participants', 'gallery']
+const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'page', 'participants', 'gallery', 'form', 'settings']
 
 type Tab =
   | 'dashboard'
@@ -31,7 +34,10 @@ type Tab =
   | 'logistics'
   | 'engagement'
   | 'gallery'
+  | 'stations'
+  | 'form'
   | 'audit'
+  | 'settings'
 
 function statusTone(status: number) {
   switch (status) {
@@ -73,6 +79,9 @@ export function EventDetailPage() {
     { id: 'logistics', label: t('logistics.title'), icon: 'truck' },
     { id: 'engagement', label: t('engagement.title'), icon: 'bolt' },
     { id: 'gallery', label: t('gallery.title'), icon: 'image' },
+    { id: 'stations', label: t('stations.title'), icon: 'station' },
+    { id: 'form', label: t('eventForm.title'), icon: 'document' },
+    { id: 'settings', label: t('settings.title'), icon: 'cog' },
     { id: 'audit', label: t('audit.title'), icon: 'shield' },
   ] as { id: Tab; label: string; icon: NavItem['icon'] }[]
 
@@ -163,6 +172,9 @@ export function EventDetailPage() {
           {activeTab === 'engagement' && <EngagementTab eventId={eventId} />}
           {activeTab === 'gallery' && <GalleryTab eventId={eventId} />}
           {activeTab === 'dashboard' && <DashboardTab eventId={eventId} />}
+          {activeTab === 'stations' && <StationsTab eventId={eventId} />}
+          {activeTab === 'form' && <EventFormTab eventId={eventId} />}
+          {activeTab === 'settings' && <SettingsTab eventId={eventId} />}
           {activeTab === 'audit' && <AuditTab />}
         </>
       )}

@@ -13,7 +13,7 @@ public sealed class ParticipantConfiguration : IEntityTypeConfiguration<Particip
 
         builder.Property(p => p.FirstName).HasMaxLength(200).IsRequired();
         builder.Property(p => p.LastName).HasMaxLength(200).IsRequired();
-        builder.Property(p => p.Email).HasMaxLength(320).IsRequired();
+        builder.Property(p => p.Email).HasMaxLength(320); // nullable: accompanying persons have no e-mail
         builder.Property(p => p.Phone).HasMaxLength(50);
         builder.Property(p => p.Company).HasMaxLength(200);
         builder.Property(p => p.Position).HasMaxLength(200);
@@ -31,6 +31,7 @@ public sealed class ParticipantConfiguration : IEntityTypeConfiguration<Particip
         builder.Property(p => p.Wishes).HasMaxLength(2000);
         builder.Property(p => p.Notes).HasMaxLength(2000);
         builder.Property(p => p.RodoVersion).HasMaxLength(20);
+        builder.Property(p => p.CustomFieldsJson).HasMaxLength(8000);
         builder.Property(p => p.Status).HasConversion<int>();
         builder.Ignore(p => p.HasAcceptedRodo);
 
@@ -38,5 +39,6 @@ public sealed class ParticipantConfiguration : IEntityTypeConfiguration<Particip
         builder.HasIndex(p => p.TenantId);
         builder.HasIndex(p => new { p.EventId, p.Status });
         builder.HasIndex(p => p.AccessToken).IsUnique();
+        builder.HasIndex(p => p.ParentParticipantId);
     }
 }

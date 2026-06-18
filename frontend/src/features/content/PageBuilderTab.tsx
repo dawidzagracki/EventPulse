@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
   useApplyTemplate,
+  useExtractBranding,
   usePage,
   usePublish,
   useRestoreVersion,
@@ -799,6 +800,22 @@ function BrandingEditor({
   const [angle, setAngle] = useState(parsed.angle)
   const [imageUrl, setImageUrl] = useState(parsed.imageUrl)
 
+  // Auto-branding from a website URL.
+  const extract = useExtractBranding()
+  const [brandUrl, setBrandUrl] = useState('')
+  async function fetchBranding() {
+    if (!brandUrl.trim()) return
+    const s = await extract.mutateAsync(brandUrl.trim())
+    onChange({
+      ...branding,
+      primaryColor: s.primaryColor ?? branding.primaryColor,
+      secondaryColor: s.secondaryColor ?? branding.secondaryColor,
+      accentColor: s.accentColor ?? branding.accentColor,
+      logoUrl: s.logoUrl ?? branding.logoUrl,
+      faviconUrl: s.faviconUrl ?? branding.faviconUrl,
+    })
+  }
+
   function commitBg(nextMode = mode, nextColor = color, nextFrom = from, nextTo = to, nextAngle = angle, nextUrl = imageUrl) {
     onChange({
       ...branding,
@@ -810,6 +827,26 @@ function BrandingEditor({
 
   return (
     <div className="mt-3 border-t border-slate-800 pt-3">
+      {/* Auto-branding: pull colours + logo from a website URL */}
+      <div className="mb-3 rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-3">
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-300">
+          ✨ {t('page.autoBranding')}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            className="min-w-[220px] flex-1"
+            placeholder="https://twojafirma.pl"
+            value={brandUrl}
+            onChange={(e) => setBrandUrl(e.target.value)}
+          />
+          <Button variant="subtle" onClick={fetchBranding} disabled={extract.isPending || !brandUrl.trim()}>
+            {extract.isPending ? '…' : t('page.autoBrandingFetch')}
+          </Button>
+        </div>
+        <p className="mt-1.5 text-[11px] text-slate-500">{t('page.autoBrandingHint')}</p>
+        {extract.isError && <p className="mt-1 text-[11px] text-rose-400">{t('page.autoBrandingError')}</p>}
+      </div>
+
       {/* Brand colors + logo + Save button in one tidy row */}
       <div className="grid gap-3 lg:grid-cols-[1fr_1fr_2fr_auto] items-end">
         <Field label={t('page.primaryColor')}>

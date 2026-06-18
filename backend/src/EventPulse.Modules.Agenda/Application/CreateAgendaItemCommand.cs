@@ -32,6 +32,7 @@ public sealed class CreateAgendaItemHandler : IRequestHandler<CreateAgendaItemCo
             DescriptionPl = input.DescriptionPl,
             DescriptionEn = input.DescriptionEn,
             Type = input.Type,
+            CustomTypeId = input.CustomTypeId,
             LocationName = input.LocationName,
             LocationMapUrl = input.LocationMapUrl,
             SpeakerName = input.SpeakerName,

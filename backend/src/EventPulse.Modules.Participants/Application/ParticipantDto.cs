@@ -7,7 +7,7 @@ public sealed record ParticipantDto(
     Guid EventId,
     string FirstName,
     string LastName,
-    string Email,
+    string? Email,
     string? Phone,
     string? Company,
     string? Position,
@@ -17,9 +17,12 @@ public sealed record ParticipantDto(
     string? RoomNumber,
     bool AirportTransfer,
     string? DietaryPreferences,
-    ParticipantStatus Status)
+    ParticipantStatus Status,
+    Guid? ParentParticipantId,
+    int? Age)
 {
     public static ParticipantDto From(Participant p) => new(
         p.Id, p.EventId, p.FirstName, p.LastName, p.Email, p.Phone, p.Company, p.Position,
-        p.Language, p.GroupName, p.TableName, p.RoomNumber, p.AirportTransfer, p.DietaryPreferences, p.Status);
+        p.Language, p.GroupName, p.TableName, p.RoomNumber, p.AirportTransfer, p.DietaryPreferences, p.Status,
+        p.ParentParticipantId, p.Age);
 }

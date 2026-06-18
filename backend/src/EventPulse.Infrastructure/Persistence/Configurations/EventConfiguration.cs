@@ -18,6 +18,9 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.ClientEmail).HasMaxLength(320);
         builder.Property(e => e.Status).HasConversion<int>();
 
+        builder.Property(e => e.CustomPhotosUrl).HasMaxLength(2048);
+        builder.Property(e => e.CustomPhotosText).HasMaxLength(4000);
+
         builder.HasIndex(e => e.Slug).IsUnique();
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.TenantId, e.Status });

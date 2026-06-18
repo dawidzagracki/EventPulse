@@ -26,4 +26,38 @@ public sealed class Event : AggregateRoot
 
     /// <summary>Email of the end client (mini-admin) who edits this event.</summary>
     public string? ClientEmail { get; set; }
+
+    // ---------------------------------------------------------------------
+    // Per-event settings (configured from the dashboard "Ustawienia" tab).
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// Whether this event collects/uses location (station-scan) data.
+    /// Drives the participant reassurance notice ("data not used after the event").
+    /// </summary>
+    public bool UsesLocationData { get; set; } = true;
+
+    /// <summary>Whether the participant phone number is required (asked during the RODO/consent step).</summary>
+    public bool PhoneRequired { get; set; }
+
+    /// <summary>Whether participants may add accompanying persons (plus-ones) from their app.</summary>
+    public bool AllowCompanions { get; set; }
+
+    /// <summary>Max accompanying persons per participant. 0 = unlimited (when <see cref="AllowCompanions"/> is on).</summary>
+    public int MaxCompanions { get; set; }
+
+    /// <summary>Opt-in automatic anonymization of personal data after the event ends.</summary>
+    public bool AnonymizeEnabled { get; set; }
+
+    /// <summary>Days after <see cref="EndsAt"/> before personal data is anonymized.</summary>
+    public int AnonymizeAfterDays { get; set; } = 90;
+
+    /// <summary>Set once anonymization has run for this event (idempotency guard).</summary>
+    public DateTimeOffset? AnonymizedAt { get; set; }
+
+    /// <summary>Optional external link to event photos shown in the participant app.</summary>
+    public string? CustomPhotosUrl { get; set; }
+
+    /// <summary>Optional free-text info shown in the participant app's photos section.</summary>
+    public string? CustomPhotosText { get; set; }
 }

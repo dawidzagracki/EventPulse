@@ -23,7 +23,8 @@ export interface MyProfileDto {
   eventId: string
   firstName: string
   lastName: string
-  email: string
+  email: string | null
+  phone: string | null
   language: string
   status: number
   hasAcceptedRodo: boolean
@@ -41,6 +42,8 @@ export interface MyProfileDto {
   hotelName: string | null
   hotelAddress: string | null
   hotelPhone: string | null
+  customFields: Record<string, string>
+  onboardingCompleted: boolean
 }
 
 export interface TransferDto {
@@ -70,6 +73,63 @@ export const EventStatusName: Record<number, string> = {
   4: 'Archived',
 }
 
+export const CustomFieldType = {
+  Text: 0,
+  Textarea: 1,
+  Checkbox: 2,
+  Select: 3,
+} as const
+export type CustomFieldType = (typeof CustomFieldType)[keyof typeof CustomFieldType]
+
+export interface CustomFieldDto {
+  id: string
+  labelPl: string
+  labelEn: string | null
+  type: number
+  options: string[]
+  required: boolean
+  order: number
+}
+
+export interface CustomFieldInput {
+  id: string | null
+  labelPl: string
+  labelEn: string | null
+  type: number
+  options: string[] | null
+  required: boolean
+}
+
+export interface OnboardingStepDto {
+  id: string
+  titlePl: string
+  titleEn: string | null
+  bodyPl: string | null
+  bodyEn: string | null
+  requireConfirm: boolean
+  order: number
+}
+
+export interface OnboardingStepInput {
+  titlePl: string
+  titleEn: string | null
+  bodyPl: string | null
+  bodyEn: string | null
+  requireConfirm: boolean
+}
+
+export interface EventSettingsDto {
+  usesLocationData: boolean
+  phoneRequired: boolean
+  allowCompanions: boolean
+  maxCompanions: number
+  anonymizeEnabled: boolean
+  anonymizeAfterDays: number
+  anonymizedAt: string | null
+  customPhotosUrl: string | null
+  customPhotosText: string | null
+}
+
 export interface EventDto {
   id: string
   name: string
@@ -83,6 +143,7 @@ export interface EventDto {
   clientEmail: string | null
   createdAt: string
   updatedAt: string | null
+  settings: EventSettingsDto
 }
 
 export interface CreateEventRequest {
@@ -110,7 +171,7 @@ export interface ParticipantDto {
   eventId: string
   firstName: string
   lastName: string
-  email: string
+  email: string | null
   phone: string | null
   company: string | null
   position: string | null
@@ -121,6 +182,15 @@ export interface ParticipantDto {
   airportTransfer: boolean
   dietaryPreferences: string | null
   status: number
+  parentParticipantId: string | null
+  age: number | null
+}
+
+export interface CompanionDto {
+  id: string
+  firstName: string
+  lastName: string
+  age: number | null
 }
 
 export interface ImportResult {
@@ -165,6 +235,28 @@ export interface AgendaItemDto {
   requiresCheckIn: boolean
   dressCode: string | null
   groupName: string | null
+  customTypeId: string | null
+  customTypeName: string | null
+  customTypeNameEn: string | null
+  customTypeColor: string | null
+  customTypeIcon: string | null
+}
+
+export interface AgendaTypeDto {
+  id: string
+  namePl: string
+  nameEn: string | null
+  color: string
+  icon: string | null
+  order: number
+}
+
+export interface AgendaTypeInput {
+  id: string | null
+  namePl: string
+  nameEn: string | null
+  color: string
+  icon: string | null
 }
 
 export interface AgendaItemInput {
@@ -184,6 +276,7 @@ export interface AgendaItemInput {
   requiresCheckIn: boolean
   dressCode?: string | null
   groupName?: string | null
+  customTypeId?: string | null
 }
 
 export interface PageBlock {
@@ -208,6 +301,17 @@ export interface BrandingDto {
   logoUrl: string | null
   faviconUrl: string | null
   backgroundColor: string | null
+}
+
+export interface BrandingSuggestionDto {
+  primaryColor: string | null
+  secondaryColor: string | null
+  accentColor: string | null
+  logoUrl: string | null
+  faviconUrl: string | null
+  ogImageUrl: string | null
+  title: string | null
+  description: string | null
 }
 
 export interface SeoDto {
@@ -241,6 +345,42 @@ export interface RecentCheckIn {
 export interface StationActivity {
   code: string
   count: number
+  people: number
+}
+
+export interface StationDto {
+  id: string
+  name: string
+  nameEn: string | null
+  icon: string | null
+  scanLimitPerParticipant: number
+  countsAsCheckIn: boolean
+  allowSelfScan: boolean
+  active: boolean
+  order: number
+}
+
+export interface StationInput {
+  id: string | null
+  name: string
+  nameEn: string | null
+  icon: string | null
+  scanLimitPerParticipant: number
+  countsAsCheckIn: boolean
+  allowSelfScan: boolean
+  active: boolean
+}
+
+export interface StationStatDto {
+  id: string | null
+  name: string
+  icon: string | null
+  scanLimitPerParticipant: number
+  countsAsCheckIn: boolean
+  allowSelfScan: boolean
+  active: boolean
+  scans: number
+  people: number
 }
 
 export interface DashboardData {

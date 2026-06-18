@@ -17,6 +17,9 @@ public sealed class AgendaItem : AggregateRoot
 
     public AgendaItemType Type { get; set; } = AgendaItemType.Talk;
 
+    /// <summary>Optional reference to an admin-defined <see cref="AgendaType"/>; falls back to <see cref="Type"/> when null.</summary>
+    public Guid? CustomTypeId { get; set; }
+
     public string? LocationName { get; set; }
     public string? LocationMapUrl { get; set; }
 

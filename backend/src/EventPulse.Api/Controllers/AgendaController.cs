@@ -24,6 +24,23 @@ public sealed class AgendaController : ControllerBase
         return Ok(await _mediator.Send(new ListAgendaQuery(eventId), ct));
     }
 
+    [HttpGet("types")]
+    public async Task<ActionResult<IReadOnlyList<AgendaTypeDto>>> Types(Guid eventId, CancellationToken ct)
+    {
+        await EnsureEventAsync(eventId, ct);
+        return Ok(await _mediator.Send(new ListAgendaTypesQuery(eventId), ct));
+    }
+
+    [HttpPut("types")]
+    public async Task<ActionResult<IReadOnlyList<AgendaTypeDto>>> SaveTypes(
+        Guid eventId, SaveTypesBody body, CancellationToken ct)
+    {
+        await EnsureEventAsync(eventId, ct);
+        return Ok(await _mediator.Send(new SaveAgendaTypesCommand(eventId, body.Types), ct));
+    }
+
+    public sealed record SaveTypesBody(IReadOnlyList<AgendaTypeInput> Types);
+
     [HttpPost]
     public async Task<ActionResult<AgendaItemDto>> Create(Guid eventId, AgendaItemInput input, CancellationToken ct)
     {

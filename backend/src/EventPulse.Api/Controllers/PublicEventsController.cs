@@ -116,6 +116,37 @@ public sealed class PublicEventHandler(IAppDbContext db) : IRequestHandler<Publi
     }
 }
 
+/// <summary>Resolves a friendly slug to the public event (so the SPA can load /public/{slug}).</summary>
+public sealed record PublicEventBySlugQuery(string Slug) : IRequest<PublicEventDto>;
+
+public sealed class PublicEventBySlugHandler(IAppDbContext db) : IRequestHandler<PublicEventBySlugQuery, PublicEventDto>
+{
+    public async Task<PublicEventDto> Handle(PublicEventBySlugQuery request, CancellationToken ct)
+    {
+        var ev = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
+            .Where(e => e.Slug == request.Slug && e.Status >= EventStatus.Published)
+            .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status))
+            .FirstOrDefaultAsync(ct);
+
+        return ev ?? throw new NotFoundException("Event not available.");
+    }
+}
+
+/// <summary>Slug resolution lives on its own route (the main controller is keyed by GUID).</summary>
+[ApiController]
+[Route("api/public")]
+[AllowAnonymous]
+public sealed class PublicSlugController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public PublicSlugController(IMediator mediator) => _mediator = mediator;
+
+    [HttpGet("by-slug/{slug}")]
+    public async Task<ActionResult<PublicEventDto>> BySlug(string slug, CancellationToken ct)
+        => Ok(await _mediator.Send(new PublicEventBySlugQuery(slug), ct));
+}
+
 public sealed record PublicAgendaQuery(Guid EventId) : IRequest<IReadOnlyList<AgendaItemDto>>;
 
 public sealed class PublicAgendaHandler(IAppDbContext db) : IRequestHandler<PublicAgendaQuery, IReadOnlyList<AgendaItemDto>>
@@ -131,7 +162,8 @@ public sealed class PublicAgendaHandler(IAppDbContext db) : IRequestHandler<Publ
             .OrderBy(a => a.StartsAt)
             .ToListAsync(ct);
 
-        return items.Select(AgendaItemDto.From).ToList();
+        var types = await AgendaTypeLookup.ForEventAsync(db, request.EventId, ct, ignoreFilters: true);
+        return AgendaItemDto.Enrich(items, types);
     }
 }
 

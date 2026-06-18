@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import type { AgendaItemDto, MyProfileDto, ParticipantLoginResult, TransferDto } from '../../types/api'
+import type {
+  AgendaItemDto,
+  CompanionDto,
+  CustomFieldDto,
+  MyProfileDto,
+  OnboardingStepDto,
+  ParticipantLoginResult,
+  TransferDto,
+} from '../../types/api'
 
 export async function exchangeToken(token: string): Promise<ParticipantLoginResult> {
   const { data } = await api.post<ParticipantLoginResult>('/api/auth/participant', { token })
@@ -22,6 +30,12 @@ export interface MyEventDto {
   endsAt: string
   location: string | null
   description: string | null
+  usesLocationData: boolean
+  phoneRequired: boolean
+  allowCompanions: boolean
+  maxCompanions: number
+  customPhotosUrl: string | null
+  customPhotosText: string | null
 }
 
 export function useMyEvent() {
@@ -35,6 +49,7 @@ export interface ConsentsInput {
   rodoAccepted: boolean
   photoConsent: boolean
   networkingConsent: boolean
+  phone?: string | null
 }
 
 export function useUpdateConsents() {
@@ -57,6 +72,8 @@ export function useRsvp() {
 export interface SelfScanResult {
   stationCode: string
   duplicate: boolean
+  limitReached?: boolean
+  allowed?: boolean
 }
 
 /** Guest records presence at a station they scanned. clientId makes it idempotent. */
@@ -106,5 +123,68 @@ export function useSubmitFeedback() {
     mutationFn: async (body: { rating: number; comment: string | null }) => {
       await api.post('/api/me/feedback', body)
     },
+  })
+}
+
+// ---- Custom fields (participant) ----
+export function useMyCustomFields() {
+  return useQuery({
+    queryKey: ['me', 'custom-fields'],
+    queryFn: async () => (await api.get<CustomFieldDto[]>('/api/me/custom-fields')).data,
+  })
+}
+
+export function useSaveMyCustomFields() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (values: Record<string, string>) => {
+      await api.put('/api/me/custom-fields', values)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }),
+  })
+}
+
+// ---- Accompanying persons (participant) ----
+export function useMyCompanions() {
+  return useQuery({
+    queryKey: ['me', 'companions'],
+    queryFn: async () => (await api.get<CompanionDto[]>('/api/me/companions')).data,
+  })
+}
+
+export function useAddCompanion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { firstName: string; lastName: string; age: number | null }) =>
+      (await api.post<CompanionDto>('/api/me/companions', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'companions'] }),
+  })
+}
+
+export function useDeleteCompanion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/api/me/companions/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'companions'] }),
+  })
+}
+
+// ---- Onboarding (participant) ----
+export function useMyOnboarding() {
+  return useQuery({
+    queryKey: ['me', 'onboarding'],
+    queryFn: async () => (await api.get<OnboardingStepDto[]>('/api/me/onboarding')).data,
+  })
+}
+
+export function useCompleteOnboarding() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      await api.post('/api/me/onboarding/complete')
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }),
   })
 }

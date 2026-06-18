@@ -20,7 +20,8 @@ public sealed class ListAgendaHandler : IRequestHandler<ListAgendaQuery, IReadOn
             .OrderBy(i => i.StartsAt)
             .ToListAsync(cancellationToken);
 
-        return items.Select(AgendaItemDto.From).ToList();
+        var types = await AgendaTypeLookup.ForEventAsync(_db, request.EventId, cancellationToken);
+        return AgendaItemDto.Enrich(items, types);
     }
 }
 
@@ -41,6 +42,7 @@ public sealed class ParticipantAgendaHandler : IRequestHandler<ParticipantAgenda
             .OrderBy(i => i.StartsAt)
             .ToListAsync(cancellationToken);
 
-        return items.Select(AgendaItemDto.From).ToList();
+        var types = await AgendaTypeLookup.ForEventAsync(_db, request.EventId, cancellationToken);
+        return AgendaItemDto.Enrich(items, types);
     }
 }

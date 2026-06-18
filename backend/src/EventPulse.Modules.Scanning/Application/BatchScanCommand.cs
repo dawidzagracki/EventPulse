@@ -42,6 +42,12 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
             .ToListAsync(cancellationToken);
         var seen = existing.ToHashSet();
 
+        // Stations with a per-participant cap (e.g. "2 beers"), keyed by their name (= scan code).
+        var limitedStations = await db.Set<Station>().AsNoTracking()
+            .Where(s => s.EventId == request.EventId && s.ScanLimitPerParticipant > 0)
+            .ToDictionaryAsync(s => s.Name, s => s.ScanLimitPerParticipant, StringComparer.OrdinalIgnoreCase, cancellationToken);
+        var batchStationCounts = new Dictionary<(Guid, string), int>();
+
         var results = new List<ScanResultItem>();
         var accepted = 0;
         var duplicates = 0;
@@ -66,6 +72,26 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
                 notFound++;
                 results.Add(new ScanResultItem(item.ClientId, "notfound"));
                 continue;
+            }
+
+            // Per-station cap: reject once the participant hit the limit (e.g. their 3rd beer).
+            var code = item.StationCode?.Trim();
+            if (!string.IsNullOrEmpty(code) && limitedStations.TryGetValue(code, out var limit))
+            {
+                var key = (participant.Id, code);
+                var priorDb = await db.Set<ScanEvent>().CountAsync(
+                    s => s.EventId == request.EventId && s.ParticipantId == participant.Id && s.StationCode == code,
+                    cancellationToken);
+                var priorBatch = batchStationCounts.GetValueOrDefault(key);
+                if (priorDb + priorBatch >= limit)
+                {
+                    results.Add(new ScanResultItem(
+                        item.ClientId, "limit",
+                        Name: $"{participant.FirstName} {participant.LastName}".Trim()));
+                    continue;
+                }
+
+                batchStationCounts[key] = priorBatch + 1;
             }
 
             // Capture the prior state BEFORE mutating, so the operator can be warned

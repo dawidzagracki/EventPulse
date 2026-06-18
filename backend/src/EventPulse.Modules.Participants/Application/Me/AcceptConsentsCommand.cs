@@ -6,12 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventPulse.Modules.Participants.Application.Me;
 
-/// <summary>RODO acceptance is mandatory; photo/networking consents are optional.</summary>
+/// <summary>RODO acceptance is mandatory; photo/networking consents are optional. Phone is optional here
+/// (the API enforces it when the event requires it).</summary>
 public sealed record AcceptConsentsCommand(
     Guid ParticipantId,
     bool RodoAccepted,
     bool PhotoConsent,
-    bool NetworkingConsent) : IRequest<MyProfileDto>;
+    bool NetworkingConsent,
+    string? Phone = null) : IRequest<MyProfileDto>;
 
 public sealed class AcceptConsentsHandler : IRequestHandler<AcceptConsentsCommand, MyProfileDto>
 {
@@ -34,6 +36,13 @@ public sealed class AcceptConsentsHandler : IRequestHandler<AcceptConsentsComman
         participant.RodoVersion = RodoPolicy.CurrentVersion;
         participant.PhotoConsent = request.PhotoConsent;
         participant.NetworkingConsent = request.NetworkingConsent;
+
+        // Phone is collected (optionally) alongside the consents. Only overwrite when provided
+        // so re-accepting consents never wipes an existing number.
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            participant.Phone = request.Phone.Trim();
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
         return MyProfileDto.From(participant);

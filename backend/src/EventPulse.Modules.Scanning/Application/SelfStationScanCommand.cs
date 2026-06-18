@@ -16,7 +16,7 @@ public sealed record SelfStationScanCommand(
     Guid ClientId,
     DateTimeOffset OccurredAt) : IRequest<SelfStationScanResult>;
 
-public sealed record SelfStationScanResult(string StationCode, bool Duplicate);
+public sealed record SelfStationScanResult(string StationCode, bool Duplicate, bool LimitReached = false, bool Allowed = true);
 
 public sealed class SelfStationScanHandler(IAppDbContext db) : IRequestHandler<SelfStationScanCommand, SelfStationScanResult>
 {
@@ -29,6 +29,28 @@ public sealed class SelfStationScanHandler(IAppDbContext db) : IRequestHandler<S
         if (exists)
         {
             return new SelfStationScanResult(station, Duplicate: true);
+        }
+
+        // Respect the defined station's self-scan flag and per-participant limit.
+        var defined = await db.Set<Station>().AsNoTracking()
+            .FirstOrDefaultAsync(s => s.EventId == request.EventId && s.Name == station, cancellationToken);
+        if (defined is not null)
+        {
+            if (!defined.AllowSelfScan)
+            {
+                return new SelfStationScanResult(station, Duplicate: false, Allowed: false);
+            }
+
+            if (defined.ScanLimitPerParticipant > 0)
+            {
+                var prior = await db.Set<ScanEvent>().CountAsync(
+                    s => s.EventId == request.EventId && s.ParticipantId == request.ParticipantId && s.StationCode == station,
+                    cancellationToken);
+                if (prior >= defined.ScanLimitPerParticipant)
+                {
+                    return new SelfStationScanResult(station, Duplicate: false, LimitReached: true);
+                }
+            }
         }
 
         db.Set<ScanEvent>().Add(new ScanEvent

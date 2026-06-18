@@ -18,5 +18,24 @@ public sealed class ScanEventConfiguration : IEntityTypeConfiguration<ScanEvent>
         builder.HasIndex(s => s.EventId);
         builder.HasIndex(s => s.ParticipantId);
         builder.HasIndex(s => s.TenantId);
+
+        // Speeds up the per-participant station-limit count.
+        builder.HasIndex(s => new { s.EventId, s.ParticipantId, s.StationCode });
+    }
+}
+
+public sealed class StationConfiguration : IEntityTypeConfiguration<Station>
+{
+    public void Configure(EntityTypeBuilder<Station> builder)
+    {
+        builder.ToTable("stations");
+        builder.HasKey(s => s.Id);
+
+        builder.Property(s => s.Name).HasMaxLength(100).IsRequired();
+        builder.Property(s => s.NameEn).HasMaxLength(100);
+        builder.Property(s => s.Icon).HasMaxLength(16);
+
+        builder.HasIndex(s => s.TenantId);
+        builder.HasIndex(s => new { s.EventId, s.Order });
     }
 }

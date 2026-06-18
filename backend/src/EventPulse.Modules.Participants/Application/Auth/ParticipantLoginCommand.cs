@@ -42,7 +42,7 @@ public sealed class ParticipantLoginHandler : IRequestHandler<ParticipantLoginCo
             participant.Id,
             PrincipalType.Participant,
             participant.TenantId,
-            participant.Email,
+            participant.Email ?? string.Empty,
             role: null,
             eventId: participant.EventId);
 

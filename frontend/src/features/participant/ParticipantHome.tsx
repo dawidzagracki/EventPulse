@@ -2,11 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
+  useAddCompanion,
+  useCompleteOnboarding,
+  useDeleteCompanion,
   useMyAgenda,
+  useMyCompanions,
+  useMyCustomFields,
   useMyEvent,
+  useMyOnboarding,
   useMyProfile,
   useMyTransfers,
   useRsvp,
+  useSaveMyCustomFields,
   useSubmitFeedback,
   useUpdateConsents,
   useUpdatePreferences,
@@ -15,7 +22,14 @@ import { useAuthStore } from '../../stores/authStore'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
 import { Logo } from '../../components/Logo'
-import { AgendaItemTypeName, type MyProfileDto, type QuizTakeDto } from '../../types/api'
+import {
+  AgendaItemTypeName,
+  CustomFieldType,
+  type CustomFieldDto,
+  type MyProfileDto,
+  type OnboardingStepDto,
+  type QuizTakeDto,
+} from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { recordStationScan } from './api'
 import { createQuizConnection } from '../../lib/signalr'
@@ -53,7 +67,29 @@ export function ParticipantHome() {
     return <RodoGate key={`gate-${profile.id}`} profile={profile} onLogout={handleLogout} />
   }
 
-  return <ParticipantApp profile={profile} onLogout={handleLogout} />
+  return <ParticipantShell profile={profile} onLogout={handleLogout} />
+}
+
+// Shows the custom onboarding (if any, not yet completed) before the main app.
+function ParticipantShell({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
+  const { t } = useTranslation()
+  const { data: steps, isLoading } = useMyOnboarding()
+  const complete = useCompleteOnboarding()
+
+  if (isLoading || steps === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-slate-500">{t('common.loading')}</p>
+      </div>
+    )
+  }
+
+  const needsOnboarding = !profile.onboardingCompleted && steps.length > 0
+  if (needsOnboarding) {
+    return <OnboardingGate steps={steps} onDone={() => complete.mutate()} onLogout={onLogout} />
+  }
+
+  return <ParticipantApp profile={profile} onLogout={onLogout} />
 }
 
 // ===================== Tabbed app shell =====================
@@ -132,6 +168,8 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         {tab === 'profile' && (
           <div className="space-y-5">
             <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
+            <CompanionsSection />
+            <CustomFieldsSection />
             <LogisticsSection profile={profile} />
             <ConsentsSection key={`consents-${profile.id}`} profile={profile} />
           </div>
@@ -316,7 +354,7 @@ function parseStationCode(raw: string): string {
 function StationScanSection() {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const [result, setResult] = useState<{ name: string; dup: boolean } | null>(null)
+  const [result, setResult] = useState<{ name: string; dup: boolean; limit?: boolean; notAllowed?: boolean } | null>(null)
   const [camOk, setCamOk] = useState<boolean | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const busyRef = useRef(false)
@@ -353,7 +391,7 @@ function StationScanSection() {
               const code = parseStationCode(codes[0].rawValue)
               try {
                 const r = await recordStationScan(code)
-                setResult({ name: r.stationCode, dup: r.duplicate })
+                setResult({ name: r.stationCode, dup: r.duplicate, limit: r.limitReached, notAllowed: r.allowed === false })
                 setOpen(false)
               } finally {
                 window.setTimeout(() => (busyRef.current = false), 1500)
@@ -386,10 +424,20 @@ function StationScanSection() {
       {result && (
         <p
           className={`mb-3 rounded-lg px-3 py-2 text-sm ${
-            result.dup ? 'bg-amber-400/15 text-amber-300' : 'bg-emerald-400/15 text-emerald-300'
+            result.limit || result.notAllowed
+              ? 'bg-rose-400/15 text-rose-300'
+              : result.dup
+                ? 'bg-amber-400/15 text-amber-300'
+                : 'bg-emerald-400/15 text-emerald-300'
           }`}
         >
-          {result.dup ? t('participant.stationScanDup') : t('participant.stationScanned', { name: result.name })}
+          {result.limit
+            ? t('participant.stationLimit')
+            : result.notAllowed
+              ? t('participant.stationNotAllowed')
+              : result.dup
+                ? t('participant.stationScanDup')
+                : t('participant.stationScanned', { name: result.name })}
         </p>
       )}
 
@@ -538,14 +586,25 @@ function MyQrScreen({ profile }: { profile: MyProfileDto }) {
 function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
   const { t } = useTranslation()
   const update = useUpdateConsents()
+  const { data: ev } = useMyEvent()
   const [rodo, setRodo] = useState(profile.hasAcceptedRodo)
   const [photo, setPhoto] = useState(profile.photoConsent)
   const [networking, setNetworking] = useState(profile.networkingConsent)
+  const [phone, setPhone] = useState(profile.phone ?? '')
+
+  const phoneRequired = ev?.phoneRequired ?? false
+  const usesLocationData = ev?.usesLocationData ?? false
+  const phoneMissing = phoneRequired && phone.trim().length === 0
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    if (!rodo) return
-    await update.mutateAsync({ rodoAccepted: rodo, photoConsent: photo, networkingConsent: networking })
+    if (!rodo || phoneMissing) return
+    await update.mutateAsync({
+      rodoAccepted: rodo,
+      photoConsent: photo,
+      networkingConsent: networking,
+      phone: phone.trim() || null,
+    })
   }
 
   return (
@@ -578,8 +637,30 @@ function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () =
             <ConsentRow checked={rodo} onChange={setRodo} required label={t('participant.rodo')} />
             <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />
             <ConsentRow checked={networking} onChange={setNetworking} label={t('participant.networking')} />
+
+            <div className="pt-1">
+              <Field label={phoneRequired ? `${t('participant.phone')} *` : t('participant.phoneOptional')}>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder={t('participant.phonePlaceholder')}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </Field>
+              {phoneMissing && <p className="mt-1 px-1 text-[11px] text-amber-300">{t('participant.phoneRequiredHint')}</p>}
+            </div>
+
+            {usesLocationData && (
+              <div className="rounded-xl border border-sky-500/25 bg-sky-500/10 p-3">
+                <p className="text-xs font-semibold text-sky-200">🔒 {t('participant.locationNoticeTitle')}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-sky-100/80">{t('participant.locationNotice')}</p>
+              </div>
+            )}
+
             {!rodo && <p className="px-1 text-[11px] text-amber-300">{t('participant.rodoRequired')}</p>}
-            <Button type="submit" className="mt-2 w-full justify-center" disabled={!rodo || update.isPending}>
+            <Button type="submit" className="mt-2 w-full justify-center" disabled={!rodo || phoneMissing || update.isPending}>
               {t('participant.unlock')}
             </Button>
           </form>
@@ -623,18 +704,316 @@ function ConsentRow({
   )
 }
 
+// ===================== Custom onboarding (full screen, before the app) =====================
+function OnboardingGate({
+  steps,
+  onDone,
+  onLogout,
+}: {
+  steps: OnboardingStepDto[]
+  onDone: () => void
+  onLogout: () => void
+}) {
+  const { t, i18n } = useTranslation()
+  const en = i18n.resolvedLanguage === 'en'
+  const [idx, setIdx] = useState(0)
+  const [confirmed, setConfirmed] = useState(false)
+
+  const step = steps[idx]
+  const title = (en && step.titleEn) || step.titlePl
+  const body = (en ? step.bodyEn : step.bodyPl) ?? step.bodyPl
+  const isLast = idx === steps.length - 1
+  const blocked = step.requireConfirm && !confirmed
+
+  function next() {
+    if (blocked) return
+    if (isLast) {
+      onDone()
+      return
+    }
+    setIdx((i) => i + 1)
+    setConfirmed(false)
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-600/25 blur-3xl animate-pulse-slow" />
+        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl animate-pulse-slow [animation-delay:1.5s]" />
+      </div>
+
+      <div className="w-full max-w-md">
+        <div className="mb-5 flex items-center justify-between">
+          <Logo size={32} />
+          <Button variant="ghost" onClick={onLogout}>
+            {t('common.logout')}
+          </Button>
+        </div>
+
+        <Card glow>
+          {/* progress dots */}
+          <div className="mb-4 flex items-center gap-1.5">
+            {steps.map((s, i) => (
+              <span
+                key={s.id}
+                className={`h-1.5 flex-1 rounded-full transition ${i <= idx ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-slate-700'}`}
+              />
+            ))}
+          </div>
+
+          <h1 className="text-lg font-bold text-white">{title}</h1>
+          {body && <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-300">{body}</p>}
+
+          {step.requireConfirm && (
+            <button
+              type="button"
+              onClick={() => setConfirmed((v) => !v)}
+              className={`mt-4 flex w-full items-start gap-3 rounded-xl border p-3 text-left transition ${
+                confirmed ? 'border-indigo-400/40 bg-indigo-500/10' : 'border-slate-800/70 bg-slate-900/40'
+              }`}
+            >
+              <span
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                  confirmed ? 'border-indigo-400 bg-indigo-500 text-white' : 'border-slate-600'
+                }`}
+              >
+                {confirmed && '✓'}
+              </span>
+              <span className="text-sm text-slate-200">{t('participant.onboardingConfirm')}</span>
+            </button>
+          )}
+
+          <div className="mt-5 flex items-center gap-2">
+            {idx > 0 && (
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  setIdx((i) => i - 1)
+                  setConfirmed(false)
+                }}
+              >
+                {t('participant.onboardingBack')}
+              </Button>
+            )}
+            <Button className="flex-1 justify-center" onClick={next} disabled={blocked}>
+              {isLast ? t('participant.onboardingFinish') : t('participant.onboardingNext')}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ===================== Accompanying persons (plus-ones) =====================
+function CompanionsSection() {
+  const { t } = useTranslation()
+  const { data: ev } = useMyEvent()
+  const { data: companions } = useMyCompanions()
+  const add = useAddCompanion()
+  const del = useDeleteCompanion()
+
+  const [first, setFirst] = useState('')
+  const [last, setLast] = useState('')
+  const [age, setAge] = useState('')
+  const [qrId, setQrId] = useState<string | null>(null)
+
+  if (!ev?.allowCompanions) return null
+
+  const max = ev.maxCompanions
+  const count = companions?.length ?? 0
+  const atMax = max > 0 && count >= max
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!first.trim() || !last.trim()) return
+    await add.mutateAsync({ firstName: first.trim(), lastName: last.trim(), age: age ? Number(age) : null })
+    setFirst('')
+    setLast('')
+    setAge('')
+  }
+
+  return (
+    <Card>
+      <div className="mb-1 flex items-center justify-between">
+        <h2 className="font-semibold text-white">{t('companions.title')}</h2>
+        <span className="rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-semibold text-indigo-300">
+          {count}
+          {max > 0 ? ` / ${max}` : ''}
+        </span>
+      </div>
+      <p className="mb-3 text-sm text-slate-400">{t('companions.hint')}</p>
+
+      <div className="space-y-2">
+        {(companions ?? []).map((c) => (
+          <div key={c.id} className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  {c.firstName} {c.lastName}
+                </p>
+                {c.age != null && <p className="text-xs text-slate-500">{t('companions.ageLabel', { n: c.age })}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setQrId(qrId === c.id ? null : c.id)}
+                  className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/20"
+                >
+                  {qrId === c.id ? t('companions.hideQr') : t('companions.showQr')}
+                </button>
+                <button
+                  onClick={() => del.mutate(c.id)}
+                  className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            {qrId === c.id && <CompanionQr id={c.id} />}
+          </div>
+        ))}
+      </div>
+
+      {atMax ? (
+        <p className="mt-3 text-xs text-amber-300">{t('companions.maxReached')}</p>
+      ) : (
+        <form onSubmit={submit} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_80px_auto]">
+          <Input placeholder={t('companions.first')} value={first} onChange={(e) => setFirst(e.target.value)} />
+          <Input placeholder={t('companions.last')} value={last} onChange={(e) => setLast(e.target.value)} />
+          <Input type="number" min={0} max={120} placeholder={t('companions.age')} value={age} onChange={(e) => setAge(e.target.value)} />
+          <Button type="submit" disabled={add.isPending || !first.trim() || !last.trim()}>
+            +
+          </Button>
+        </form>
+      )}
+    </Card>
+  )
+}
+
+function CompanionQr({ id }: { id: string }) {
+  const { t } = useTranslation()
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let revoke: string | null = null
+    void fetchPhotoUrl(`/api/me/companions/${id}/qr`).then((u) => {
+      revoke = u
+      setUrl(u)
+    })
+    return () => {
+      if (revoke) URL.revokeObjectURL(revoke)
+    }
+  }, [id])
+
+  return (
+    <div className="mt-3 flex flex-col items-center rounded-xl bg-white p-4">
+      {url ? <img src={url} alt="QR" className="h-44 w-44" /> : <div className="h-44 w-44 animate-pulse bg-slate-100" />}
+      <p className="mt-2 text-xs font-medium text-slate-500">{t('companions.qrHint')}</p>
+    </div>
+  )
+}
+
+// ===================== Custom fields (participant profile) =====================
+function CustomFieldsSection() {
+  const { data: fields } = useMyCustomFields()
+  const { data: profile } = useMyProfile()
+
+  if (!fields || fields.length === 0 || !profile) return null
+  return <CustomFieldsForm key={profile.id} fields={fields} initialValues={profile.customFields} />
+}
+
+function CustomFieldsForm({
+  fields,
+  initialValues,
+}: {
+  fields: CustomFieldDto[]
+  initialValues: Record<string, string>
+}) {
+  const { t, i18n } = useTranslation()
+  const save = useSaveMyCustomFields()
+  const en = i18n.resolvedLanguage === 'en'
+
+  const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }))
+
+  const selectCls = 'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100'
+  const set = (id: string, v: string) => setValues((vs) => ({ ...vs, [id]: v }))
+
+  async function persist(e: React.FormEvent) {
+    e.preventDefault()
+    await save.mutateAsync(values)
+  }
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-semibold text-white">{t('participant.customFields')}</h2>
+      <form onSubmit={persist} className="space-y-3">
+        {fields.map((f: CustomFieldDto) => {
+          const label = (en && f.labelEn) || f.labelPl
+          const val = values[f.id] ?? ''
+          return (
+            <Field key={f.id} label={f.required ? `${label} *` : label}>
+              {f.type === CustomFieldType.Textarea ? (
+                <textarea
+                  className={selectCls}
+                  rows={3}
+                  value={val}
+                  onChange={(e) => set(f.id, e.target.value)}
+                />
+              ) : f.type === CustomFieldType.Checkbox ? (
+                <label className="flex items-center gap-2 text-sm text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={val === 'true'}
+                    onChange={(e) => set(f.id, e.target.checked ? 'true' : 'false')}
+                  />
+                  {t('common.yes')}
+                </label>
+              ) : f.type === CustomFieldType.Select ? (
+                <select className={selectCls} value={val} onChange={(e) => set(f.id, e.target.value)}>
+                  <option value="">—</option>
+                  {f.options.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input value={val} onChange={(e) => set(f.id, e.target.value)} />
+              )}
+            </Field>
+          )
+        })}
+        <Button type="submit" disabled={save.isPending}>
+          {t('common.save')}
+        </Button>
+        {save.isSuccess && <span className="ml-3 text-sm text-emerald-400">✓</span>}
+      </form>
+    </Card>
+  )
+}
+
 // ===================== Existing sections (reused) =====================
 function ConsentsSection({ profile }: { profile: MyProfileDto }) {
   const { t } = useTranslation()
   const update = useUpdateConsents()
+  const { data: ev } = useMyEvent()
 
   const [rodo, setRodo] = useState(profile.hasAcceptedRodo)
   const [photo, setPhoto] = useState(profile.photoConsent)
   const [networking, setNetworking] = useState(profile.networkingConsent)
+  const [phone, setPhone] = useState(profile.phone ?? '')
+
+  const phoneRequired = ev?.phoneRequired ?? false
+  const phoneMissing = phoneRequired && phone.trim().length === 0
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    await update.mutateAsync({ rodoAccepted: rodo, photoConsent: photo, networkingConsent: networking })
+    if (phoneMissing) return
+    await update.mutateAsync({
+      rodoAccepted: rodo,
+      photoConsent: photo,
+      networkingConsent: networking,
+      phone: phone.trim() || null,
+    })
   }
 
   return (
@@ -644,7 +1023,18 @@ function ConsentsSection({ profile }: { profile: MyProfileDto }) {
         <ConsentRow checked={rodo} onChange={setRodo} required label={t('participant.rodo')} />
         <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />
         <ConsentRow checked={networking} onChange={setNetworking} label={t('participant.networking')} />
-        <Button type="submit" disabled={!rodo || update.isPending}>
+        <Field label={phoneRequired ? `${t('participant.phone')} *` : t('participant.phoneOptional')}>
+          <Input
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder={t('participant.phonePlaceholder')}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </Field>
+        {phoneMissing && <p className="px-1 text-[11px] text-amber-300">{t('participant.phoneRequiredHint')}</p>}
+        <Button type="submit" disabled={!rodo || phoneMissing || update.isPending}>
           {t('common.save')}
         </Button>
       </form>
@@ -652,17 +1042,28 @@ function ConsentsSection({ profile }: { profile: MyProfileDto }) {
   )
 }
 
+// Structured options. Values are the canonical Polish labels actually stored on the
+// participant record, so admin views (scan feedback, lists) stay readable.
+const DIET_OPTIONS = ['Standardowa', 'Wegetariańska', 'Wegańska', 'Bezglutenowa', 'Bez laktozy', 'Koszerna', 'Halal']
+const SHIRT_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+
 function PreferencesSection({ profile }: { profile: MyProfileDto }) {
   const { t, i18n } = useTranslation()
   const update = useUpdatePreferences()
 
   const [language, setLanguage] = useState(profile.language)
-  const [dietary, setDietary] = useState(profile.dietaryPreferences ?? '')
+  // Diet: a dropdown of presets + an "Inne" escape hatch with a free-text box.
+  const initialDiet = profile.dietaryPreferences ?? ''
+  const initialDietIsPreset = initialDiet === '' || DIET_OPTIONS.includes(initialDiet)
+  const [dietChoice, setDietChoice] = useState(initialDietIsPreset ? initialDiet : 'Inne')
+  const [dietOther, setDietOther] = useState(initialDietIsPreset ? '' : initialDiet)
   const [shirt, setShirt] = useState(profile.shirtSize ?? '')
   const [wishes, setWishes] = useState(profile.wishes ?? '')
   const [transfer, setTransfer] = useState(profile.airportTransfer)
   const [arrival, setArrival] = useState(profile.arrivalTime ?? '')
   const [flight, setFlight] = useState(profile.flightNumber ?? '')
+
+  const dietary = dietChoice === 'Inne' ? dietOther.trim() : dietChoice
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -678,25 +1079,50 @@ function PreferencesSection({ profile }: { profile: MyProfileDto }) {
     void i18n.changeLanguage(language)
   }
 
+  // A custom shirt value (legacy import) stays selectable.
+  const shirtOptions = shirt && !SHIRT_OPTIONS.includes(shirt) ? [shirt, ...SHIRT_OPTIONS] : SHIRT_OPTIONS
+  const selectCls =
+    'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100'
+
   return (
     <Card>
       <h2 className="mb-3 font-semibold text-white">{t('participant.preferences')}</h2>
       <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
         <Field label={t('participant.language')}>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100"
-          >
+          <select value={language} onChange={(e) => setLanguage(e.target.value)} className={selectCls}>
             <option value="pl">PL</option>
             <option value="en">EN</option>
           </select>
         </Field>
         <Field label={t('participant.dietary')}>
-          <Input value={dietary} onChange={(e) => setDietary(e.target.value)} />
+          <select value={dietChoice} onChange={(e) => setDietChoice(e.target.value)} className={selectCls}>
+            <option value="">{t('participant.dietNone')}</option>
+            {DIET_OPTIONS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+            <option value="Inne">{t('participant.dietOther')}</option>
+          </select>
         </Field>
+        {dietChoice === 'Inne' && (
+          <div className="sm:col-span-2">
+            <Input
+              value={dietOther}
+              onChange={(e) => setDietOther(e.target.value)}
+              placeholder={t('participant.dietOtherPlaceholder')}
+            />
+          </div>
+        )}
         <Field label={t('participant.shirt')}>
-          <Input value={shirt} onChange={(e) => setShirt(e.target.value)} />
+          <select value={shirt} onChange={(e) => setShirt(e.target.value)} className={selectCls}>
+            <option value="">{t('participant.shirtNone')}</option>
+            {shirtOptions.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </Field>
         <label className="flex items-center gap-2 self-end text-sm text-slate-200">
           <input type="checkbox" checked={transfer} onChange={(e) => setTransfer(e.target.checked)} />
@@ -896,23 +1322,49 @@ function NetworkingSection() {
 function GallerySection() {
   const { t } = useTranslation()
   const { data: photos } = useMyGallery()
+  const { data: ev } = useMyEvent()
+
+  const customUrl = ev?.customPhotosUrl ?? null
+  const customText = ev?.customPhotosText ?? null
+  const hasPhotos = !!photos && photos.length > 0
 
   return (
     <Card>
       <h2 className="mb-3 font-semibold text-white">{t('gallery.title')}</h2>
-      {!photos || photos.length === 0 ? (
-        <div className="flex flex-col items-center py-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 text-xl ring-1 ring-inset ring-indigo-400/40">
-            📸
-          </div>
-          <p className="mt-3 text-sm text-slate-400">{t('participant.galleryEmpty')}</p>
+
+      {/* Admin-provided external photos link / info, shown above the built-in gallery. */}
+      {(customUrl || customText) && (
+        <div className="mb-4 rounded-xl border border-indigo-500/25 bg-indigo-500/10 p-4">
+          {customText && <p className="text-sm leading-relaxed text-slate-200">{customText}</p>}
+          {customUrl && (
+            <a
+              href={customUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20"
+            >
+              📸 {t('gallery.openLink')}
+            </a>
+          )}
         </div>
-      ) : (
+      )}
+
+      {hasPhotos ? (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {photos.map((p) => (
+          {photos!.map((p) => (
             <Thumb key={p.id} path={`/api/me/gallery/${p.id}/file`} alt={p.fileName} />
           ))}
         </div>
+      ) : (
+        !customUrl &&
+        !customText && (
+          <div className="flex flex-col items-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 text-xl ring-1 ring-inset ring-indigo-400/40">
+              📸
+            </div>
+            <p className="mt-3 text-sm text-slate-400">{t('participant.galleryEmpty')}</p>
+          </div>
+        )
       )}
     </Card>
   )
@@ -974,15 +1426,34 @@ function AgendaSection() {
         <p className="text-slate-500">{t('participant.agendaSoon')}</p>
       ) : (
         <ul className="space-y-2">
-          {(items ?? []).map((item) => (
-            <li key={item.id} className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
-              <p className="font-medium text-white">{isEn ? item.titleEn : item.titlePl}</p>
-              <p className="text-sm text-slate-400">
-                {new Date(item.startsAt).toLocaleString()} · {AgendaItemTypeName[item.type]}
-                {item.locationName ? ` · ${item.locationName}` : ''}
-              </p>
-            </li>
-          ))}
+          {(items ?? []).map((item) => {
+            const typeLabel = item.customTypeName
+              ? (isEn && item.customTypeNameEn) || item.customTypeName
+              : AgendaItemTypeName[item.type]
+            return (
+              <li key={item.id} className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
+                <div className="flex items-center gap-2">
+                  {item.customTypeName && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                      style={{
+                        color: item.customTypeColor ?? '#a5b4fc',
+                        backgroundColor: `${item.customTypeColor ?? '#6366f1'}1a`,
+                      }}
+                    >
+                      {item.customTypeIcon || '🏷'} {typeLabel}
+                    </span>
+                  )}
+                  <p className="font-medium text-white">{isEn ? item.titleEn : item.titlePl}</p>
+                </div>
+                <p className="mt-1 text-sm text-slate-400">
+                  {new Date(item.startsAt).toLocaleString()}
+                  {!item.customTypeName ? ` · ${typeLabel}` : ''}
+                  {item.locationName ? ` · ${item.locationName}` : ''}
+                </p>
+              </li>
+            )
+          })}
         </ul>
       )}
     </Card>

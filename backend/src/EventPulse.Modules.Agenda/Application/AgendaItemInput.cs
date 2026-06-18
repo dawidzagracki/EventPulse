@@ -19,7 +19,8 @@ public sealed record AgendaItemInput(
     string? Menu,
     bool RequiresCheckIn,
     string? DressCode,
-    string? GroupName);
+    string? GroupName,
+    Guid? CustomTypeId = null);
 
 public sealed class AgendaItemInputValidator : AbstractValidator<AgendaItemInput>
 {

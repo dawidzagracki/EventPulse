@@ -14,7 +14,13 @@ public sealed record EventSummaryDto(
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
     string? Location,
-    string? Description);
+    string? Description,
+    bool UsesLocationData,
+    bool PhoneRequired,
+    bool AllowCompanions,
+    int MaxCompanions,
+    string? CustomPhotosUrl,
+    string? CustomPhotosText);
 
 /// <summary>
 /// Loads a lightweight event summary for the in-app participant view. Tenant-scoped
@@ -34,6 +40,9 @@ public sealed class GetEventSummaryHandler : IRequestHandler<GetEventSummaryQuer
             .FirstOrDefaultAsync(e => e.Id == request.EventId, cancellationToken)
             ?? throw new NotFoundException("Event not found.");
 
-        return new EventSummaryDto(ev.Id, ev.Name, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description);
+        return new EventSummaryDto(
+            ev.Id, ev.Name, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description,
+            ev.UsesLocationData, ev.PhoneRequired, ev.AllowCompanions, ev.MaxCompanions,
+            ev.CustomPhotosUrl, ev.CustomPhotosText);
     }
 }

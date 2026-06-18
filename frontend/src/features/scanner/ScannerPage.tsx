@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { extractToken, flushQueue } from './api'
+import { extractToken, fetchActiveStations, flushQueue } from './api'
 import { feedback } from './feedback'
 import { enqueueScan, queueCount } from '../../lib/scanQueue'
 import { Button, Card, Input } from '../../components/ui'
 import { Icon } from '../../components/Icon'
-import { ScanKind, type ScanResultItem } from '../../types/api'
+import { ScanKind, type ScanResultItem, type StationDto } from '../../types/api'
 import { useAuthStore } from '../../stores/authStore'
 
 type Feedback =
   | { kind: 'ok'; item: ScanResultItem; mode: number }
   | { kind: 'warn'; item: ScanResultItem; mode: number }
+  | { kind: 'limit'; item: ScanResultItem }
   | { kind: 'error'; reason: 'notfound' | 'badcode' }
   | { kind: 'queued' }
 
@@ -54,10 +55,32 @@ export function ScannerPage() {
   const [fb, setFb] = useState<Feedback | null>(null)
   const [scanCount, setScanCount] = useState(0)
 
+  const [stations, setStations] = useState<StationDto[]>([])
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const kindRef = useRef(kind)
   const stationRef = useRef(station)
+  const stationsRef = useRef(stations)
   const lastScan = useRef<{ token: string; at: number }>({ token: '', at: 0 })
+
+  // Load the event's defined stations once (used for the picker, scan kind, and limits).
+  useEffect(() => {
+    let alive = true
+    void fetchActiveStations(eventId).then((s) => {
+      if (alive) setStations(s)
+    })
+    return () => {
+      alive = false
+    }
+  }, [eventId])
+
+  useEffect(() => {
+    stationsRef.current = stations
+  }, [stations])
+
+  // A presence station (e.g. bar) records a Station scan; an entry station flips check-in/out.
+  const selectedStation = stations.find((s) => s.name === station) ?? null
+  const isPresenceStation = selectedStation !== null && !selectedStation.countsAsCheckIn
 
   const updatePending = () => queueCount().then(setPending)
 
@@ -83,7 +106,9 @@ export function ScannerPage() {
     lastScan.current = { token, at: nowMs() }
 
     const clientId = crypto.randomUUID()
-    const mode = kindRef.current
+    // Presence stations (no check-in) record a Station scan so they don't flip status.
+    const cfg = stationsRef.current.find((s) => s.name === stationRef.current)
+    const mode = cfg && !cfg.countsAsCheckIn ? ScanKind.Station : kindRef.current
     await enqueueScan({
       clientId,
       eventId,
@@ -112,6 +137,8 @@ export function ScannerPage() {
       }
       if (mine.status === 'notfound') {
         showFeedback({ kind: 'error', reason: 'notfound' })
+      } else if (mine.status === 'limit') {
+        showFeedback({ kind: 'limit', item: mine })
       } else if (mine.alreadyCheckedIn) {
         showFeedback({ kind: 'warn', item: mine, mode })
       } else {
@@ -130,6 +157,8 @@ export function ScannerPage() {
       feedback('ok')
     } else if (next.kind === 'warn') {
       feedback('warn')
+    } else if (next.kind === 'limit') {
+      feedback('error')
     } else if (next.kind === 'error') {
       feedback('error')
     }
@@ -224,7 +253,7 @@ export function ScannerPage() {
 
   // ─────────── Station picker (onboarding) ───────────
   if (!station) {
-    return <StationPicker onPick={chooseStation} />
+    return <StationPicker onPick={chooseStation} stations={stations} />
   }
 
   const modeLabel = kind === ScanKind.CheckIn ? t('scanner.checkIn') : t('scanner.checkOut')
@@ -299,7 +328,18 @@ export function ScannerPage() {
           </span>
         </div>
 
-        {/* Mode toggle with lock */}
+        {/* Presence stations (bar etc.) record attendance, not check-in — no toggle needed. */}
+        {isPresenceStation ? (
+          <div className="rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-2.5 text-sm font-semibold text-fuchsia-200">
+            {selectedStation?.icon ?? '📍'} {t('scanner.presenceMode')}
+            {selectedStation && selectedStation.scanLimitPerParticipant > 0 && (
+              <span className="ml-2 rounded-full bg-fuchsia-500/20 px-2 py-0.5 text-[11px]">
+                {t('scanner.limitPerPerson', { n: selectedStation.scanLimitPerParticipant })}
+              </span>
+            )}
+          </div>
+        ) : (
+        /* Mode toggle with lock */
         <div className="flex items-center gap-2">
           <div className="flex flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60 p-1">
             {([ScanKind.CheckIn, ScanKind.CheckOut] as const).map((k) => (
@@ -332,6 +372,7 @@ export function ScannerPage() {
             {modeLocked ? '🔒' : '🔓'}
           </button>
         </div>
+        )}
 
         {/* Camera */}
         <Card className="!p-2">
@@ -382,10 +423,13 @@ export function ScannerPage() {
 }
 
 // ─────────── Station picker ───────────
-function StationPicker({ onPick }: { onPick: (code: string) => void }) {
+function StationPicker({ onPick, stations }: { onPick: (code: string) => void; stations: StationDto[] }) {
   const { t } = useTranslation()
   const [custom, setCustom] = useState('')
   const [showCustom, setShowCustom] = useState(false)
+
+  // Prefer the event's defined stations; fall back to the generic presets when none exist.
+  const defined = stations.filter((s) => s.active)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6">
@@ -399,16 +443,32 @@ function StationPicker({ onPick }: { onPick: (code: string) => void }) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {PRESET_STATIONS.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => onPick(t(s.i18n))}
-              className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
-            >
-              <span className="text-3xl">{s.emoji}</span>
-              <span className="text-sm font-semibold text-white">{t(s.i18n)}</span>
-            </button>
-          ))}
+          {defined.length > 0
+            ? defined.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => onPick(s.name)}
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
+                >
+                  <span className="text-3xl">{s.icon || '📍'}</span>
+                  <span className="text-sm font-semibold text-white">{s.name}</span>
+                  {s.scanLimitPerParticipant > 0 && (
+                    <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                      {t('scanner.limitPerPerson', { n: s.scanLimitPerParticipant })}
+                    </span>
+                  )}
+                </button>
+              ))
+            : PRESET_STATIONS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => onPick(t(s.i18n))}
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
+                >
+                  <span className="text-3xl">{s.emoji}</span>
+                  <span className="text-sm font-semibold text-white">{t(s.i18n)}</span>
+                </button>
+              ))}
         </div>
 
         {!showCustom ? (
@@ -471,7 +531,9 @@ function FeedbackOverlay({ fb, onDismiss }: { fb: Feedback; onDismiss: () => voi
       ? { bg: 'from-emerald-500 to-teal-600', ring: 'ring-emerald-300', icon: '✓' }
       : fb.kind === 'warn'
         ? { bg: 'from-amber-500 to-orange-600', ring: 'ring-amber-300', icon: '!' }
-        : { bg: 'from-rose-500 to-red-600', ring: 'ring-rose-300', icon: '✕' }
+        : fb.kind === 'limit'
+          ? { bg: 'from-amber-500 to-rose-600', ring: 'ring-amber-300', icon: '⛔' }
+          : { bg: 'from-rose-500 to-red-600', ring: 'ring-rose-300', icon: '✕' }
 
   let headline: string
   let sub: string | null = null
@@ -481,6 +543,11 @@ function FeedbackOverlay({ fb, onDismiss }: { fb: Feedback; onDismiss: () => voi
   if (fb.kind === 'error') {
     headline = t('scanner.notFoundBig')
     sub = t('scanner.notFoundHint')
+  } else if (fb.kind === 'limit') {
+    item = fb.item
+    name = item.name ?? '—'
+    headline = t('scanner.limitReached')
+    sub = t('scanner.limitReachedHint')
   } else {
     item = fb.item
     name = item.name ?? '—'

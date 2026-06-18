@@ -48,7 +48,7 @@ public sealed class ExportParticipantsHandler : IRequestHandler<ExportParticipan
 
             sheet.Cell(row, 1).Value = p.FirstName;
             sheet.Cell(row, 2).Value = p.LastName;
-            sheet.Cell(row, 3).Value = p.Email;
+            sheet.Cell(row, 3).Value = p.Email ?? "";
             sheet.Cell(row, 4).Value = p.Phone ?? "";
             sheet.Cell(row, 5).Value = p.Company ?? "";
             sheet.Cell(row, 6).Value = p.Position ?? "";

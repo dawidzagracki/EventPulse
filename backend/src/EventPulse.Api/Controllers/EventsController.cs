@@ -78,6 +78,26 @@ public sealed class EventsController : ControllerBase
         return Ok(await _mediator.Send(command, ct));
     }
 
+    [HttpPut("{id:guid}/settings")]
+    public async Task<ActionResult<EventDto>> UpdateSettings(Guid id, UpdateEventSettingsBody body, CancellationToken ct)
+    {
+        var command = new UpdateEventSettingsCommand(
+            id,
+            body.UsesLocationData,
+            body.PhoneRequired,
+            body.AllowCompanions,
+            body.MaxCompanions,
+            body.AnonymizeEnabled,
+            body.AnonymizeAfterDays,
+            body.CustomPhotosUrl,
+            body.CustomPhotosText);
+        return Ok(await _mediator.Send(command, ct));
+    }
+
+    [HttpPut("{id:guid}/slug")]
+    public async Task<ActionResult<EventDto>> UpdateSlug(Guid id, UpdateSlugBody body, CancellationToken ct)
+        => Ok(await _mediator.Send(new UpdateEventSlugCommand(id, body.Slug), ct));
+
     [HttpPost("{id:guid}/status")]
     public async Task<ActionResult<EventDto>> ChangeStatus(Guid id, ChangeStatusBody body, CancellationToken ct)
         => Ok(await _mediator.Send(new ChangeEventStatusCommand(id, body.NewStatus), ct));
@@ -100,4 +120,16 @@ public sealed class EventsController : ControllerBase
         string? ClientEmail);
 
     public sealed record ChangeStatusBody(EventStatus NewStatus);
+
+    public sealed record UpdateSlugBody(string Slug);
+
+    public sealed record UpdateEventSettingsBody(
+        bool UsesLocationData,
+        bool PhoneRequired,
+        bool AllowCompanions,
+        int MaxCompanions,
+        bool AnonymizeEnabled,
+        int AnonymizeAfterDays,
+        string? CustomPhotosUrl,
+        string? CustomPhotosText);
 }

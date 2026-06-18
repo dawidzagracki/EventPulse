@@ -25,7 +25,9 @@ public sealed class SendInvitationsHandler : IRequestHandler<SendInvitationsComm
 
     public async Task<SendInvitationsResult> Handle(SendInvitationsCommand request, CancellationToken cancellationToken)
     {
-        var query = _db.Set<Participant>().Where(p => p.EventId == request.EventId);
+        // Only primary guests with an e-mail get invitations (accompanying persons have neither).
+        var query = _db.Set<Participant>()
+            .Where(p => p.EventId == request.EventId && p.ParentParticipantId == null && p.Email != null);
         if (request.OnlyNotInvited)
         {
             query = query.Where(p => p.Status == ParticipantStatus.Invited);

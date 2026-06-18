@@ -54,12 +54,23 @@ function ScopedStyles({ blocks }: { blocks: PageBlock[] }) {
 }
 
 export function PublicEventPage() {
-  const { eventId = '' } = useParams()
+  const { eventId: paramEventId, slug } = useParams()
   const { t, i18n } = useTranslation()
   const lang: 'pl' | 'en' = (i18n.resolvedLanguage ?? 'pl') === 'en' ? 'en' : 'pl'
 
-  const page = usePublic<PublishedPage>('public-page', eventId, '/page')
-  const event = usePublic<PublicEvent>('public-event', eventId, '')
+  // Friendly-URL mode: /public/{slug} resolves to the event id, then the id-based
+  // endpoints feed the rest of the page. GUID mode (/public/events/{id}) skips this.
+  const slugMode = !!slug && !paramEventId
+  const slugResolve = useQuery({
+    queryKey: ['public-slug', slug ?? ''],
+    queryFn: async () => (await axios.get<PublicEvent>(`${baseURL}/api/public/by-slug/${slug}`)).data,
+    enabled: slugMode,
+    retry: false,
+  })
+  const eventId = paramEventId || slugResolve.data?.id || ''
+
+  const page = usePublic<PublishedPage>('public-page', eventId, '/page', !!eventId)
+  const event = usePublic<PublicEvent>('public-event', eventId, '', !!eventId)
   const agenda = usePublic<AgendaItemDto[]>('public-agenda', eventId, '/agenda', !!event.data)
   const gallery = usePublic<PublicPhoto[]>('public-gallery', eventId, '/gallery', !!event.data)
   const contests = usePublic<{ id: string; name: string; mode: number }[]>('public-contests', eventId, '/contests', !!event.data)
@@ -88,7 +99,21 @@ export function PublicEventPage() {
     [page.data],
   )
 
-  if (page.isLoading)
+  if (slugMode && slugResolve.isLoading)
+    return <p className="p-8 text-slate-500">{t('common.loading')}</p>
+
+  if (slugMode && (slugResolve.isError || !slugResolve.data)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white p-8 text-slate-900">
+        <div className="max-w-md text-center">
+          <h1 className="text-3xl font-bold">{t('public.notPublished')}</h1>
+          <p className="mt-2 text-slate-500">{t('public.notPublishedHint')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (page.isLoading || (slugMode && !eventId))
     return <p className="p-8 text-slate-500">{t('common.loading')}</p>
 
   if (page.isError || !page.data) {
