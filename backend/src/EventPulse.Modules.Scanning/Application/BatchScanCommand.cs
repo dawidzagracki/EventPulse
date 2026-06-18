@@ -99,6 +99,8 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
             var alreadyCheckedIn = item.Kind == ScanKind.CheckIn && participant.CheckedInAt is not null;
             var previousAt = item.Kind == ScanKind.CheckOut ? participant.CheckedOutAt : participant.CheckedInAt;
 
+            var occurredAt = item.OccurredAt.ToUniversalTime(); // timestamptz requires UTC
+
             db.Set<ScanEvent>().Add(new ScanEvent
             {
                 EventId = request.EventId,
@@ -106,11 +108,11 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
                 Kind = item.Kind,
                 ParticipantId = participant.Id,
                 StationCode = item.StationCode,
-                OccurredAt = item.OccurredAt,
+                OccurredAt = occurredAt,
                 Online = item.Online,
             });
 
-            ApplyToParticipant(participant, item);
+            ApplyToParticipant(participant, occurredAt, item.Kind);
 
             accepted++;
             results.Add(new ScanResultItem(
@@ -135,24 +137,24 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
         return new BatchScanResult(accepted, duplicates, notFound, results);
     }
 
-    // Last-write-wins by device timestamp.
-    private static void ApplyToParticipant(Participant participant, ScanInput item)
+    // Last-write-wins by device timestamp (UTC-normalized by the caller).
+    private static void ApplyToParticipant(Participant participant, DateTimeOffset occurredAt, ScanKind kind)
     {
-        switch (item.Kind)
+        switch (kind)
         {
             case ScanKind.CheckIn:
-                if (participant.CheckedInAt is null || item.OccurredAt > participant.CheckedInAt)
+                if (participant.CheckedInAt is null || occurredAt > participant.CheckedInAt)
                 {
-                    participant.CheckedInAt = item.OccurredAt;
+                    participant.CheckedInAt = occurredAt;
                 }
 
                 participant.Status = ParticipantStatus.CheckedIn;
                 break;
 
             case ScanKind.CheckOut:
-                if (participant.CheckedOutAt is null || item.OccurredAt > participant.CheckedOutAt)
+                if (participant.CheckedOutAt is null || occurredAt > participant.CheckedOutAt)
                 {
-                    participant.CheckedOutAt = item.OccurredAt;
+                    participant.CheckedOutAt = occurredAt;
                 }
 
                 participant.Status = ParticipantStatus.CheckedOut;

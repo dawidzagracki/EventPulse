@@ -60,7 +60,7 @@ public sealed class SelfStationScanHandler(IAppDbContext db) : IRequestHandler<S
             Kind = ScanKind.Station,
             ParticipantId = request.ParticipantId,
             StationCode = station,
-            OccurredAt = request.OccurredAt,
+            OccurredAt = request.OccurredAt.ToUniversalTime(), // timestamptz requires UTC
             Online = true,
         });
         await db.SaveChangesAsync(cancellationToken);
