@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EventPulse — Podręcznik Super Admina (pełny)</title>
+<style>
+  :root{
+    --bg:#070A14;--bg2:#0B1020;--panel:#0F1626;--panel2:#131C30;
+    --border:#1E293B;--border2:#293548;
+    --txt:#E7ECF5;--muted:#9AA7BD;--dim:#6B7890;
+    --indigo:#6366F1;--violet:#8B5CF6;--fuchsia:#D946EF;--sky:#38BDF8;
+    --emerald:#34D399;--amber:#FBBF24;--rose:#FB7185;
+    --grad:linear-gradient(135deg,#6366F1,#8B5CF6 55%,#D946EF);
+    --sidebar:312px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(1200px 800px at 80% -10%,rgba(139,92,246,.10),transparent 60%),
+    radial-gradient(900px 700px at -10% 10%,rgba(56,189,248,.08),transparent 55%),var(--bg);
+    color:var(--txt);font:15px/1.66 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#A5B4FC;text-decoration:none}a:hover{text-decoration:underline}
+  code{background:#0c1424;border:1px solid var(--border);border-radius:6px;padding:.08em .42em;font-size:.85em;color:#C7D2FE;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar);flex:0 0 var(--sidebar);position:sticky;top:0;height:100vh;overflow-y:auto;background:linear-gradient(180deg,var(--bg2),var(--bg));border-right:1px solid var(--border);padding:22px 14px 70px}
+  .sidebar::-webkit-scrollbar{width:8px}.sidebar::-webkit-scrollbar-thumb{background:#1c2842;border-radius:8px}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:6px;padding:0 6px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:0 6px 20px rgba(139,92,246,.45)}
+  .brand .name{font-weight:800;font-size:16px}.brand .sub{font-size:11px;color:var(--dim)}
+  .search{margin:14px 4px 8px}
+  .search input{width:100%;background:#0a1120;border:1px solid var(--border2);border-radius:10px;color:var(--txt);padding:9px 12px;font-size:13px;outline:none}
+  .search input:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(99,102,241,.18)}
+  .nav-group{margin-top:14px}
+  .nav-group>.gt{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 8px;margin-bottom:5px}
+  .nav a{display:flex;gap:9px;align-items:center;padding:6px 10px;border-radius:8px;color:var(--muted);font-size:13.3px;line-height:1.3}
+  .nav a .em{width:18px;text-align:center;flex:0 0 18px}
+  .nav a:hover{background:#121d33;color:var(--txt);text-decoration:none}
+  .nav a.active{background:linear-gradient(90deg,rgba(99,102,241,.22),rgba(139,92,246,.10));color:#fff;box-shadow:inset 2px 0 0 var(--violet)}
+
+  .content{flex:1 1 auto;min-width:0;max-width:1020px;margin:0 auto;padding:34px 42px 130px}
+  .hero{background:linear-gradient(135deg,rgba(99,102,241,.16),rgba(217,70,239,.10));border:1px solid var(--border2);border-radius:18px;padding:30px;margin-bottom:8px;position:relative;overflow:hidden}
+  .hero h1{margin:0 0 6px;font-size:29px;letter-spacing:-.3px}
+  .hero p{margin:0;color:var(--muted);max-width:76ch}
+  .hero .pill{display:inline-block;margin-top:14px;font-size:12px;color:#C7D2FE;background:#10182b;border:1px solid var(--border2);border-radius:999px;padding:5px 12px}
+  .hero .blob{position:absolute;border-radius:50%;filter:blur(46px);opacity:.5}
+  .hero .b1{width:200px;height:200px;background:#6366F1;right:-40px;top:-60px}.hero .b2{width:170px;height:170px;background:#D946EF;right:120px;bottom:-90px}
+
+  section{scroll-margin-top:16px;margin-top:32px}
+  section.grp-head{margin-top:50px}
+  h2{font-size:22px;margin:0 0 6px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h2 .num{color:var(--dim);font-weight:600;font-size:15px;margin-right:8px}
+  h3{font-size:16px;margin:22px 0 6px;color:#EAF0FB}
+  h4{font-size:13.5px;margin:16px 0 4px;color:#AEB9CE;text-transform:uppercase;letter-spacing:.08em}
+  .lead{color:var(--muted)}
+  .grp-title{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin:0}
+  .grp-title::before,.grp-title::after{content:"";height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);flex:1}
+
+  .flow{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:15px 17px;margin:14px 0;scroll-margin-top:16px}
+  .flow-h{display:flex;align-items:center;gap:11px;margin-bottom:3px}
+  .flow-h h3{margin:0;font-size:15.5px;color:#EAF0FB}
+  .fno{flex:0 0 auto;font-size:11px;font-weight:800;color:#fff;background:var(--grad);border-radius:7px;padding:3px 9px;box-shadow:0 4px 12px rgba(99,102,241,.3)}
+  .where{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:7px 0 9px;font-size:12.2px;color:var(--muted)}
+  .where b{color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;font-size:10px;margin-right:2px}
+  .crumb{display:inline-flex;align-items:center;gap:6px;background:#101a2d;border:1px solid var(--border2);border-radius:7px;padding:3px 9px;color:#C7D2FE}
+  .arrow{color:var(--dim)}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:8px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:6px 0 6px 36px;border-bottom:1px dashed #18233a}
+  ol.steps>li:last-child{border-bottom:0}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:5px;width:24px;height:24px;border-radius:7px;background:#1b2740;color:#C7D2FE;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2)}
+  .result{margin-top:9px;font-size:12.8px;color:#86efac;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:9px;padding:7px 11px}
+  .result b{color:#bbf7d0}
+  ul.clean{list-style:none;padding:0;margin:8px 0}
+  ul.clean>li{padding:4px 0 4px 20px;position:relative;color:#D3DBEA}
+  ul.clean>li::before{content:"▸";position:absolute;left:2px;color:var(--violet)}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.2px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#0d1526;color:#AEB9CE;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  tr:last-child td{border-bottom:0}
+  td b{color:#EAF0FB}
+  .anatomy td:first-child{white-space:nowrap;color:#C7D2FE;font-weight:600}
+
+  .callout{border-radius:12px;padding:12px 15px;margin:12px 0;border:1px solid;display:flex;gap:11px;font-size:13.4px}
+  .callout .ic{flex:0 0 20px;font-size:16px}.callout p{margin:0;color:#D9E1EF}.callout b{color:#fff}
+  .tip{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3)}
+  .note{background:rgba(56,189,248,.07);border-color:rgba(56,189,248,.28)}
+  .warn{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.32)}
+  .danger{background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.32)}
+
+  .kbd{background:#0c1424;border:1px solid var(--border2);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:12px;font-family:ui-monospace,monospace;color:#C7D2FE;white-space:nowrap}
+  .tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;vertical-align:middle}
+  .tag.new{background:rgba(217,70,239,.16);color:#F0ABFC;border:1px solid rgba(217,70,239,.35)}
+
+  .index{columns:2;column-gap:24px;margin:12px 0}
+  .index a{display:block;padding:3px 0;font-size:13px;break-inside:avoid;color:#c0c9da}
+  .index a .n{display:inline-block;width:42px;color:var(--violet);font-weight:700;font-family:ui-monospace,monospace}
+  .roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:14px 0}
+  .role{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 15px;position:relative;overflow:hidden}
+  .role::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+  .role.r1::before{background:var(--violet)}.role.r2::before{background:var(--sky)}.role.r3::before{background:var(--amber)}.role.r4::before{background:var(--emerald)}
+  .role h4{margin:0 0 3px;font-size:14.5px;color:#fff;text-transform:none;letter-spacing:0}.role .t{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace}.role p{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+  .totop{position:fixed;right:22px;bottom:22px;background:var(--panel2);border:1px solid var(--border2);color:#C7D2FE;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:.2s;font-size:18px}
+  .totop.show{opacity:1}
+  .footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--border);color:var(--dim);font-size:12.5px}
+  .hide{display:none!important}
+  @media(max-width:920px){.index{columns:1}.sidebar{position:fixed;left:0;z-index:40;transform:translateX(-100%);transition:.25s;box-shadow:0 0 40px rgba(0,0,0,.6)}.sidebar.open{transform:none}.content{padding:20px 15px 100px}.menu-btn{display:flex!important}}
+  .menu-btn{display:none;position:fixed;top:14px;left:14px;z-index:50;background:var(--panel2);border:1px solid var(--border2);color:#fff;border-radius:10px;width:42px;height:42px;align-items:center;justify-content:center;font-size:20px;cursor:pointer}
+</style>
+</head>
+<body>
+<button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="logo">EP</div><div><div class="name">EventPulse</div><div class="sub">Podręcznik Super Admina</div></div></div>
+    <div class="search"><input id="q" type="search" placeholder="🔍 Szukaj funkcji / ekranu…" autocomplete="off"></div>
+    <nav class="nav" id="nav">
+      <div class="nav-group"><div class="gt">Podstawy</div>
+        <a href="#wprowadzenie"><span class="em">📘</span>Wprowadzenie</a>
+        <a href="#mapa"><span class="em">🗺️</span>Mapa aplikacji</a>
+        <a href="#role"><span class="em">👥</span>Role i uprawnienia</a>
+        <a href="#anatomia"><span class="em">🧭</span>Anatomia panelu</a>
+        <a href="#slownik"><span class="em">📖</span>Słownik pojęć</a>
+        <a href="#indeks"><span class="em">🗂️</span>Indeks flow</a>
+      </div>
+      <div class="nav-group"><div class="gt">Konto</div>
+        <a href="#konto"><span class="em">🔑</span>Logowanie i konto</a>
+      </div>
+      <div class="nav-group"><div class="gt">Wydarzenia</div>
+        <a href="#lista"><span class="em">🗂️</span>Lista wydarzeń</a>
+        <a href="#tworzenie"><span class="em">➕</span>Tworzenie wydarzenia</a>
+        <a href="#statusy"><span class="em">🔁</span>Statusy / cykl życia</a>
+        <a href="#dashboard"><span class="em">📊</span>Dashboard</a>
+        <a href="#przeglad"><span class="em">📝</span>Przegląd</a>
+        <a href="#ustawienia"><span class="em">⚙️</span>Ustawienia wydarzenia</a>
+      </div>
+      <div class="nav-group"><div class="gt">Goście</div>
+        <a href="#uczestnicy"><span class="em">🧑‍🤝‍🧑</span>Uczestnicy</a>
+        <a href="#import"><span class="em">📥</span>Import z Excela</a>
+        <a href="#towarzyszace"><span class="em">👨‍👩‍👧</span>Osoby towarzyszące</a>
+        <a href="#logistyka"><span class="em">🏨</span>Logistyka</a>
+      </div>
+      <div class="nav-group"><div class="gt">Konfiguracja gościa</div>
+        <a href="#formularz"><span class="em">🧩</span>Formularz (pola)</a>
+        <a href="#onboarding"><span class="em">👋</span>Onboarding</a>
+        <a href="#agenda"><span class="em">📅</span>Agenda i typy</a>
+      </div>
+      <div class="nav-group"><div class="gt">Strona</div>
+        <a href="#builder"><span class="em">🎨</span>Kreator strony</a>
+        <a href="#bloki"><span class="em">🧱</span>Katalog bloków</a>
+        <a href="#branding"><span class="em">✨</span>Branding i auto-branding</a>
+        <a href="#slug"><span class="em">🔗</span>Adres (slug)</a>
+        <a href="#publikacja"><span class="em">🚀</span>SEO, publikacja, wersje</a>
+      </div>
+      <div class="nav-group"><div class="gt">Na evencie</div>
+        <a href="#stanowiska"><span class="em">📍</span>Stanowiska</a>
+        <a href="#skaner"><span class="em">📷</span>Skaner / Operator</a>
+        <a href="#aktywnosci"><span class="em">🎯</span>Aktywności</a>
+        <a href="#galeria"><span class="em">🖼️</span>Galeria</a>
+      </div>
+      <div class="nav-group"><div class="gt">Administracja</div>
+        <a href="#zespol"><span class="em">🛡️</span>Zespół i konta</a>
+        <a href="#rodo"><span class="em">🔒</span>RODO i prywatność</a>
+        <a href="#audyt"><span class="em">📜</span>Audyt</a>
+        <a href="#bezpieczenstwo"><span class="em">🧰</span>Jak to działa pod spodem</a>
+      </div>
+      <div class="nav-group"><div class="gt">Gość i pomoc</div>
+        <a href="#apka"><span class="em">📱</span>Aplikacja uczestnika</a>
+        <a href="#publiczna"><span class="em">🌐</span>Strona publiczna</a>
+        <a href="#faq"><span class="em">❓</span>FAQ</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="content" id="content">
+    <div class="hero">
+      <div class="blob b1"></div><div class="blob b2"></div>
+      <h1>EventPulse — pełny podręcznik Super Admina</h1>
+      <p>Dokument, który możesz dać klientowi. Opisuje <b>każdą funkcję, każdy ekran i każde pole</b> — co to jest, gdzie się znajduje i jak działa. Każdy ekran „rozłożony na części pierwsze": anatomia interfejsu, tabele pól i opcji, procedury krok‑po‑kroku oraz wyjaśnienie, co dzieje się pod spodem.</p>
+      <span class="pill">Wszystkie moduły · anatomia ekranów · ~60 procedur · słownik · FAQ</span>
+    </div>
+
+    <div class="callout note"><span class="ic">🧭</span><p><b>Jak czytać.</b> Każdy rozdział ma sekcje: <b>Po co to</b> → <b>Anatomia ekranu</b> (co jest na ekranie) → <b>Pola/opcje</b> → <b>Procedury</b> (kroki) → <b>Jak działa / uwagi</b>. Po lewej spis treści i wyszukiwarka. Oznaczenia: <span class="kbd">Przycisk</span> = przycisk w aplikacji, <span class="crumb">ścieżka</span> = gdzie kliknąć, <span class="tag new">NOWE</span> = świeżo dodana funkcja.</p></div>
+
+    <!-- ===================== PODSTAWY ===================== -->
+    <section class="grp-head"><p class="grp-title">Podstawy</p></section>
+
+    <section id="wprowadzenie">
+      <h2><span class="num">01</span>Wprowadzenie</h2>
+      <p class="lead">EventPulse to platforma do kompleksowej obsługi wydarzeń (konferencje, gale, integracje, premiery). W jednym miejscu prowadzisz gości, budujesz stronę, wysyłasz zaproszenia z QR, obsługujesz wejścia i stanowiska, prowadzisz quizy na żywo, galerię i raporty.</p>
+      <h3>Cztery aplikacje w jednej platformie</h3>
+      <table class="anatomy">
+        <tr><th>Część</th><th>Dla kogo</th><th>Co robi</th></tr>
+        <tr><td>Panel administratora</td><td>Super Admin / Klient</td><td>Zarządzanie wydarzeniem: goście, strona, agenda, stanowiska, raporty, zespół. <b>Tu pracujesz.</b></td></tr>
+        <tr><td>Strona publiczna</td><td>każdy (anonimowo)</td><td>Landing wydarzenia złożony w kreatorze, pod przyjaznym adresem.</td></tr>
+        <tr><td>Aplikacja uczestnika</td><td>Gość</td><td>Otwierana linkiem/QR: zgody, profil, agenda, jego kod QR, quizy, galeria, osoby towarzyszące.</td></tr>
+        <tr><td>Skaner operatora</td><td>Hostessa / ochrona</td><td>Telefon do odbijania kodów na bramce i stanowiskach. Działa offline.</td></tr>
+      </table>
+      <div class="callout tip"><span class="ic">✅</span><p>Nic nie instalujesz — wszystko działa w przeglądarce. Panel jest responsywny; aplikacja gościa i skaner są „mobile‑first".</p></div>
+    </section>
+
+    <section id="mapa">
+      <h2><span class="num">02</span>Mapa aplikacji — wszystkie ekrany</h2>
+      <p class="lead">Pełny spis ekranów, do których masz dostęp jako Super Admin. Zakładki wydarzenia są po lewej, po wejściu w konkretne wydarzenie.</p>
+      <table class="anatomy">
+        <tr><th>Ekran</th><th>Gdzie</th><th>Po co</th></tr>
+        <tr><td>Logowanie</td><td><code>/login</code></td><td>Wejście do panelu.</td></tr>
+        <tr><td>Lista wydarzeń</td><td>Wydarzenia</td><td>Wszystkie eventy, filtry, tworzenie.</td></tr>
+        <tr><td>Dashboard</td><td>Wydarzenie › Dashboard</td><td>Liczby na żywo, frekwencja, stanowiska.</td></tr>
+        <tr><td>Przegląd</td><td>Wydarzenie › Przegląd</td><td>Edycja podstawowych danych.</td></tr>
+        <tr><td>Uczestnicy</td><td>Wydarzenie › Uczestnicy</td><td>Goście, import, zaproszenia, eksport, QR.</td></tr>
+        <tr><td>Agenda</td><td>Wydarzenie › Agenda</td><td>Plan + własne typy.</td></tr>
+        <tr><td>Strona</td><td>Wydarzenie › Strona</td><td>Kreator strony, branding, SEO, publikacja.</td></tr>
+        <tr><td>Logistyka</td><td>Wydarzenie › Logistyka</td><td>Stoliki, pokoje, hotele, transfery.</td></tr>
+        <tr><td>Aktywności</td><td>Wydarzenie › Aktywności</td><td>Quizy (też LIVE), konkursy, networking.</td></tr>
+        <tr><td>Galeria</td><td>Wydarzenie › Galeria</td><td>Zdjęcia (moderacja).</td></tr>
+        <tr><td>Stanowiska <span class="tag new">NOWE</span></td><td>Wydarzenie › Stanowiska</td><td>Definicje stanowisk + statystyki.</td></tr>
+        <tr><td>Formularz <span class="tag new">NOWE</span></td><td>Wydarzenie › Formularz</td><td>Custom pola + onboarding.</td></tr>
+        <tr><td>Ustawienia <span class="tag new">NOWE</span></td><td>Wydarzenie › Ustawienia</td><td>Prywatność, telefon, towarzyszące, slug, zdjęcia.</td></tr>
+        <tr><td>Audyt</td><td>Wydarzenie › Audyt</td><td>Dziennik działań.</td></tr>
+        <tr><td>Zespół</td><td>Zespół</td><td>Super admini, klienci, operatorzy.</td></tr>
+        <tr><td>Skaner</td><td>link operatora / Skaner QR</td><td>Odbijanie kodów na evencie.</td></tr>
+      </table>
+    </section>
+
+    <section id="role">
+      <h2><span class="num">03</span>Role i uprawnienia</h2>
+      <div class="roles">
+        <div class="role r1"><h4>🛡️ Super Admin</h4><div class="t">Organizator (agencja)</div><p>Pełny dostęp: wszystkie wydarzenia i moduły, zarządzanie zespołem i kontami.</p></div>
+        <div class="role r2"><h4>👔 Klient</h4><div class="t">mini‑admin</div><p>Tylko swoje jedno wydarzenie. Skrócone menu. Bez zarządzania zespołem.</p></div>
+        <div class="role r3"><h4>📷 Operator</h4><div class="t">hostessa / ochrona</div><p>Tylko skaner jednego eventu (przez link). Bez panelu.</p></div>
+        <div class="role r4"><h4>🎫 Uczestnik</h4><div class="t">gość</div><p>Tylko swoja aplikacja (link/QR, bez hasła).</p></div>
+      </div>
+      <h4>Macierz uprawnień</h4>
+      <table>
+        <tr><th>Czynność</th><th>Super Admin</th><th>Klient</th><th>Operator</th></tr>
+        <tr><td>Tworzenie / usuwanie wydarzeń</td><td>✅</td><td>—</td><td>—</td></tr>
+        <tr><td>Dashboard, Przegląd, Strona, Uczestnicy, Galeria, Formularz, Ustawienia</td><td>✅ wszystkie</td><td>✅ swój event</td><td>—</td></tr>
+        <tr><td>Agenda, Logistyka, Aktywności, Stanowiska, Audyt</td><td>✅</td><td>zależnie od menu klienta</td><td>—</td></tr>
+        <tr><td>Skanowanie wejść / stanowisk</td><td>✅</td><td>✅</td><td>✅ (przez link)</td></tr>
+        <tr><td>Zespół i konta</td><td>✅</td><td>—</td><td>—</td></tr>
+      </table>
+      <div class="callout note"><span class="ic">🔒</span><p>Klient widzi <b>wyłącznie</b> swoje wydarzenie (rozpoznawane po jego e‑mailu przypisanym do eventu). Dane różnych organizatorów są w pełni odizolowane (multi‑tenant).</p></div>
+    </section>
+
+    <section id="anatomia">
+      <h2><span class="num">04</span>Anatomia panelu (elementy wspólne)</h2>
+      <p class="lead">Te elementy powtarzają się na wielu ekranach — warto je znać raz.</p>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co to / co robi</th></tr>
+        <tr><td>Lewe menu</td><td>Nawigacja po zakładkach wydarzenia (lub globalnie: Wydarzenia, Zespół). Aktywna zakładka jest podświetlona.</td></tr>
+        <tr><td>Górny pasek</td><td>Tytuł wydarzenia + jego <b>slug</b> (adres), przyciski akcji po prawej.</td></tr>
+        <tr><td>Badge statusu</td><td>Kolorowa etykieta statusu wydarzenia (Szkic/Opublikowane/Na żywo/Zakończone/Zarchiwizowane). Klik = zmiana statusu.</td></tr>
+        <tr><td><span class="kbd">Skaner QR</span></td><td>Otwiera skaner dla tego wydarzenia (dla Ciebie).</td></tr>
+        <tr><td><span class="kbd">🔗 Link operatora</span></td><td>Generuje i kopiuje link skanera dla hostessy/ochrony (tylko Super Admin).</td></tr>
+        <tr><td><span class="kbd">✕ Usuń</span></td><td>Trwale usuwa wydarzenie (tylko Super Admin).</td></tr>
+        <tr><td>Przełącznik języka</td><td>PL/EN interfejsu; wybór zapamiętany.</td></tr>
+        <tr><td><span class="kbd">Wyloguj</span></td><td>Na dole lewego menu.</td></tr>
+        <tr><td>Wyszukiwarki / filtry</td><td>Na listach (uczestnicy, wydarzenia) — zawężają widok na żywo.</td></tr>
+        <tr><td>Panel szczegółów</td><td>Na listach klik w wiersz otwiera panel po prawej z detalami i edycją.</td></tr>
+      </table>
+    </section>
+
+    <section id="slownik">
+      <h2><span class="num">05</span>Słownik pojęć</h2>
+      <table class="anatomy">
+        <tr><td>Wydarzenie (event)</td><td>Pojedyncza impreza: ma gości, stronę, agendę, stanowiska, status.</td></tr>
+        <tr><td>Slug</td><td>Przyjazny fragment adresu strony, np. <code>falp-gala-2026</code> → <code>/public/falp-gala-2026</code>.</td></tr>
+        <tr><td>Token / kod QR gościa</td><td>Unikalny klucz gościa. Zaszyty w linku i kodzie QR — służy do logowania bez hasła i do skanowania na wejściu.</td></tr>
+        <tr><td>Check‑in / check‑out</td><td>Wejście / wyjście — rejestrowane skanem na stanowisku typu „brama".</td></tr>
+        <tr><td>No‑show</td><td>Gość nieobecny (nie zeskanowany).</td></tr>
+        <tr><td>Stanowisko</td><td>Punkt skanowania (wejście, bar, sala). Może mieć limit skanów na osobę.</td></tr>
+        <tr><td>Osoba towarzysząca</td><td>Plus‑one dodany przez gościa; ma własny kod QR.</td></tr>
+        <tr><td>RODO / zgody</td><td>Zgoda na przetwarzanie danych (obowiązkowa) + opcjonalnie wizerunek i networking.</td></tr>
+        <tr><td>Anonimizacja</td><td>Automatyczne czyszczenie danych osobowych po wydarzeniu (statystyki zostają).</td></tr>
+        <tr><td>Operator</td><td>Osoba z linkiem tylko do skanera.</td></tr>
+        <tr><td>Multi‑tenant</td><td>Pełna izolacja danych między organizatorami.</td></tr>
+        <tr><td>Idempotencja skanów</td><td>Ten sam skan wysłany dwa razy (np. po utracie sieci) nie tworzy duplikatu.</td></tr>
+      </table>
+    </section>
+
+    <section id="indeks">
+      <h2><span class="num">06</span>Indeks wszystkich procedur (flow)</h2>
+      <div class="index" id="flowIndex"></div>
+    </section>
+
+    <!-- ===================== KONTO ===================== -->
+    <section class="grp-head"><p class="grp-title">Konto</p></section>
+    <section id="konto">
+      <h2><span class="num">07</span>Logowanie i konto</h2>
+      <h4>Anatomia ekranu logowania</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td>Pole E‑mail</td><td>Adres Twojego konta.</td></tr>
+        <tr><td>Pole Hasło</td><td>Hasło konta.</td></tr>
+        <tr><td><span class="kbd">Zaloguj</span></td><td>Loguje i przenosi do panelu.</td></tr>
+        <tr><td>Przełącznik PL/EN</td><td>Język interfejsu.</td></tr>
+      </table>
+      <div class="flow" id="f1"><div class="flow-h"><span class="fno">F1</span><h3>Zaloguj się</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">/login</span></div>
+        <ol class="steps"><li>Wpisz e‑mail i hasło.</li><li>Kliknij <span class="kbd">Zaloguj</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Super Admin → lista wydarzeń; klient z jednym eventem → od razu jego dashboard. (Dev: <code>admin@falp.local</code> / <code>Admin123!</code>.)</div>
+      </div>
+      <div class="flow" id="f2"><div class="flow-h"><span class="fno">F2</span><h3>Zmień język / wyloguj się</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">przełącznik PL/EN</span><span class="arrow">·</span><span class="crumb">menu › Wyloguj</span></div>
+        <ol class="steps"><li>Język: klik <span class="kbd">PL/EN</span>.</li><li>Wylogowanie: <span class="kbd">Wyloguj</span> na dole menu.</li></ol>
+        <div class="result"><b>Wynik:</b> Interfejs przełączony / powrót na ekran logowania.</div>
+      </div>
+      <div class="callout warn"><span class="ic">🔐</span><p>Po wielu błędnych próbach z jednego IP logowanie jest chwilowo blokowane (ochrona). Odczekaj minutę.</p></div>
+    </section>
+
+    <!-- ===================== WYDARZENIA ===================== -->
+    <section class="grp-head"><p class="grp-title">Wydarzenia</p></section>
+
+    <section id="lista">
+      <h2><span class="num">08</span>Lista wydarzeń</h2>
+      <p class="lead"><b>Po co:</b> przegląd wszystkich eventów i wejście do konkretnego.</p>
+      <h4>Anatomia ekranu</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td>Karta wydarzenia</td><td>Kafelek z nazwą, badge statusu i datami. Klik → wejście do wydarzenia.</td></tr>
+        <tr><td>Filtr statusu</td><td>Pokazuje tylko eventy w danym statusie.</td></tr>
+        <tr><td>Wyszukiwarka</td><td>Filtruje po nazwie.</td></tr>
+        <tr><td><span class="kbd">Nowe wydarzenie</span></td><td>Otwiera kreator tworzenia.</td></tr>
+      </table>
+      <div class="flow" id="f3"><div class="flow-h"><span class="fno">F3</span><h3>Przeglądaj i filtruj</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenia</span></div>
+        <ol class="steps"><li>Wybierz filtr statusu lub wpisz nazwę.</li><li>Kliknij kartę, aby wejść.</li></ol>
+        <div class="result"><b>Wynik:</b> Widzisz/otwierasz wybrane wydarzenie.</div>
+      </div>
+    </section>
+
+    <section id="tworzenie">
+      <h2><span class="num">09</span>Tworzenie wydarzenia — każde pole</h2>
+      <p class="lead"><b>Po co:</b> założyć nowy event (powstaje jako Szkic).</p>
+      <h4>Pola formularza (3 sekcje)</h4>
+      <table class="anatomy">
+        <tr><th>Pole</th><th>Opis</th><th>Wymagane</th></tr>
+        <tr><td colspan="3"><b>Sekcja „Podstawy"</b></td></tr>
+        <tr><td>Nazwa</td><td>Nazwa wydarzenia (pod podpowiedzią z hintem).</td><td>Tak</td></tr>
+        <tr><td>Lokalizacja</td><td>Miejsce wydarzenia (tekst).</td><td>Nie</td></tr>
+        <tr><td colspan="3"><b>Sekcja „Kiedy"</b></td></tr>
+        <tr><td>Szybkie presety</td><td>Skróty: dziś wieczór / jutro / weekend / przyszły tydzień — wypełniają daty jednym klikiem.</td><td>—</td></tr>
+        <tr><td>Start</td><td>Data i godzina rozpoczęcia (kalendarz).</td><td>Tak</td></tr>
+        <tr><td>Koniec</td><td>Data i godzina końca; podpowiadana automatycznie, pokazuje czas trwania. Musi być po starcie.</td><td>Tak</td></tr>
+        <tr><td colspan="3"><b>Sekcja „Klient"</b></td></tr>
+        <tr><td>E‑mail klienta</td><td>Adres klienta (mini‑admina), który ma widzieć ten event. Walidacja formatu e‑mail.</td><td>Nie</td></tr>
+      </table>
+      <div class="flow" id="f4"><div class="flow-h"><span class="fno">F4</span><h3>Utwórz wydarzenie</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenia</span><span class="arrow">→</span><span class="kbd">Nowe wydarzenie</span></div>
+        <ol class="steps"><li>Uzupełnij Nazwę i Lokalizację.</li><li>Ustaw Start/Koniec (możesz użyć presetu).</li><li>(Opc.) podaj e‑mail klienta.</li><li>Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Event w statusie <b>Szkic</b> na liście. E‑mail klienta możesz dodać też później w Przeglądzie.</div>
+      </div>
+      <div class="callout warn"><span class="ic">⚠️</span><p>„Koniec" musi być po „Starcie" — inaczej zobaczysz czerwony komunikat i nie zapiszesz.</p></div>
+    </section>
+
+    <section id="statusy">
+      <h2><span class="num">10</span>Statusy i cykl życia</h2>
+      <table>
+        <tr><th>Status</th><th>Znaczenie</th><th>Co odblokowuje</th></tr>
+        <tr><td>Szkic</td><td>W przygotowaniu, niepubliczny.</td><td>Pełna konfiguracja.</td></tr>
+        <tr><td>Opublikowane</td><td>Strona dostępna publicznie.</td><td>Strona pod adresem, zapisy/podgląd.</td></tr>
+        <tr><td>Na żywo</td><td>Trwa event.</td><td>Skanowanie, dashboard na żywo, quizy LIVE.</td></tr>
+        <tr><td>Zakończone</td><td>Po evencie.</td><td>Raporty, galeria, feedback.</td></tr>
+        <tr><td>Zarchiwizowane</td><td>Schowane.</td><td>Tylko odczyt.</td></tr>
+      </table>
+      <div class="flow" id="f5"><div class="flow-h"><span class="fno">F5</span><h3>Zmień status</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">karta wydarzenia</span><span class="arrow">→</span><span class="crumb">badge statusu</span></div>
+        <ol class="steps"><li>Kliknij badge statusu i wybierz następny etap.</li></ol>
+        <div class="result"><b>Wynik:</b> Status zmieniony. Nie da się przeskoczyć etapu (np. Szkic → od razu Zarchiwizowane).</div>
+      </div>
+      <div class="flow" id="f6"><div class="flow-h"><span class="fno">F6</span><h3>Usuń wydarzenie</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">karta wydarzenia</span><span class="arrow">→</span><span class="kbd">✕ Usuń</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">✕ Usuń</span>, potwierdź.</li></ol>
+        <div class="result"><b>Wynik:</b> Trwałe usunięcie (Super Admin). Dla testowych raczej archiwizuj.</div>
+      </div>
+    </section>
+
+    <section id="dashboard">
+      <h2><span class="num">11</span>Dashboard — każdy widget</h2>
+      <p class="lead"><b>Po co:</b> kontrola wydarzenia na żywo. Odświeża się sam podczas skanowania.</p>
+      <table class="anatomy">
+        <tr><th>Widget</th><th>Co pokazuje</th></tr>
+        <tr><td>Licznik</td><td>Odliczanie do startu wydarzenia.</td></tr>
+        <tr><td>KPI „Łącznie"</td><td>Wszyscy goście.</td></tr>
+        <tr><td>KPI „Zaproszeni / Potwierdzeni"</td><td>Liczby wg statusu (RSVP).</td></tr>
+        <tr><td>KPI „Na miejscu / Wyszli"</td><td>Check‑in / check‑out.</td></tr>
+        <tr><td>KPI „Nieobecni"</td><td>No‑show.</td></tr>
+        <tr><td>% frekwencji</td><td>Obecni względem wszystkich.</td></tr>
+        <tr><td>Aktywność stanowisk <span class="tag new">NOWE</span></td><td>Paski z liczbą <b>unikalnych osób</b> i skanów na każdym stanowisku (top 6).</td></tr>
+        <tr><td>Ostatnie wejścia</td><td>Kto i o której wszedł (ostatnie 5).</td></tr>
+        <tr><td>Feedback</td><td>Średnia ocen z aplikacji gościa.</td></tr>
+      </table>
+      <div class="callout tip"><span class="ic">📡</span><p>Połączenie na żywo jest „best‑effort": nawet jeśli chwilowo zniknie, skanowanie działa, a dane dociągną się przy odświeżeniu. Skan na bramce nigdy nie zależy od dashboardu.</p></div>
+    </section>
+
+    <section id="przeglad">
+      <h2><span class="num">12</span>Przegląd</h2>
+      <p class="lead"><b>Po co:</b> szybki podgląd i edycja podstawowych danych eventu.</p>
+      <div class="flow" id="f7"><div class="flow-h"><span class="fno">F7</span><h3>Edytuj dane wydarzenia</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Przegląd</span></div>
+        <ol class="steps"><li>Zmień nazwę, daty, lokalizację, opis, język domyślny, e‑mail klienta.</li><li>Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Dane zaktualizowane.</div>
+      </div>
+    </section>
+
+    <section id="ustawienia">
+      <h2><span class="num">13</span>Ustawienia wydarzenia — każda opcja <span class="tag new">NOWE</span></h2>
+      <p class="lead"><b>Po co:</b> sterowanie prywatnością, formularzem gościa i funkcjami eventu. Zakładka <span class="crumb">Ustawienia</span>; zapis przyciskiem <span class="kbd">Zapisz ustawienia</span> (slug ma osobny przycisk).</p>
+      <table class="anatomy">
+        <tr><th>Opcja</th><th>Co dokładnie robi</th></tr>
+        <tr><td>Adres strony (slug)</td><td>Przyjazny adres strony — patrz <a href="#slug">rozdział 22</a>. Osobne pole + przycisk <span class="kbd">Zapisz adres</span>.</td></tr>
+        <tr><td>Wykorzystuj dane lokalizacyjne</td><td>ON → gość widzi w aplikacji komunikat, że dane o jego obecności na stanowiskach <b>nie będą używane po evencie</b>. Włącz, gdy skanujesz stanowiska.</td></tr>
+        <tr><td>Automatyczna anonimizacja</td><td>ON + liczba dni (domyślnie 90): po tym czasie od końca eventu dane osobowe gości są czyszczone automatycznie; statystyki zostają zanonimizowane.</td></tr>
+        <tr><td>Numer telefonu wymagany</td><td>ON → gość musi podać telefon w kroku zgód.</td></tr>
+        <tr><td>Zezwól na osoby towarzyszące</td><td>ON → gość może dodać plus‑one z własnym QR. Pole „maks. liczba na uczestnika" (0 = bez limitu).</td></tr>
+        <tr><td>Zdjęcia: link / tekst</td><td>Link do zewnętrznej galerii i/lub tekst — pokażą się w aplikacji gościa zamiast wbudowanej galerii.</td></tr>
+      </table>
+      <div class="flow" id="f8"><div class="flow-h"><span class="fno">F8</span><h3>Skonfiguruj ustawienia</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Ustawienia</span></div>
+        <ol class="steps"><li>Przełącz potrzebne opcje (i ustaw liczby: dni anonimizacji, maks. osób towarzyszących).</li><li>Kliknij <span class="kbd">Zapisz ustawienia</span>.</li><li>Slug zapisz osobnym przyciskiem <span class="kbd">Zapisz adres</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Ustawienia wpływają na aplikację gościa i zachowanie eventu.</div>
+      </div>
+    </section>
+
+    <!-- ===================== GOŚCIE ===================== -->
+    <section class="grp-head"><p class="grp-title">Goście</p></section>
+
+    <section id="uczestnicy">
+      <h2><span class="num">14</span>Uczestnicy — pełna anatomia</h2>
+      <p class="lead"><b>Po co:</b> zarządzanie listą gości, statusami i kodami QR.</p>
+      <h4>Pasek narzędzi</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td><span class="kbd">Import z Excela</span></td><td>Rozwija panel importu (podgląd + commit).</td></tr>
+        <tr><td><span class="kbd">Wyślij zaproszenia</span></td><td>Maile z linkiem i QR.</td></tr>
+        <tr><td><span class="kbd">Eksport Excel</span></td><td>Pobiera pełną listę z danymi.</td></tr>
+        <tr><td><span class="kbd">Nowy uczestnik</span></td><td>Formularz ręcznego dodania.</td></tr>
+        <tr><td>Wyszukiwarka</td><td>Szuka po imieniu/nazwisku/e‑mailu/firmie.</td></tr>
+        <tr><td>Filtry statusu</td><td>Wszyscy / Zaproszeni / Potwierdzeni / Na miejscu / Nieobecni — z licznikami.</td></tr>
+      </table>
+      <h4>Lista i panel szczegółów</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co pokazuje</th></tr>
+        <tr><td>Wiersz gościa</td><td>Awatar (inicjały), imię i nazwisko, e‑mail, status. Klik → szczegóły po prawej.</td></tr>
+        <tr><td>Drzewko towarzyszących <span class="tag new">NOWE</span></td><td>Pod głównym gościem — dodane osoby + wiek + znacznik wejścia.</td></tr>
+        <tr><td>Szczegóły: QR</td><td>Kod QR gościa do wydruku/pokazania.</td></tr>
+        <tr><td>Szczegóły: Info</td><td>Telefon, firma, stanowisko, język.</td></tr>
+        <tr><td>Szczegóły: Preferencje</td><td>Dieta (i inne preferencje uzupełnione przez gościa).</td></tr>
+        <tr><td>Szczegóły: Logistyka</td><td>Stolik, pokój, grupa, transfer.</td></tr>
+      </table>
+      <h4>Pola formularza „Nowy uczestnik"</h4>
+      <table class="anatomy">
+        <tr><th>Pole</th><th>Wymagane</th></tr>
+        <tr><td>Imię</td><td>Tak</td></tr><tr><td>Nazwisko</td><td>Tak</td></tr><tr><td>E‑mail</td><td>Tak</td></tr>
+      </table>
+      <div class="callout note"><span class="ic">ℹ️</span><p>Resztę danych (telefon, firma, dieta, logistyka, custom pola) uzupełnia gość w swojej aplikacji albo wczytujesz je importem. W panelu te pola są widoczne w szczegółach.</p></div>
+
+      <h4>Statusy uczestnika</h4>
+      <table>
+        <tr><th>Status</th><th>Znaczenie</th></tr>
+        <tr><td>Zaproszony</td><td>Dodany, nie wszedł do aplikacji.</td></tr>
+        <tr><td>Aktywowany</td><td>Otworzył aplikację linkiem.</td></tr>
+        <tr><td>Potwierdził / Odmówił</td><td>Odpowiedział na pytanie o obecność (RSVP).</td></tr>
+        <tr><td>Na miejscu / Wyszedł</td><td>Zeskanowany na wejściu / wyjściu.</td></tr>
+        <tr><td>Nieobecny</td><td>Oznaczony po evencie.</td></tr>
+      </table>
+
+      <div class="flow" id="f9"><div class="flow-h"><span class="fno">F9</span><h3>Dodaj uczestnika ręcznie</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span><span class="arrow">→</span><span class="kbd">Nowy uczestnik</span></div>
+        <ol class="steps"><li>Wpisz imię, nazwisko, e‑mail. Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Gość na liście (status Zaproszony).</div>
+      </div>
+      <div class="flow" id="f10"><div class="flow-h"><span class="fno">F10</span><h3>Edytuj gościa / zmień status / pokaż QR</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span><span class="arrow">→</span><span class="crumb">wiersz gościa</span></div>
+        <ol class="steps"><li>Kliknij wiersz → panel szczegółów.</li><li>Edytuj dane / status, podejrzyj QR.</li></ol>
+        <div class="result"><b>Wynik:</b> Zmiany zapisane; QR gotowy do druku.</div>
+      </div>
+      <div class="flow" id="f11"><div class="flow-h"><span class="fno">F11</span><h3>Wyślij zaproszenia</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span><span class="arrow">→</span><span class="kbd">Wyślij zaproszenia</span></div>
+        <ol class="steps"><li>Kliknij, wybierz: wszyscy / tylko niezaproszeni.</li></ol>
+        <div class="result"><b>Wynik:</b> Maile z imieniem, datą, linkiem i QR. Bez duplikatów. Osoby towarzyszące (bez e‑maila) pomijane.</div>
+      </div>
+      <div class="flow" id="f12"><div class="flow-h"><span class="fno">F12</span><h3>Eksportuj do Excela / oznacz nieobecnych</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span></div>
+        <ol class="steps"><li>Eksport: <span class="kbd">Eksport Excel</span> → plik z pełnymi danymi.</li><li>Po evencie uruchom oznaczenie nieobecnych (no‑show).</li></ol>
+        <div class="result"><b>Wynik:</b> XLSX gotowy; statystyki frekwencji uzupełnione.</div>
+      </div>
+    </section>
+
+    <section id="import">
+      <h2><span class="num">15</span>Import z Excela — krok po kroku</h2>
+      <h4>Anatomia panelu importu</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td><span class="kbd">Pobierz szablon</span></td><td>Plik wzorcowy z kolumnami.</td></tr>
+        <tr><td><span class="kbd">Wybierz plik</span></td><td>Wskazanie Excela do wczytania.</td></tr>
+        <tr><td><span class="kbd">Podgląd</span></td><td>Analiza pliku bez zapisu.</td></tr>
+        <tr><td>Statystyki podglądu</td><td>Wiersze, Poprawne, Zaimportowane, lista Błędów (z numerem wiersza i komunikatem), Duplikaty (e‑maile).</td></tr>
+        <tr><td><span class="kbd">Zatwierdź import</span></td><td>Zapisuje poprawnych gości.</td></tr>
+      </table>
+      <div class="flow" id="f13"><div class="flow-h"><span class="fno">F13</span><h3>Zaimportuj listę gości</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span><span class="arrow">→</span><span class="kbd">Import z Excela</span></div>
+        <ol class="steps"><li>(Opc.) pobierz szablon.</li><li>Wybierz plik → <span class="kbd">Podgląd</span>.</li><li>Sprawdź statystyki i błędy.</li><li>Kliknij <span class="kbd">Zatwierdź import</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Poprawni dodani; błędne wiersze i duplikaty pominięte (z informacją którego dotyczą).</div>
+      </div>
+    </section>
+
+    <section id="towarzyszace">
+      <h2><span class="num">16</span>Osoby towarzyszące <span class="tag new">NOWE</span></h2>
+      <p class="lead"><b>Scenariusz:</b> pracownik przychodzi z rodziną. Gość dodaje osoby towarzyszące w aplikacji — każda dostaje własny kod QR do wejścia.</p>
+      <div class="flow" id="f14"><div class="flow-h"><span class="fno">F14</span><h3>Włącz osoby towarzyszące (admin)</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Ustawienia</span><span class="arrow">→</span><span class="crumb">Osoby towarzyszące</span></div>
+        <ol class="steps"><li>Włącz „Zezwól na dodawanie osób towarzyszących".</li><li>Ustaw maks. liczbę na uczestnika (0 = bez limitu). Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Gość widzi w profilu sekcję dodawania osób.</div>
+      </div>
+      <div class="flow" id="f15"><div class="flow-h"><span class="fno">F15</span><h3>Zobacz drzewko + wiek (admin)</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span></div>
+        <ol class="steps"><li>Pod głównym gościem rozwija się drzewko dodanych osób (imię, wiek, znacznik wejścia).</li></ol>
+        <div class="result"><b>Wynik:</b> Wiesz, ile osób i w jakim wieku dołączył dany uczestnik. Każda jest skanowana na bramce jak normalny gość.</div>
+      </div>
+    </section>
+
+    <section id="logistyka">
+      <h2><span class="num">17</span>Logistyka</h2>
+      <p class="lead"><b>Po co:</b> przypisania (stolik/pokój/hotel/grupa) i transfery (np. z lotniska).</p>
+      <div class="flow" id="f16"><div class="flow-h"><span class="fno">F16</span><h3>Przypisz logistykę / dodaj transfer</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Logistyka</span></div>
+        <ol class="steps"><li>Ustaw gościom grupę, stolik, pokój, hotel.</li><li>Dodaj transfer (nazwa, godzina, miejsce zbiórki, uwagi).</li></ol>
+        <div class="result"><b>Wynik:</b> Gość widzi przypisania i transfery w aplikacji; operator widzi stolik/dietę po skanie.</div>
+      </div>
+    </section>
+
+    <!-- ===================== KONFIGURACJA GOŚCIA ===================== -->
+    <section class="grp-head"><p class="grp-title">Konfiguracja gościa</p></section>
+
+    <section id="formularz">
+      <h2><span class="num">18</span>Formularz: customowe pola <span class="tag new">NOWE</span></h2>
+      <p class="lead"><b>Po co:</b> zapytać gościa o cokolwiek (rozmiar buta, alergie, własne pytanie). Zakładka <span class="crumb">Formularz</span>.</p>
+      <h4>Typy pól</h4>
+      <table>
+        <tr><th>Typ</th><th>Zastosowanie</th></tr>
+        <tr><td>Tekst</td><td>Krótka odpowiedź.</td></tr>
+        <tr><td>Długi tekst</td><td>Dłuższa wypowiedź.</td></tr>
+        <tr><td>Tak / Nie</td><td>Checkbox.</td></tr>
+        <tr><td>Lista wyboru</td><td>Opcje do wyboru (podajesz je po przecinku).</td></tr>
+      </table>
+      <div class="flow" id="f17"><div class="flow-h"><span class="fno">F17</span><h3>Dodaj / edytuj / usuń pole</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Formularz</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">+ Dodaj pole</span>.</li><li>Wpisz nazwę, wybierz typ; dla listy podaj opcje (np. <code>S, M, L, XL</code>).</li><li>Zaznacz „Wymagane" w razie potrzeby.</li><li>Kliknij <span class="kbd">Zapisz pola</span>. (Usuwasz ✕ przy polu.)</li></ol>
+        <div class="result"><b>Wynik:</b> Pola pojawiają się w profilu gościa; odpowiedzi widoczne dla Ciebie.</div>
+      </div>
+    </section>
+
+    <section id="onboarding">
+      <h2><span class="num">19</span>Onboarding przed wejściem <span class="tag new">NOWE</span></h2>
+      <p class="lead"><b>Po co:</b> ekrany powitalne (zasady, ważne informacje) pokazywane gościowi zaraz po wejściu z linku, przed aplikacją.</p>
+      <div class="flow" id="f18"><div class="flow-h"><span class="fno">F18</span><h3>Zbuduj onboarding</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Formularz</span><span class="arrow">→</span><span class="crumb">Onboarding</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">+ Dodaj ekran</span>.</li><li>Wpisz tytuł i treść.</li><li>Włącz „Wymagaj potwierdzenia" jeśli gość musi zaakceptować, by przejść dalej.</li><li>Dodaj kolejne ekrany → <span class="kbd">Zapisz onboarding</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Gość przechodzi ekrany w kolejności (jak agenda przed logowaniem), potem trafia do aplikacji.</div>
+      </div>
+    </section>
+
+    <section id="agenda">
+      <h2><span class="num">20</span>Agenda i własne typy</h2>
+      <h4>Pola punktu agendy</h4>
+      <table class="anatomy">
+        <tr><th>Pole</th><th>Opis</th></tr>
+        <tr><td>Typ</td><td>Wybór z presetów (Prelekcja, Posiłek, Atrakcja, Transport, Networking, Inne) lub <b>typ własny</b> (kolor/ikona).</td></tr>
+        <tr><td>Tytuł PL / EN</td><td>Nazwa punktu w dwóch językach.</td></tr>
+        <tr><td>Start / Koniec</td><td>Godziny punktu.</td></tr>
+        <tr><td>Wymaga check‑in</td><td>Czy punkt wymaga zeskanowania wejścia.</td></tr>
+      </table>
+      <div class="callout note"><span class="ic">ℹ️</span><p>Dodatkowe pola punktu (lokalizacja, mapa, prelegent, menu, dress code, grupa) są częścią modelu agendy i widoczne w szczegółach/na stronie; podstawowy formularz dodawania skupia się na powyższych.</p></div>
+      <div class="flow" id="f19"><div class="flow-h"><span class="fno">F19</span><h3>Dodaj punkt agendy</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Agenda</span><span class="arrow">→</span><span class="kbd">Nowy punkt</span></div>
+        <ol class="steps"><li>Wybierz typ (preset lub własny), wpisz tytuły PL/EN i godziny.</li><li>Włącz „wymaga check‑in" jeśli trzeba. Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Punkt w agendzie (pogrupowany po dniach); zmiany mogą powiadomić gości.</div>
+      </div>
+      <div class="flow" id="f20"><div class="flow-h"><span class="fno">F20</span><h3>Zdefiniuj własne typy agendy <span class="tag new">NOWE</span></h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Agenda</span><span class="arrow">→</span><span class="kbd">Typy agendy</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">Typy agendy</span> → <span class="kbd">+ Dodaj typ</span>.</li><li>Wybierz kolor, ikonę (emoji), nazwę PL/EN. Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Typ dostępny przy dodawaniu punktu; u gościa punkt dostaje kolorowy znacznik.</div>
+      </div>
+    </section>
+
+    <!-- ===================== STRONA ===================== -->
+    <section class="grp-head"><p class="grp-title">Strona wydarzenia</p></section>
+
+    <section id="builder">
+      <h2><span class="num">21</span>Kreator strony (Page Builder)</h2>
+      <p class="lead"><b>Po co:</b> złożyć landing wydarzenia z bloków, edytując treści wprost na podglądzie (PL/EN).</p>
+      <h4>Anatomia kreatora</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td>Paleta bloków</td><td>Lista bloków do dodania (katalog niżej).</td></tr>
+        <tr><td>Płótno / podgląd</td><td>Tu widzisz i edytujesz stronę; teksty klikasz i zmieniasz w miejscu.</td></tr>
+        <tr><td>Przełącznik PL/EN</td><td>Edycja treści w obu językach.</td></tr>
+        <tr><td>Przełącznik urządzenia</td><td>Podgląd desktop / tablet / telefon (realny wygląd dla danej szerokości).</td></tr>
+        <tr><td>Panel brandingu</td><td>Kolory, logo, tło + auto‑branding.</td></tr>
+        <tr><td><span class="kbd">Publikuj</span> / Wersje</td><td>Publikacja i historia wersji.</td></tr>
+      </table>
+      <div class="flow" id="f21"><div class="flow-h"><span class="fno">F21</span><h3>Zbuduj stronę</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Strona</span></div>
+        <ol class="steps"><li>(Opc.) zastosuj szablon startowy.</li><li>Dodawaj bloki, zmieniaj kolejność, ukrywaj/usuwaj.</li><li>Klikaj teksty i edytuj (PL/EN).</li><li>Sprawdź podgląd na telefonie/tablecie.</li></ol>
+        <div class="result"><b>Wynik:</b> Gotowy szkic strony do brandingu i publikacji.</div>
+      </div>
+    </section>
+
+    <section id="bloki">
+      <h2><span class="num">22</span>Katalog bloków strony</h2>
+      <table class="anatomy">
+        <tr><th>Blok</th><th>Do czego</th></tr>
+        <tr><td>Hero</td><td>Nagłówek strony (tytuł, podtytuł, tło, CTA).</td></tr>
+        <tr><td>Opis</td><td>Sekcja tekstowa.</td></tr>
+        <tr><td>Agenda</td><td>Plan wydarzenia (z danych agendy).</td></tr>
+        <tr><td>Zespół / prelegenci</td><td>Osoby, zdjęcia, role.</td></tr>
+        <tr><td>Galeria</td><td>Zdjęcia.</td></tr>
+        <tr><td>Mapa</td><td>Lokalizacja.</td></tr>
+        <tr><td>FAQ</td><td>Pytania i odpowiedzi.</td></tr>
+        <tr><td>Licznik (countdown)</td><td>Odliczanie do startu.</td></tr>
+        <tr><td>Sponsorzy</td><td>Loga partnerów.</td></tr>
+        <tr><td>Kontakt</td><td>Dane kontaktowe.</td></tr>
+        <tr><td>CTA</td><td>Wezwanie do działania (przycisk).</td></tr>
+        <tr><td>Funkcje (features)</td><td>Lista atutów/ikon.</td></tr>
+        <tr><td>Sekcja dzielona (split)</td><td>Tekst + obraz obok siebie.</td></tr>
+        <tr><td>Opinia (testimonial)</td><td>Cytat/rekomendacja.</td></tr>
+        <tr><td>Wideo</td><td>Osadzony film.</td></tr>
+        <tr><td>Quizy</td><td>Sekcja z quizami wydarzenia.</td></tr>
+        <tr><td>Konkursy</td><td>Sekcja z konkursami.</td></tr>
+        <tr><td>Statystyki</td><td>Liczby/efekty wydarzenia.</td></tr>
+      </table>
+    </section>
+
+    <section id="branding">
+      <h2><span class="num">23</span>Branding i auto‑branding z URL <span class="tag new">NOWE</span></h2>
+      <h4>Co ustawiasz</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Opis</th></tr>
+        <tr><td>Kolor główny / akcent</td><td>Kolory motywu strony.</td></tr>
+        <tr><td>Logo</td><td>URL logo wydarzenia/firmy.</td></tr>
+        <tr><td>Tło strony</td><td>Tryb: kolor / gradient / obraz (z podglądem).</td></tr>
+        <tr><td>Auto‑branding</td><td>Pole na adres firmy + <span class="kbd">Pobierz z adresu</span>.</td></tr>
+      </table>
+      <div class="flow" id="f22"><div class="flow-h"><span class="fno">F22</span><h3>Ustaw branding (ręcznie)</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Strona</span><span class="arrow">→</span><span class="crumb">Branding</span></div>
+        <ol class="steps"><li>Ustaw kolory, logo i tło.</li><li>Kliknij <span class="kbd">Zapisz branding</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Branding na stronie publicznej.</div>
+      </div>
+      <div class="flow" id="f23"><div class="flow-h"><span class="fno">F23</span><h3>Pobierz branding ze strony firmy</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Branding</span><span class="arrow">→</span><span class="crumb">Automatyczny branding</span></div>
+        <ol class="steps"><li>Wpisz adres (np. <code>https://twojafirma.pl</code>).</li><li>Kliknij <span class="kbd">Pobierz z adresu</span>.</li><li>Sprawdź pobrane kolory/logo, popraw i <span class="kbd">Zapisz branding</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Kolory i logo wstępnie wypełnione na podstawie strony firmy.</div>
+      </div>
+      <div class="callout note"><span class="ic">ℹ️</span><p>Jeśli strona firmy nie deklaruje koloru motywu — kolory ustaw ręcznie. Logo zwykle pobiera się poprawnie (z ikony / obrazka strony).</p></div>
+    </section>
+
+    <section id="slug">
+      <h2><span class="num">24</span>Adres strony (slug) <span class="tag new">NOWE</span></h2>
+      <div class="flow" id="f24"><div class="flow-h"><span class="fno">F24</span><h3>Ustaw przyjazny adres</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Ustawienia</span><span class="arrow">→</span><span class="crumb">Adres strony</span></div>
+        <ol class="steps"><li>Wpisz slug (np. <code>falp-gala-2026</code>).</li><li>Kliknij <span class="kbd">Zapisz adres</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Adres sprowadzony do formatu URL (małe litery, myślniki, bez polskich znaków), sprawdzona unikalność; pod polem klikalny link <code>/public/twoj-slug</code>.</div>
+      </div>
+      <div class="callout warn"><span class="ic">⚠️</span><p>Slug musi być unikalny w całym systemie. Jeśli zajęty/nieprawidłowy — dostaniesz komunikat i adres się nie zmieni.</p></div>
+    </section>
+
+    <section id="publikacja">
+      <h2><span class="num">25</span>SEO, publikacja, wersje</h2>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td>SEO: tytuł / opis / obrazek</td><td>Wygląd podglądu przy udostępnianiu linku.</td></tr>
+        <tr><td><span class="kbd">Publikuj</span></td><td>Zapisuje aktualny szkic jako wersję publiczną.</td></tr>
+        <tr><td>Wersje / <span class="kbd">Przywróć</span></td><td>Historia publikacji; powrót do wcześniejszej.</td></tr>
+        <tr><td>Podgląd publiczny</td><td>Otwiera stronę pod adresem publicznym.</td></tr>
+      </table>
+      <div class="flow" id="f25"><div class="flow-h"><span class="fno">F25</span><h3>Opublikuj / przywróć wersję / otwórz publiczną</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Strona</span></div>
+        <ol class="steps"><li>Ustaw SEO.</li><li>Kliknij <span class="kbd">Publikuj</span>.</li><li>W razie potrzeby <span class="kbd">Przywróć</span> starszą wersję.</li><li>Otwórz link publiczny (po ustawieniu slug).</li></ol>
+        <div class="result"><b>Wynik:</b> Strona dostępna dla gości pod <code>/public/twoj-slug</code> (PL/EN).</div>
+      </div>
+    </section>
+
+    <!-- ===================== NA EVENCIE ===================== -->
+    <section class="grp-head"><p class="grp-title">Na evencie</p></section>
+
+    <section id="stanowiska">
+      <h2><span class="num">26</span>Stanowiska — każda opcja <span class="tag new">NOWE</span></h2>
+      <p class="lead"><b>Po co:</b> zdefiniować punkty skanowania (wejście, bar, sala). Sterują limitami i statystykami.</p>
+      <h4>Opcje stanowiska</h4>
+      <table class="anatomy">
+        <tr><th>Opcja</th><th>Znaczenie</th></tr>
+        <tr><td>Ikona + Nazwa</td><td>Emoji i nazwa (np. <code>BAR</code>). Nazwa = etykieta skanów.</td></tr>
+        <tr><td>Limit / os.</td><td>Maks. skanów jednej osoby (np. 2). 0 = bez limitu. Po przekroczeniu → „LIMIT".</td></tr>
+        <tr><td>Wejście (check‑in)</td><td>ON = brama (skan zmienia status na miejscu/wyszedł). OFF = stanowisko obecności (np. bar) — skan tylko rejestruje obecność.</td></tr>
+        <tr><td>Samoobsługa gościa</td><td>Gość może sam zeskanować stanowisko z aplikacji (skanowanie dwustronne).</td></tr>
+        <tr><td>Aktywne</td><td>Tylko aktywne stanowiska widać w skanerze.</td></tr>
+      </table>
+      <div class="flow" id="f26"><div class="flow-h"><span class="fno">F26</span><h3>Dodaj i skonfiguruj stanowisko</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Stanowiska</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">+ Dodaj stanowisko</span>, podaj ikonę i nazwę.</li><li>Ustaw limit i przełączniki.</li><li>Kliknij <span class="kbd">Zapisz stanowiska</span>.</li></ol>
+        <div class="result"><b>Wynik:</b> Stanowisko gotowe; limity egzekwowane przy skanie.</div>
+      </div>
+      <div class="flow" id="f27"><div class="flow-h"><span class="fno">F27</span><h3>Zobacz podsumowanie aktywności</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Stanowiska</span><span class="arrow">→</span><span class="crumb">Podsumowanie</span></div>
+        <ol class="steps"><li>Przewiń do podsumowania pod listą.</li></ol>
+        <div class="result"><b>Wynik:</b> Dla każdego stanowiska: liczba unikalnych osób, liczba skanów, limit.</div>
+      </div>
+      <div class="callout tip"><span class="ic">🍺</span><p><b>Przykład „limit piwa":</b> stanowisko BAR, limit 2, „Wejście" OFF, „Samoobsługa" ON. Gość skanuje bar telefonem — trzeci skan zostaje zablokowany z komunikatem, że nie może więcej.</p></div>
+    </section>
+
+    <section id="skaner">
+      <h2><span class="num">27</span>Skaner QR / Operator — pełna anatomia</h2>
+      <h4>Anatomia skanera</h4>
+      <table class="anatomy">
+        <tr><th>Element</th><th>Co robi</th></tr>
+        <tr><td>Wybór stanowiska</td><td>Lista aktywnych stanowisk (lub presety). Operator wybiera, gdzie stoi.</td></tr>
+        <tr><td>Tryb Wejście/Wyjście</td><td>Dla bram. Dla stanowiska obecności tryb jest automatyczny.</td></tr>
+        <tr><td>Blokada trybu</td><td>Zapobiega przypadkowej zmianie trybu w trakcie.</td></tr>
+        <tr><td>Kamera + wpis ręczny</td><td>Skan kodu albo wpisanie ręczne.</td></tr>
+        <tr><td>Licznik skanów / status online</td><td>Ile odbito + czy jest sieć (kolejka offline).</td></tr>
+        <tr><td>Wylogowanie</td><td>Kończy sesję operatora.</td></tr>
+      </table>
+      <h4>Kolory feedbacku po skanie</h4>
+      <table>
+        <tr><th>Kolor</th><th>Znaczenie</th></tr>
+        <tr><td>🟢 Zielony</td><td>Wpuszczono — imię, stolik, dieta.</td></tr>
+        <tr><td>🟠 Pomarańczowy</td><td>Już był (np. „JUŻ WSZEDŁ o 17:32").</td></tr>
+        <tr><td>⛔ Limit <span class="tag new">NOWE</span></td><td>Limit stanowiska osiągnięty — nie można więcej.</td></tr>
+        <tr><td>🔴 Czerwony</td><td>Nieznany kod (nie z tego wydarzenia).</td></tr>
+      </table>
+      <div class="flow" id="f28"><div class="flow-h"><span class="fno">F28</span><h3>Udostępnij skaner operatorowi</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">karta wydarzenia</span><span class="arrow">→</span><span class="kbd">🔗 Link operatora</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">🔗 Link operatora</span> (kopiuje się).</li><li>Wyślij link hostessie/ochronie.</li></ol>
+        <div class="result"><b>Wynik:</b> Operator otwiera link i ląduje na skanerze tego eventu (bez panelu).</div>
+      </div>
+      <div class="flow" id="f29"><div class="flow-h"><span class="fno">F29</span><h3>Skanuj na bramce / stanowisku</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">skaner (telefon)</span></div>
+        <ol class="steps"><li>Wybierz stanowisko.</li><li>Dla bramy wybierz Wejście/Wyjście.</li><li>Skieruj kamerę na QR gościa (lub wpisz ręcznie).</li></ol>
+        <div class="result"><b>Wynik:</b> Pełnoekranowy feedback (kolory wyżej), dźwięk + wibracja. Wejście trafia na dashboard na żywo.</div>
+      </div>
+      <div class="callout tip"><span class="ic">📴</span><p><b>Tryb offline:</b> bez internetu skany trafiają do kolejki w telefonie i wysyłają się same po odzyskaniu sieci. Bez duplikatów (idempotencja).</p></div>
+    </section>
+
+    <section id="aktywnosci">
+      <h2><span class="num">28</span>Aktywności: quizy, konkursy, networking</h2>
+      <div class="flow" id="f30"><div class="flow-h"><span class="fno">F30</span><h3>Utwórz quiz</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Aktywności</span></div>
+        <ol class="steps"><li>Dodaj quiz, wpisz pytania i odpowiedzi (oznacz poprawne).</li></ol>
+        <div class="result"><b>Wynik:</b> Quiz w aplikacji gościa; ranking wyników.</div>
+      </div>
+      <div class="flow" id="f31"><div class="flow-h"><span class="fno">F31</span><h3>Uruchom quiz LIVE (Kahoot)</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Aktywności</span><span class="arrow">→</span><span class="crumb">quiz</span><span class="arrow">→</span><span class="crumb">tryb na żywo</span></div>
+        <ol class="steps"><li>Włącz tryb na żywo, kliknij <b>Start</b>.</li><li>Steruj: <b>Następne pytanie</b> → … → <b>Zakończ</b>.</li></ol>
+        <div class="result"><b>Wynik:</b> Gościom pojawia się <b>baner „dołącz do quizu na żywo"</b>; odpowiadają na telefonach w czasie rzeczywistym.</div>
+      </div>
+      <div class="flow" id="f32"><div class="flow-h"><span class="fno">F32</span><h3>Konkurs i networking</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Aktywności</span></div>
+        <ol class="steps"><li>Konkurs: dodaj punktowy lub na czas (ranking).</li><li>Networking: gość dodaje kontakt, skanując token innego uczestnika (za zgodą).</li></ol>
+        <div class="result"><b>Wynik:</b> Rywalizacja i wymiana kontaktów wśród gości.</div>
+      </div>
+    </section>
+
+    <section id="galeria">
+      <h2><span class="num">29</span>Galeria</h2>
+      <div class="flow" id="f33"><div class="flow-h"><span class="fno">F33</span><h3>Wgraj i opublikuj zdjęcia</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Galeria</span></div>
+        <ol class="steps"><li>Wgraj zdjęcia.</li><li>Opublikuj wybrane (moderacja ręczna).</li></ol>
+        <div class="result"><b>Wynik:</b> Opublikowane zdjęcia widzą goście (za zgodą na wizerunek). Alternatywa: link/tekst w <a href="#ustawienia">Ustawieniach</a>.</div>
+      </div>
+    </section>
+
+    <!-- ===================== ADMINISTRACJA ===================== -->
+    <section class="grp-head"><p class="grp-title">Administracja</p></section>
+
+    <section id="zespol">
+      <h2><span class="num">30</span>Zespół i konta</h2>
+      <p class="lead"><b>Po co:</b> zarządzać dostępem. Trzy sekcje: Organizatorzy, Klienci, Operatorzy.</p>
+      <table class="anatomy">
+        <tr><th>Sekcja</th><th>Co robisz</th></tr>
+        <tr><td>Organizatorzy</td><td>Dodajesz innego super admina (imię, e‑mail, hasło).</td></tr>
+        <tr><td>Klienci</td><td>Dodajesz konto klienta; przypisujesz jego e‑mail do wydarzenia, by go widział.</td></tr>
+        <tr><td>Operatorzy</td><td>Generujesz link skanera per wydarzenie (operator nie ma osobnego konta).</td></tr>
+      </table>
+      <div class="flow" id="f34"><div class="flow-h"><span class="fno">F34</span><h3>Dodaj super admina lub klienta</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Zespół</span></div>
+        <ol class="steps"><li>W sekcji Organizatorzy/Klienci kliknij dodawanie.</li><li>Podaj imię, e‑mail, hasło startowe. Zapisz.</li><li>Dla klienta: wpisz jego e‑mail w Przeglądzie wydarzenia.</li></ol>
+        <div class="result"><b>Wynik:</b> Nowy super admin (pełny dostęp) lub klient (widzi swój event).</div>
+      </div>
+      <div class="flow" id="f35"><div class="flow-h"><span class="fno">F35</span><h3>Edytuj konto / reset hasła / dezaktywuj</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Zespół</span><span class="arrow">→</span><span class="crumb">wiersz konta</span></div>
+        <ol class="steps"><li>Zmień imię/rolę/aktywność.</li><li><b>Reset hasła</b> — ustaw nowe.</li><li><b>Dezaktywuj</b> — odbierz dostęp bez usuwania.</li></ol>
+        <div class="result"><b>Wynik:</b> Konto zaktualizowane.</div>
+        <div class="callout danger"><span class="ic">🔑</span><p>Haseł <b>nie da się podejrzeć</b> (są nieodwracalnie szyfrowane) — tylko reset. Nie odbierzesz też sobie samemu roli super admina ani nie dezaktywujesz własnego konta (zabezpieczenie).</p></div>
+      </div>
+    </section>
+
+    <section id="rodo">
+      <h2><span class="num">31</span>RODO i prywatność <span class="tag new">NOWE</span></h2>
+      <table class="anatomy">
+        <tr><th>Mechanizm</th><th>Jak działa</th></tr>
+        <tr><td>Zgody gościa</td><td>RODO obowiązkowe (z wersją) + opcjonalnie wizerunek i networking. Funkcje odsłaniają się po akceptacji.</td></tr>
+        <tr><td>Dane lokalizacyjne</td><td>Skany obecności na stanowiskach. Po włączeniu opcji gość widzi, że nie będą używane po evencie.</td></tr>
+        <tr><td>Telefon</td><td>Zbierany w kroku zgód; opcjonalnie wymagany.</td></tr>
+        <tr><td>Anonimizacja</td><td>Po X dniach od końca eventu dane osobowe czyszczone automatycznie; statystyki zostają.</td></tr>
+        <tr><td>Izolacja danych</td><td>Multi‑tenant — klient widzi tylko swoje wydarzenie.</td></tr>
+      </table>
+    </section>
+
+    <section id="audyt">
+      <h2><span class="num">32</span>Audyt</h2>
+      <div class="flow" id="f36"><div class="flow-h"><span class="fno">F36</span><h3>Przejrzyj dziennik działań</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Audyt</span></div>
+        <ol class="steps"><li>Otwórz Audyt, filtruj/szukaj.</li></ol>
+        <div class="result"><b>Wynik:</b> Widzisz kto, co i kiedy zmienił.</div>
+      </div>
+    </section>
+
+    <section id="bezpieczenstwo">
+      <h2><span class="num">33</span>Jak to działa pod spodem (dla spokoju ducha)</h2>
+      <table class="anatomy">
+        <tr><th>Mechanizm</th><th>Co Ci daje</th></tr>
+        <tr><td>Izolacja danych (multi‑tenant)</td><td>Żadna inna agencja nie zobaczy Twoich danych; klient widzi tylko swój event.</td></tr>
+        <tr><td>Idempotencja skanów</td><td>Powtórzony skan (np. po sieci) nie tworzy duplikatu wejścia.</td></tr>
+        <tr><td>Tryb offline skanera</td><td>Brak internetu nie zatrzymuje wejść — kolejka w telefonie + auto‑synchronizacja.</td></tr>
+        <tr><td>Odporny dashboard</td><td>Awaria kanału „na żywo" nie blokuje skanów ani zapisu.</td></tr>
+        <tr><td>Hasła</td><td>Szyfrowane jednokierunkowo (nieodwracalnie) — można tylko zresetować.</td></tr>
+        <tr><td>Ograniczanie logowań</td><td>Ochrona przed atakami siłowymi (limit prób).</td></tr>
+        <tr><td>Anonimizacja w tle</td><td>Automatyczne czyszczenie danych osobowych po terminie — bez Twojego udziału.</td></tr>
+      </table>
+    </section>
+
+    <!-- ===================== GOŚĆ I POMOC ===================== -->
+    <section class="grp-head"><p class="grp-title">Gość i pomoc</p></section>
+
+    <section id="apka">
+      <h2><span class="num">34</span>Aplikacja uczestnika — co widzi gość</h2>
+      <p class="lead">Żeby dobrze konfigurować event, warto znać widok gościa. Otwiera aplikację linkiem z maila lub skanując QR (bez hasła).</p>
+      <h4>Kolejność ekranów gościa</h4>
+      <table class="anatomy">
+        <tr><th>Krok</th><th>Co się dzieje</th></tr>
+        <tr><td>1. Wejście linkiem/QR</td><td>Logowanie bez hasła.</td></tr>
+        <tr><td>2. Onboarding</td><td>Ekrany powitalne (jeśli ustawione) — do potwierdzenia.</td></tr>
+        <tr><td>3. Zgody</td><td>RODO + (opc./wymagany) telefon + komunikat o danych lokalizacyjnych.</td></tr>
+        <tr><td>4. Aplikacja</td><td>Dolna nawigacja: Agenda · Aktywności · Mój QR · Galeria · Profil.</td></tr>
+      </table>
+      <h4>Co gość ma w środku</h4>
+      <ul class="clean">
+        <li><b>Mój QR</b> — pełnoekranowy kod na bramkę (tryb rozjaśnienia ekranu).</li>
+        <li><b>Profil</b> — język, dieta (lista), rozmiar koszulki, transport, uwagi i <b>Twoje customowe pola</b>.</li>
+        <li><b>Osoby towarzyszące</b> (jeśli włączone) — dodawanie z własnym QR i wiekiem.</li>
+        <li><b>Agenda</b> z kolorowymi typami, <b>quizy</b> (też LIVE), <b>galeria</b> lub Twój link do zdjęć, <b>networking</b>, ocena.</li>
+        <li><b>Skan stanowiska</b> — jeśli stanowisko ma samoobsługę (z limitem).</li>
+      </ul>
+    </section>
+
+    <section id="publiczna">
+      <h2><span class="num">35</span>Strona publiczna — co widzi odwiedzający</h2>
+      <p class="lead">Po publikacji każdy może otworzyć stronę pod <code>/public/twoj-slug</code> (lub przez identyfikator). Widzi bloki, które złożyłeś (hero, agenda, galeria, mapa, FAQ, sponsorzy…), w Twoim brandingu, z przełącznikiem PL/EN.</p>
+      <div class="callout note"><span class="ic">🌐</span><p>Strona jest publiczna dopiero w statusie <b>Opublikowane</b> (lub dalszych). W Szkicu jest niewidoczna.</p></div>
+    </section>
+
+    <section id="faq">
+      <h2><span class="num">36</span>FAQ — najczęstsze pytania</h2>
+      <p><b>Gość nie dostał maila?</b> Sprawdź e‑mail i czy to nie osoba towarzysząca (nie dostają maili). Wyślij do „niezaproszonych". Lokalnie maile w Mailhogu <code>:8025</code>.</p>
+      <p><b>Klient nie widzi wydarzenia?</b> Wpisz jego e‑mail w Przeglądzie i sprawdź, czy konto istnieje i jest aktywne.</p>
+      <p><b>Operator nie widzi stanowisk?</b> Muszą być <b>aktywne</b> (zakładka Stanowiska). Bez zdefiniowanych skaner pokaże presety.</p>
+      <p><b>Chcę ograniczyć liczbę piw/posiłków na osobę?</b> Stanowisko z limitem i wyłączonym „Wejście (check‑in)".</p>
+      <p><b>Czy mogę podejrzeć hasło użytkownika?</b> Nie — użyj resetu hasła.</p>
+      <p><b>Auto‑branding nie pobrał kolorów?</b> Strona firmy może nie mieć koloru motywu — ustaw ręcznie; logo zwykle wchodzi.</p>
+      <p><b>Slug „zajęty"?</b> Musi być unikalny w całym systemie — wybierz inny.</p>
+      <p><b>Skaner zgubił internet?</b> Skanuje dalej — wszystko wyśle się po odzyskaniu sieci, bez duplikatów.</p>
+      <div class="footer"><p>EventPulse — pełny podręcznik Super Admina. Samodzielny plik HTML: otwórz w przeglądarce (offline), wydrukuj lub wyślij klientowi.</p></div>
+    </section>
+
+  </main>
+</div>
+<div class="totop" id="toTop" title="Do góry">↑</div>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav');
+  var links=[].slice.call(nav.querySelectorAll('a'));
+  var byId={}; links.forEach(function(a){byId[a.getAttribute('href').slice(1)]=a;});
+  var secs=[].slice.call(document.querySelectorAll('main section[id]'));
+
+  var idx=document.getElementById('flowIndex');
+  if(idx){
+    [].slice.call(document.querySelectorAll('.flow')).forEach(function(f){
+      var no=f.querySelector('.fno'), h=f.querySelector('h3'); if(!no||!h)return;
+      var a=document.createElement('a'); a.href='#'+f.id;
+      a.innerHTML='<span class="n">'+no.textContent+'</span>'+h.textContent.replace(/\s*NOWE\s*$/,'');
+      idx.appendChild(a);
+    });
+  }
+
+  var obs=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){var a=byId[e.target.id]; if(a){links.forEach(function(l){l.classList.remove('active')}); a.classList.add('active'); a.scrollIntoView({block:'nearest'});}}
+  });},{rootMargin:'-8% 0px -82% 0px',threshold:0});
+  secs.forEach(function(s){ if(byId[s.id]) obs.observe(s); });
+
+  var q=document.getElementById('q');
+  q.addEventListener('input',function(){
+    var t=q.value.trim().toLowerCase();
+    links.forEach(function(a){a.classList.toggle('hide', !!t && a.textContent.toLowerCase().indexOf(t)<0);});
+    nav.querySelectorAll('.nav-group').forEach(function(g){
+      var any=[].some.call(g.querySelectorAll('a'),function(a){return !a.classList.contains('hide')});
+      g.classList.toggle('hide',!any);
+    });
+    if(idx)[].slice.call(idx.children).forEach(function(a){a.classList.toggle('hide', !!t && a.textContent.toLowerCase().indexOf(t)<0);});
+  });
+
+  var toTop=document.getElementById('toTop');
+  window.addEventListener('scroll',function(){toTop.classList.toggle('show',window.scrollY>600)});
+  toTop.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+  var sb=document.getElementById('sidebar'),mb=document.getElementById('menuBtn');
+  mb.addEventListener('click',function(){sb.classList.toggle('open')});
+  nav.addEventListener('click',function(e){if(e.target.closest('a'))sb.classList.remove('open')});
+})();
+</script>
+</body>
+</html>

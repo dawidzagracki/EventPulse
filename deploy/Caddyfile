@@ -1,0 +1,46 @@
+# EventPulse — reverse proxy (Caddy v2). Automatyczne HTTPS (Let's Encrypt).
+# Każda aplikacja/domena = osobny blok. EventPulse load-balansuje 3 repliki API.
+#
+# Caddy łączy się z kontenerami po nazwie usługi w SIECI `edge` (zewnętrzna, współdzielona).
+# Dlatego usługi EventPulse mają prefiks `ep-` (brak kolizji z innymi appkami na tej sieci).
+
+{
+	email {$ACME_EMAIL}
+	# Na czas testów odkomentuj, by używać staging Let's Encrypt (uniknięcie limitów):
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# ──────────────────────────── EventPulse (3 repliki) ────────────────────────────
+{$EVENTPULSE_DOMAIN} {
+	encode zstd gzip
+
+	# API + huby SignalR (WebSocket obsługiwany automatycznie) → load-balancing 3 replik.
+	# Połączenie WS trzyma się jednej repliki przez całe życie; Redis-backplane dostarcza
+	# komunikaty między replikami, więc dashboard/quiz na żywo działają spójnie.
+	@backend path /api/* /hubs/*
+	handle @backend {
+		reverse_proxy ep-api1:8080 ep-api2:8080 ep-api3:8080 {
+			lb_policy round_robin
+			health_uri /health
+			health_interval 10s
+		}
+	}
+
+	# Cała reszta → statyczny front (SPA). Trasy /p/:token, /op/:token, /public/:slug
+	# obsługuje router SPA (nginx ma fallback do index.html).
+	handle {
+		reverse_proxy ep-web:80
+	}
+}
+
+# ──────────────────────── Przykład: druga, osobna aplikacja ────────────────────────
+# Skopiuj blok dla każdej kolejnej apki. Jej kontenery też muszą być w sieci `edge`.
+#
+# app2.twojadomena.pl {
+# 	encode zstd gzip
+# 	reverse_proxy app2-web:80
+# }
+#
+# api.app2.twojadomena.pl {
+# 	reverse_proxy app2-api:8080
+# }

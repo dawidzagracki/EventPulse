@@ -1,0 +1,114 @@
+# EventPulse — produkcja: 3 repliki API za load-balancerem (Caddy) + wspólne dane.
+# SignalR (dashboard/quiz na żywo) działa między replikami dzięki Redis-backplane.
+#
+# Wymaga istniejącej sieci `edge` (patrz docker-compose.proxy.yml) i pliku .env (z .env.example).
+#   docker network create edge
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml up -d
+#
+name: eventpulse
+
+# Wspólna definicja repliki API (DRY).
+x-api: &api-base
+  image: eventpulse-api:local
+  restart: unless-stopped
+  env_file: [./.env]
+  environment:
+    ASPNETCORE_ENVIRONMENT: Production
+    ASPNETCORE_URLS: http://+:8080
+  networks: [edge, internal]
+
+services:
+  ep-postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks: [internal]
+
+  ep-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks: [internal]
+
+  ep-minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${Storage__AccessKey}
+      MINIO_ROOT_PASSWORD: ${Storage__SecretKey}
+    volumes: [miniodata:/data]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks: [internal]
+
+  ep-minio-init:
+    image: minio/mc:latest
+    depends_on:
+      ep-minio: { condition: service_healthy }
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://ep-minio:9000 ${Storage__AccessKey} ${Storage__SecretKey} &&
+      mc mb --ignore-existing local/${Storage__Bucket} &&
+      mc anonymous set download local/${Storage__Bucket} &&
+      echo 'bucket ready';
+      "
+    networks: [internal]
+
+  # api1 BUDUJE obraz i jako jedyne uruchamia migracje na starcie (przed /health).
+  ep-api1:
+    <<: *api-base
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      ep-postgres: { condition: service_healthy }
+      ep-redis: { condition: service_healthy }
+      ep-minio: { condition: service_healthy }
+
+  # api2/api3 startują DOPIERO gdy api1 jest healthy → migracje już wykonane (brak wyścigu).
+  ep-api2:
+    <<: *api-base
+    depends_on:
+      ep-api1: { condition: service_healthy }
+  ep-api3:
+    <<: *api-base
+    depends_on:
+      ep-api1: { condition: service_healthy }
+
+  # Front budowany na adresy WZGLĘDNE (same-origin) → ten sam obraz działa pod każdą domeną.
+  ep-web:
+    image: eventpulse-web:local
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    restart: unless-stopped
+    networks: [edge]
+
+networks:
+  edge:
+    external: true   # tu proxy widzi ep-api1/2/3 i ep-web
+  internal: {}        # prywatna: api ↔ postgres/redis/minio (niedostępna z zewnątrz)
+
+volumes:
+  pgdata:
+  miniodata:

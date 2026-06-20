@@ -1,0 +1,32 @@
+# Wspólny reverse proxy dla WSZYSTKICH aplikacji na serwerze.
+# Uruchamiasz raz. Każda apka dokłada własny blok w ./Caddyfile i dołącza do sieci `edge`.
+#
+#   docker network create edge                 # raz, jeśli nie istnieje
+#   docker compose -f docker-compose.proxy.yml --env-file proxy.env up -d
+#
+name: edge-proxy
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      EVENTPULSE_DOMAIN: ${EVENTPULSE_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # certyfikaty TLS — NIE kasować
+      - caddy_config:/config
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true   # wspólna sieć: tu spotykają się proxy + fronty/api wszystkich apek
+
+volumes:
+  caddy_data:
+  caddy_config:

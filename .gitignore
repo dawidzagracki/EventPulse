@@ -25,6 +25,10 @@ frontend/coverage/
 .env
 .env.*
 !.env.example
+# deployment runtime env files (keep *.example)
+deploy/proxy.env
+deploy/**/*.env
+!deploy/**/*.env.example
 *.pfx
 *.key
 appsettings.*.local.json
