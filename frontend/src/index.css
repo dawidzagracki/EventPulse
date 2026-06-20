@@ -148,3 +148,15 @@ body {
   content: attr(data-placeholder);
   color: rgb(148 163 184 / 0.7);
 }
+
+/* iOS Safari (and other mobile browsers) zoom the viewport whenever a focused
+ * form control renders below 16px. On touch devices we force every text field
+ * to >=16px so tapping an input never triggers that jarring auto-zoom. Desktop
+ * keeps its smaller, designed sizing — pointer:fine devices never auto-zoom. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
