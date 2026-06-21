@@ -123,6 +123,23 @@ export function useUpdateEventSlug(eventId: string) {
   })
 }
 
+// ---- Client account access (which client logins may open this event) ----
+export function useEventClients(eventId: string) {
+  return useQuery({
+    queryKey: ['events', eventId, 'clients'],
+    queryFn: async () => (await api.get<string[]>(`/api/events/${eventId}/clients`)).data,
+  })
+}
+
+export function useSetEventClients(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (clientUserIds: string[]) =>
+      (await api.put<string[]>(`/api/events/${eventId}/clients`, { clientUserIds })).data,
+    onSuccess: (data) => qc.setQueryData(['events', eventId, 'clients'], data),
+  })
+}
+
 export function useDeleteEvent(eventId: string) {
   const qc = useQueryClient()
   return useMutation({

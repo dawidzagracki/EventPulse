@@ -1,4 +1,5 @@
 using EventPulse.Modules.Events.Application;
+using EventPulse.Modules.Events.Application.Clients;
 using EventPulse.Modules.Events.Application.Create;
 using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Events.Application.Update;
@@ -97,6 +98,20 @@ public sealed class EventsController : ControllerBase
     [HttpPut("{id:guid}/slug")]
     public async Task<ActionResult<EventDto>> UpdateSlug(Guid id, UpdateSlugBody body, CancellationToken ct)
         => Ok(await _mediator.Send(new UpdateEventSlugCommand(id, body.Slug), ct));
+
+    /// <summary>Client accounts granted access to this event (ids only). Agency-only.</summary>
+    [HttpGet("{id:guid}/clients")]
+    [Authorize(Policy = AuthPolicies.Agency)]
+    public async Task<ActionResult<IReadOnlyList<Guid>>> GetClients(Guid id, CancellationToken ct)
+        => Ok(await _mediator.Send(new GetEventClientsQuery(id), ct));
+
+    /// <summary>Replaces the set of client accounts that may access this event. Agency-only.</summary>
+    [HttpPut("{id:guid}/clients")]
+    [Authorize(Policy = AuthPolicies.Agency)]
+    public async Task<ActionResult<IReadOnlyList<Guid>>> SetClients(Guid id, SetClientsBody body, CancellationToken ct)
+        => Ok(await _mediator.Send(new SetEventClientsCommand(id, body.ClientUserIds ?? new List<Guid>()), ct));
+
+    public sealed record SetClientsBody(List<Guid> ClientUserIds);
 
     [HttpPost("{id:guid}/status")]
     public async Task<ActionResult<EventDto>> ChangeStatus(Guid id, ChangeStatusBody body, CancellationToken ct)

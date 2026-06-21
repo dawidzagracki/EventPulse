@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
-import { useEvent, useUpdateEvent } from './api'
+import { useEvent, useUpdateEvent, useEventClients, useSetEventClients } from './api'
 import { prettifyEventName } from './eventName'
 import { useParticipants } from '../participants/api'
 import { useAgenda } from '../agenda/api'
 import { usePage } from '../content/api'
+import { useClients } from '../team/api'
+import { useAuthStore } from '../../stores/authStore'
 import { EventStatus } from '../../types/api'
 
 export function OverviewTab({ eventId }: { eventId: string }) {
@@ -17,6 +19,7 @@ export function OverviewTab({ eventId }: { eventId: string }) {
   const { data: agenda } = useAgenda(eventId)
   const { data: page } = usePage(eventId)
   const updateEvent = useUpdateEvent(eventId)
+  const isClient = useAuthStore((s) => s.principalType) === 'Client'
 
   // Tick once a minute to refresh phase pill / countdown.
   const [now, setNow] = useState(() => Date.now())
@@ -296,26 +299,30 @@ export function OverviewTab({ eventId }: { eventId: string }) {
             </div>
           </Card>
 
-          {/* Client */}
-          <Card>
-            <SectionHeader icon="users" title={t('eventDetail.clientContact')} />
-            {event.clientEmail ? (
-              <a
-                href={`mailto:${event.clientEmail}`}
-                className="group flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 transition hover:border-indigo-400/40 hover:bg-slate-900"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-semibold text-white">
-                  {event.clientEmail.charAt(0).toUpperCase()}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-white group-hover:text-indigo-200">{event.clientEmail}</p>
-                </div>
-                <Icon name="externalLink" className="h-3.5 w-3.5 text-slate-500 group-hover:text-indigo-300" />
-              </a>
-            ) : (
-              <EmptyBlock icon="users" title={t('eventDetail.noClient')} />
-            )}
-          </Card>
+          {/* Client access — agency manages which client accounts may open this event */}
+          {isClient ? (
+            <Card>
+              <SectionHeader icon="users" title={t('eventDetail.clientContact')} />
+              {event.clientEmail ? (
+                <a
+                  href={`mailto:${event.clientEmail}`}
+                  className="group flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 transition hover:border-indigo-400/40 hover:bg-slate-900"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-semibold text-white">
+                    {event.clientEmail.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-white group-hover:text-indigo-200">{event.clientEmail}</p>
+                  </div>
+                  <Icon name="externalLink" className="h-3.5 w-3.5 text-slate-500 group-hover:text-indigo-300" />
+                </a>
+              ) : (
+                <EmptyBlock icon="users" title={t('eventDetail.noClient')} />
+              )}
+            </Card>
+          ) : (
+            <ClientAccessCard eventId={eventId} clientEmail={event.clientEmail} />
+          )}
 
           {/* Created / updated */}
           <Card>
@@ -339,6 +346,91 @@ export function OverviewTab({ eventId }: { eventId: string }) {
 }
 
 // ============ Helpers ============
+
+function ClientAccessCard({ eventId, clientEmail }: { eventId: string; clientEmail: string | null }) {
+  const { t } = useTranslation()
+  const { data: clients } = useClients()
+  const { data: assignedIds } = useEventClients(eventId)
+  const setClients = useSetEventClients(eventId)
+
+  const assigned = new Set(assignedIds ?? [])
+  const list = clients ?? []
+
+  async function toggle(clientId: string) {
+    const next = new Set(assigned)
+    if (next.has(clientId)) next.delete(clientId)
+    else next.add(clientId)
+    await setClients.mutateAsync([...next])
+  }
+
+  // A legacy free-text contact e-mail that isn't one of the real client accounts.
+  const legacyOnly =
+    clientEmail && !list.some((c) => c.email.toLowerCase() === clientEmail.toLowerCase())
+
+  return (
+    <Card>
+      <SectionHeader icon="users" title={t('eventDetail.clientAccess')} />
+      <p className="-mt-2 mb-3 text-xs text-slate-400">{t('eventDetail.clientAccessHint')}</p>
+
+      {list.length === 0 ? (
+        <div className="space-y-2">
+          <EmptyBlock icon="users" title={t('eventDetail.clientAccessNoAccounts')} />
+          <Link
+            to="/team"
+            className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-sm text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white"
+          >
+            <Icon name="users" className="h-3.5 w-3.5" /> {t('eventDetail.clientAccessManageTeam')}
+          </Link>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((c) => {
+            const on = assigned.has(c.id)
+            return (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => void toggle(c.id)}
+                  disabled={setClients.isPending}
+                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition disabled:opacity-60 ${
+                    on
+                      ? 'border-indigo-400/50 bg-indigo-500/10'
+                      : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white ${
+                      on ? 'from-indigo-500 to-violet-500' : 'from-slate-600 to-slate-700'
+                    }`}
+                  >
+                    {c.displayName.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">{c.displayName}</p>
+                    <p className="truncate text-xs text-slate-500">{c.email}</p>
+                  </div>
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ${
+                      on ? 'bg-indigo-500 text-white ring-indigo-400' : 'bg-slate-900 text-transparent ring-slate-700'
+                    }`}
+                  >
+                    <Icon name="check" className="h-3 w-3" />
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      {legacyOnly && (
+        <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/80">
+          {t('eventDetail.clientAccessLegacy', { email: clientEmail })}
+        </p>
+      )}
+    </Card>
+  )
+}
 
 function PhaseChip({ phase }: { phase: 'upcoming' | 'live' | 'ended' }) {
   const { t } = useTranslation()

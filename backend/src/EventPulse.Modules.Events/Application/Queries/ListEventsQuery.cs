@@ -23,12 +23,20 @@ public sealed class ListEventsHandler : IRequestHandler<ListEventsQuery, IReadOn
     {
         var query = _db.Set<Event>().AsNoTracking();
 
-        // A Client end-user only ever sees the events they're assigned to
-        // (matched by the e-mail on their token). Agency staff see all tenant events.
+        // A Client end-user only ever sees the events they're explicitly assigned to.
+        // Primary mechanism: an EventClientAssignment row linking their account id.
+        // Legacy fallback: the free-text ClientEmail field still matches their e-mail,
+        // so events configured before assignments existed keep working.
         if (_currentUser.IsClient)
         {
+            var clientId = _currentUser.UserId ?? Guid.Empty;
             var email = _currentUser.Email?.Trim().ToLowerInvariant();
-            query = query.Where(e => e.ClientEmail != null && e.ClientEmail == email);
+            var assignedEventIds = _db.Set<EventClientAssignment>()
+                .Where(a => a.ClientUserId == clientId)
+                .Select(a => a.EventId);
+            query = query.Where(e =>
+                assignedEventIds.Contains(e.Id)
+                || (e.ClientEmail != null && e.ClientEmail == email));
         }
 
         if (request.Status is { } status)

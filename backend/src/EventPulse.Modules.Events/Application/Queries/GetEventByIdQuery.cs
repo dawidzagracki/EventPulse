@@ -25,13 +25,18 @@ public sealed class GetEventByIdHandler : IRequestHandler<GetEventByIdQuery, Eve
             .FirstOrDefaultAsync(e => e.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Event not found.");
 
-        // A Client may only open their own event. Treat anything else as "not found"
-        // so we don't leak the existence of other clients' events.
+        // A Client may only open an event they're assigned to. Treat anything else as
+        // "not found" so we don't leak the existence of other clients' events.
+        // Primary: an explicit assignment; legacy fallback: matching ClientEmail.
         if (_currentUser.IsClient)
         {
+            var clientId = _currentUser.UserId ?? Guid.Empty;
             var email = _currentUser.Email?.Trim().ToLowerInvariant();
-            if (string.IsNullOrEmpty(ev.ClientEmail)
-                || !string.Equals(ev.ClientEmail, email, StringComparison.OrdinalIgnoreCase))
+            var assigned = await _db.Set<EventClientAssignment>()
+                .AnyAsync(a => a.EventId == ev.Id && a.ClientUserId == clientId, cancellationToken);
+            var emailMatch = !string.IsNullOrEmpty(ev.ClientEmail)
+                && string.Equals(ev.ClientEmail, email, StringComparison.OrdinalIgnoreCase);
+            if (!assigned && !emailMatch)
             {
                 throw new NotFoundException("Event not found.");
             }
