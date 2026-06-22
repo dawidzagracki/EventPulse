@@ -17,29 +17,39 @@ public static class InvitationEmail
 
         var subject = isEn ? $"Your invitation: {eventName}" : $"Twoje zaproszenie: {eventName}";
 
-        var (greeting, intro, whenLabel, cta, footer) = isEn
-            ? ($"Hello {name},",
-               $"You have been invited to <strong>{ev}</strong>.",
-               "When",
-               "Open my event page",
-               "If the button doesn't work, copy this link into your browser:")
-            : ($"Cześć {name},",
-               $"Zostałeś zaproszony(a) na wydarzenie <strong>{ev}</strong>.",
-               "Kiedy",
-               "Otwórz stronę wydarzenia",
-               "Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:");
+        var content = isEn
+            ? new EmailContent
+            {
+                Preheader = $"You're invited to {eventName}",
+                Heading = $"Hello {name},",
+                Paragraphs =
+                [
+                    $"You have been invited to <strong>{ev}</strong>.",
+                    "Open your personal event page below — you'll find the agenda, your QR code and everything you need in one place.",
+                ],
+                InfoRows = [new EmailInfoRow("When", dateText)],
+                CtaLabel = "Open my event page",
+                CtaUrl = link,
+                FallbackNote = "If the button doesn't work, copy this link into your browser:",
+                FooterNote = "You're receiving this because you were invited to an event managed with EventPulse.",
+            }
+            : new EmailContent
+            {
+                Preheader = $"Zaproszenie na {eventName}",
+                Heading = $"Cześć {name},",
+                Paragraphs =
+                [
+                    $"Zostałeś(-aś) zaproszony(-a) na wydarzenie <strong>{ev}</strong>.",
+                    "Otwórz swoją osobistą stronę wydarzenia poniżej — znajdziesz tam agendę, swój kod QR i wszystkie szczegóły w jednym miejscu.",
+                ],
+                InfoRows = [new EmailInfoRow("Kiedy", dateText)],
+                CtaLabel = "Otwórz stronę wydarzenia",
+                CtaUrl = link,
+                FallbackNote = "Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:",
+                FooterNote = "Otrzymujesz tę wiadomość, ponieważ zaproszono Cię na wydarzenie obsługiwane w EventPulse.",
+            };
 
-        var html = $"""
-            <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto">
-              <p>{greeting}</p>
-              <p>{intro}</p>
-              <p style="color:#444"><strong>{whenLabel}:</strong> {WebUtility.HtmlEncode(dateText)}</p>
-              <p style="margin:24px 0">
-                <a href="{link}" style="background:#4f46e5;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none">{cta}</a>
-              </p>
-              <p style="color:#666;font-size:12px">{footer}<br><a href="{link}">{link}</a></p>
-            </div>
-            """;
+        var html = EmailLayout.Render(content);
 
         var text = $"{(isEn ? "Hello" : "Cześć")} {participant.FirstName},\n{eventName} — {dateText}\n{(isEn ? "Your event link" : "Twój link do wydarzenia")}: {link}";
 

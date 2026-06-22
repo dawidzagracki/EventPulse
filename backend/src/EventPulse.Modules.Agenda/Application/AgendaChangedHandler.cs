@@ -52,11 +52,28 @@ public sealed class AgendaChangedHandler : INotificationHandler<AgendaChanged>
             (false, _) => "zmieniony",
         };
 
+        var name = WebUtility.HtmlEncode(participant.FirstName);
         var line = isEn
-            ? $"The agenda of <strong>{ev}</strong> changed: \"{title}\" was {verb}."
+            ? $"The agenda of <strong>{ev}</strong> has been updated: \"{title}\" was {verb}."
             : $"Agenda wydarzenia <strong>{ev}</strong> uległa zmianie: punkt \"{title}\" został {verb}.";
 
-        var html = $"""<div style="font-family:Arial,sans-serif"><p>{line}</p></div>""";
+        var content = isEn
+            ? new EmailContent
+            {
+                Preheader = $"Agenda update: {change.EventName}",
+                Heading = $"Hi {name},",
+                Paragraphs = [line, "Open your event page to see the latest schedule."],
+                FooterNote = "You're receiving this because you're a participant of an event managed with EventPulse.",
+            }
+            : new EmailContent
+            {
+                Preheader = $"Zmiana w agendzie: {change.EventName}",
+                Heading = $"Cześć {name},",
+                Paragraphs = [line, "Otwórz stronę wydarzenia, aby zobaczyć aktualny harmonogram."],
+                FooterNote = "Otrzymujesz tę wiadomość, ponieważ jesteś uczestnikiem wydarzenia obsługiwanego w EventPulse.",
+            };
+
+        var html = EmailLayout.Render(content);
         return new EmailMessage(participant.Email, $"{participant.FirstName} {participant.LastName}", subject, html);
     }
 }
