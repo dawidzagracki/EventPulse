@@ -42,6 +42,13 @@ export function useSendInvitations(eventId: string) {
   })
 }
 
+export function useSendClientLinks(eventId: string) {
+  return useMutation({
+    mutationFn: async () =>
+      (await api.post<{ linkCount: number }>(`/api/events/${eventId}/participants/client-links`)).data,
+  })
+}
+
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

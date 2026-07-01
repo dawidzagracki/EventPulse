@@ -11,6 +11,8 @@ public sealed class CreateEventValidator : AbstractValidator<CreateEventCommand>
         RuleFor(x => x.Location).MaximumLength(300);
         RuleFor(x => x.DefaultLanguage).Must(l => l is null or "pl" or "en")
             .WithMessage("DefaultLanguage must be 'pl' or 'en'.");
-        RuleFor(x => x.ClientEmail).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.ClientEmail));
+        // Every event must belong to at least one client.
+        RuleFor(x => x.ClientEmail).NotEmpty().WithMessage("A client e-mail is required.")
+            .EmailAddress().MaximumLength(320);
     }
 }

@@ -9,6 +9,8 @@ public enum CustomFieldType
     Textarea = 1,
     Checkbox = 2,
     Select = 3,
+    /// <summary>Multiple choice — answer stored as a JSON array of the chosen option strings.</summary>
+    MultiSelect = 4,
 }
 
 /// <summary>

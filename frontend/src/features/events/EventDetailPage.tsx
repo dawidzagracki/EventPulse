@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEvent, useDeleteEvent } from './api'
 import { prettifyEventName } from './eventName'
@@ -58,11 +57,14 @@ export function EventDetailPage() {
   const { eventId = '' } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const { data: event, isLoading } = useEvent(eventId)
   const principalType = useAuthStore((s) => s.principalType)
   const isClient = principalType === 'Client'
   const deleteEvent = useDeleteEvent(eventId)
-  const [tab, setTab] = useState<Tab>('dashboard')
+  // The active tab lives in the URL hash so deep-links and the dashboard's
+  // "quick actions" (e.g. /events/:id#page) select the right tab.
+  const hashTab = location.hash.replace('#', '') as Tab
 
   async function handleDelete() {
     if (!window.confirm(t('events.deleteConfirm'))) return
@@ -86,13 +88,13 @@ export function EventDetailPage() {
   ] as { id: Tab; label: string; icon: NavItem['icon'] }[]
 
   const visibleTabs = isClient ? allTabs.filter((x) => CLIENT_TABS.includes(x.id)) : allTabs
-  // Guard against a stale/hidden tab (e.g. client lands with a non-client tab).
-  const activeTab = visibleTabs.some((x) => x.id === tab) ? tab : 'dashboard'
+  // Guard against a stale/hidden tab (empty hash, or a client landing on a non-client tab).
+  const activeTab = visibleTabs.some((x) => x.id === hashTab) ? hashTab : 'dashboard'
 
   const nav: NavItem[] = visibleTabs.map((item) => ({
     ...item,
     active: activeTab === item.id,
-    onClick: () => setTab(item.id),
+    onClick: () => navigate(`#${item.id}`),
   }))
 
   const actions = event ? (

@@ -12,6 +12,7 @@ import {
   useVersions,
 } from './api'
 import { useEvent } from '../events/api'
+import { useAgenda } from '../agenda/api'
 import { useContests, useQuizzes } from '../engagement/api'
 import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
 import { useDragAutoScroll } from './useDragAutoScroll'
@@ -19,6 +20,7 @@ import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, b
 import { Button, Card, Field, Input, Select } from '../../components/ui'
 import { ColorPicker } from '../../components/ColorPicker'
 import { Icon } from '../../components/Icon'
+import { FONT_OPTIONS, fontOptionByStack, ensureGoogleFont } from './fonts'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
 
 const TEMPLATES = ['gala', 'konferencja', 'integracja', 'premiera', 'blank']
@@ -98,12 +100,23 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   const { data: event } = useEvent(eventId)
   const { data: contests } = useContests(eventId)
   const { data: quizzes } = useQuizzes(eventId)
+  // Live agenda so the Agenda block previews real items (the public page reads
+  // the same data — general items only, i.e. without a per-group name).
+  const { data: agenda } = useAgenda(eventId)
 
   const blocksHistory = useHistoryState<PageBlock[]>(page.content.blocks ?? [])
   const blocks = blocksHistory.value
   const [branding, setBranding] = useState<BrandingDto>(page.branding)
+  // Load the chosen web font so the desktop canvas renders in it (the device
+  // iframe and public page load it into their own documents).
+  useEffect(() => {
+    ensureGoogleFont(document, branding.fontFamily)
+  }, [branding.fontFamily])
   const [lang, setLang] = useState<'pl' | 'en'>('pl')
   const [device, setDevice] = useState<Device>('desktop')
+  // On small laptops the 3 fixed columns force horizontal scroll — let the left
+  // panel collapse to a thin rail (desktop only; on mobile the columns stack).
+  const [leftOpen, setLeftOpen] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(blocks[0]?.id ?? null)
   const [tab, setTab] = useState<'content' | 'style' | 'advanced'>('content')
   const [showBranding, setShowBranding] = useState(false)
@@ -270,6 +283,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   }
 
   async function handlePublish() {
+    if (!window.confirm(t('page.confirmPublish'))) return
     await save.mutateAsync(reindexed())
     const r = await publish.mutateAsync()
     setDirty(false)
@@ -285,6 +299,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   }
 
   async function handleRestore(version: number) {
+    if (!window.confirm(t('page.confirmRestore', { version }))) return
     const r = await restore.mutateAsync(version)
     blocksHistory.reset(r.content.blocks ?? [])
     setBranding(r.branding)
@@ -302,7 +317,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       eventId,
       branding,
       lang,
-      agenda: [],
+      agenda: (agenda ?? []).filter((a) => !a.groupName),
       galleryUrls: [],
       contests: (contests ?? []).map((c) => ({ id: c.id, name: c.name, mode: c.mode })),
       quizzes: (quizzes ?? []).map((q) => ({ id: q.id, title: q.title })),
@@ -310,7 +325,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       edit: { onTextChange: setText },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eventId, branding, lang, event?.startsAt, contests, quizzes],
+    [eventId, branding, lang, event?.startsAt, contests, quizzes, agenda],
   )
 
   return (
@@ -386,6 +401,15 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             ))}
           </div>
 
+          <button
+            type="button"
+            onClick={() => setLeftOpen((v) => !v)}
+            title={leftOpen ? t('page.collapsePanel') : t('page.expandPanel')}
+            className="hidden items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-300 transition hover:bg-slate-800 lg:inline-flex"
+          >
+            {leftOpen ? '⟨⟩' : '☰'} {t('page.panels')}
+          </button>
+
           <span className="ml-auto" />
 
           <Select value={lang} onChange={(e) => setLang(e.target.value as 'pl' | 'en')} className="!w-20 !py-1.5 !text-xs">
@@ -442,22 +466,51 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       </Card>
 
       {/* MAIN 3-COLUMN LAYOUT: Layers + Canvas + Properties */}
-      <div className="grid items-start gap-3 lg:grid-cols-[288px_1fr_320px]">
-        {/* ─── LEFT: Layers + Palette + Versions ─── */}
-        <div className="flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-          <LayersPanel
-            blocks={blocks}
-            lang={lang}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onMove={moveBlock}
-            onDuplicate={duplicateBlock}
-            onDelete={deleteBlock}
-            onToggleVisible={(id) =>
-              patchBlock(id, (b) => ({ ...b, visible: b.visible === false }))
-            }
-          />
-          <PalettePanel lang={lang} onAdd={appendBlock} />
+      <div
+        className={`grid items-start gap-3 ${
+          leftOpen ? 'lg:grid-cols-[288px_1fr_320px]' : 'lg:grid-cols-[52px_1fr_320px]'
+        }`}
+      >
+        {/* ─── LEFT: Layers + Palette + Versions (collapsible on desktop) ─── */}
+        <div className="flex min-w-0 flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          {/* Collapsed rail — desktop only; click to expand */}
+          {!leftOpen && (
+            <button
+              type="button"
+              onClick={() => setLeftOpen(true)}
+              title={t('page.expandPanel')}
+              aria-label={t('page.expandPanel')}
+              className="hidden h-10 w-10 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-800/60 text-slate-300 transition hover:bg-slate-800 lg:flex"
+            >
+              ☰
+            </button>
+          )}
+          {/* Full panel — always on mobile; on desktop only when open */}
+          <div className={`flex flex-col gap-3 ${!leftOpen ? 'lg:hidden' : ''}`}>
+            <div className="hidden justify-end lg:flex">
+              <button
+                type="button"
+                onClick={() => setLeftOpen(false)}
+                title={t('page.collapsePanel')}
+                aria-label={t('page.collapsePanel')}
+                className="rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-xs text-slate-300 transition hover:bg-slate-800"
+              >
+                «
+              </button>
+            </div>
+            <LayersPanel
+              blocks={blocks}
+              lang={lang}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onMove={moveBlock}
+              onDuplicate={duplicateBlock}
+              onDelete={deleteBlock}
+              onToggleVisible={(id) =>
+                patchBlock(id, (b) => ({ ...b, visible: b.visible === false }))
+              }
+            />
+            <PalettePanel lang={lang} onAdd={appendBlock} />
           {versions && versions.length > 0 && (
             <Card>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{t('page.versions')}</h3>
@@ -481,10 +534,12 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
               </ul>
             </Card>
           )}
+          </div>
         </div>
 
         {/* ─── CENTER: Canvas — grows with content, the page itself scrolls ─── */}
-        <div className="flex flex-col rounded-2xl border border-slate-800/60 bg-slate-950/50 p-3">
+        {/* min-w-0 lets this 1fr track shrink instead of forcing the whole grid wider (horizontal scroll). */}
+        <div className="flex min-w-0 flex-col overflow-x-hidden rounded-2xl border border-slate-800/60 bg-slate-950/50 p-3">
           <div className="sticky top-0 z-10 mb-2 flex items-center justify-between rounded-lg bg-slate-950/80 px-2 py-1 backdrop-blur">
             <p className="text-[11px] uppercase tracking-wider text-slate-500">
               💡 {t('page.selectBlockHint')}
@@ -551,7 +606,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
         </div>
 
         {/* ─── RIGHT: Properties — sticky so it stays visible while canvas scrolls ─── */}
-        <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+        <div className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           {selected && schema ? (
             <PropertyPanel
               block={selected}
@@ -731,6 +786,7 @@ function DevicePreviewFrame({ width, fontFamily, children }: { width: string; fo
     doc.body.style.background = '#fbfbfd'
     doc.body.style.color = '#0f172a'
     if (fontFamily) doc.body.style.fontFamily = fontFamily
+    ensureGoogleFont(doc, fontFamily)
     setBody(doc.body)
   }, [fontFamily])
 
@@ -803,6 +859,7 @@ function BrandingEditor({
   // Auto-branding from a website URL.
   const extract = useExtractBranding()
   const [brandUrl, setBrandUrl] = useState('')
+  const [autoStatus, setAutoStatus] = useState<{ colors: boolean; logo: boolean } | null>(null)
   async function fetchBranding() {
     if (!brandUrl.trim()) return
     const s = await extract.mutateAsync(brandUrl.trim())
@@ -814,6 +871,9 @@ function BrandingEditor({
       logoUrl: s.logoUrl ?? branding.logoUrl,
       faviconUrl: s.faviconUrl ?? branding.faviconUrl,
     })
+    // Tell the admin what actually came back — many sites declare no theme-color,
+    // so colours often need to be set by hand even when the logo is found.
+    setAutoStatus({ colors: !!s.primaryColor, logo: !!s.logoUrl })
   }
 
   function commitBg(nextMode = mode, nextColor = color, nextFrom = from, nextTo = to, nextAngle = angle, nextUrl = imageUrl) {
@@ -845,6 +905,14 @@ function BrandingEditor({
         </div>
         <p className="mt-1.5 text-[11px] text-slate-500">{t('page.autoBrandingHint')}</p>
         {extract.isError && <p className="mt-1 text-[11px] text-rose-400">{t('page.autoBrandingError')}</p>}
+        {!extract.isError && autoStatus && (
+          <p className="mt-1 text-[11px] text-slate-400">
+            {t('page.autoBrandingResult', {
+              colors: autoStatus.colors ? '✓' : '✗',
+              logo: autoStatus.logo ? '✓' : '✗',
+            })}
+          </p>
+        )}
       </div>
 
       {/* Brand colors + logo + Save button in one tidy row */}
@@ -871,6 +939,25 @@ function BrandingEditor({
         <Button variant="subtle" onClick={onSave} disabled={saving}>
           {t('page.saveBranding')}
         </Button>
+      </div>
+
+      {/* Page font */}
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label={t('page.font')}>
+          <Select
+            value={fontOptionByStack(branding.fontFamily).id}
+            onChange={(e) => {
+              const opt = FONT_OPTIONS.find((f) => f.id === e.target.value) ?? FONT_OPTIONS[0]
+              onChange({ ...branding, fontFamily: opt.id === 'system' ? '' : opt.stack })
+            }}
+          >
+            {FONT_OPTIONS.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       {/* Page background — big swatch + toggle + only the relevant controls */}
@@ -1402,27 +1489,26 @@ function StyleTab({
           </Field>
           {bgType === 'color' && (
             <Field label={t('page.bgColor')}>
-              <Input
-                type="color"
+              <ColorPicker
                 value={(styles.bgColor as string) ?? '#ffffff'}
-                onChange={(e) => onStyle(block.id, 'bgColor', e.target.value)}
+                onChange={(v) => onStyle(block.id, 'bgColor', v)}
               />
             </Field>
           )}
           {bgType === 'gradient' && (
             <div className="grid grid-cols-2 gap-2">
               <Field label="Od">
-                <Input
-                  type="color"
+                <ColorPicker
+                  compact
                   value={(styles.bgGradientFrom as string) ?? branding.primaryColor}
-                  onChange={(e) => onStyle(block.id, 'bgGradientFrom', e.target.value)}
+                  onChange={(v) => onStyle(block.id, 'bgGradientFrom', v)}
                 />
               </Field>
               <Field label="Do">
-                <Input
-                  type="color"
+                <ColorPicker
+                  compact
                   value={(styles.bgGradientTo as string) ?? branding.accentColor}
-                  onChange={(e) => onStyle(block.id, 'bgGradientTo', e.target.value)}
+                  onChange={(v) => onStyle(block.id, 'bgGradientTo', v)}
                 />
               </Field>
               <Field label="Kąt (°)">
@@ -1490,30 +1576,27 @@ function StyleTab({
 
       {opts.titleColor && (
         <Field label={t('page.titleColor')}>
-          <Input
-            type="color"
+          <ColorPicker
             value={(styles.titleColor as string) ?? '#0f172a'}
-            onChange={(e) => onStyle(block.id, 'titleColor', e.target.value)}
+            onChange={(v) => onStyle(block.id, 'titleColor', v)}
           />
         </Field>
       )}
 
       {opts.textColor && (
         <Field label={t('page.textColor')}>
-          <Input
-            type="color"
+          <ColorPicker
             value={(styles.textColor as string) ?? '#475569'}
-            onChange={(e) => onStyle(block.id, 'textColor', e.target.value)}
+            onChange={(v) => onStyle(block.id, 'textColor', v)}
           />
         </Field>
       )}
 
       {opts.accentOverride && (
         <Field label={t('page.accentOverride')}>
-          <Input
-            type="color"
+          <ColorPicker
             value={(styles.accentColor as string) ?? branding.primaryColor}
-            onChange={(e) => onStyle(block.id, 'accentColor', e.target.value)}
+            onChange={(v) => onStyle(block.id, 'accentColor', v)}
           />
         </Field>
       )}

@@ -146,6 +146,34 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
         </div>
       </Card>
 
+      {/* Panele w aplikacji uczestnika */}
+      <Card>
+        <h3 className="text-base font-semibold text-white">Panele w aplikacji uczestnika</h3>
+        <p className="mt-1 text-sm text-slate-400">
+          Ukryj zakładki, których nie używasz na tym wydarzeniu. Zakładki „Mój QR" i „Profil" są zawsze widoczne.
+        </p>
+        <div className="mt-4 space-y-4">
+          <Toggle
+            checked={form.showAgendaTab}
+            onChange={(v) => set('showAgendaTab', v)}
+            label="Agenda"
+            description="Plan wydarzenia w aplikacji gościa."
+          />
+          <Toggle
+            checked={form.showActivitiesTab}
+            onChange={(v) => set('showActivitiesTab', v)}
+            label="Aktywności"
+            description="Quizy, konkursy, networking, ocena i asystent AI."
+          />
+          <Toggle
+            checked={form.showGalleryTab}
+            onChange={(v) => set('showGalleryTab', v)}
+            label="Galeria"
+            description="Zdjęcia z wydarzenia (lub Twój link do zdjęć)."
+          />
+        </div>
+      </Card>
+
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={!dirty || update.isPending}>
           {update.isPending ? 'Zapisywanie…' : 'Zapisz ustawienia'}
@@ -207,5 +235,8 @@ function serverForm(s: import('../../types/api').EventSettingsDto): UpdateEventS
     anonymizeAfterDays: s.anonymizeAfterDays,
     customPhotosUrl: s.customPhotosUrl,
     customPhotosText: s.customPhotosText,
+    showAgendaTab: s.showAgendaTab,
+    showActivitiesTab: s.showActivitiesTab,
+    showGalleryTab: s.showGalleryTab,
   }
 }

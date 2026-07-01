@@ -122,7 +122,9 @@ export function GalleryTab({ eventId }: { eventId: string }) {
                 </div>
                 <div className="mt-3 border-t border-slate-800/80 pt-3">
                   <button
-                    onClick={() => handleDelete(selected.id)}
+                    onClick={() => {
+                      if (window.confirm(t('gallery.deleteConfirm'))) handleDelete(selected.id)
+                    }}
                     disabled={del.isPending}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"
                   >

@@ -21,6 +21,11 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.CustomPhotosUrl).HasMaxLength(2048);
         builder.Property(e => e.CustomPhotosText).HasMaxLength(4000);
 
+        // Participant-app tabs default to visible so existing events are unaffected.
+        builder.Property(e => e.ShowAgendaTab).HasDefaultValue(true);
+        builder.Property(e => e.ShowActivitiesTab).HasDefaultValue(true);
+        builder.Property(e => e.ShowGalleryTab).HasDefaultValue(true);
+
         builder.HasIndex(e => e.Slug).IsUnique();
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.TenantId, e.Status });

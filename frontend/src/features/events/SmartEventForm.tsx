@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Field, Input } from '../../components/ui'
+import { DateTimeInput } from '../../components/DateTimeInput'
 import { Icon } from '../../components/Icon'
 import { useCreateEvent } from './api'
 
@@ -66,7 +67,8 @@ export function SmartEventForm({ onCancel, onCreated }: SmartEventFormProps) {
   const endDate = fromLocalInputValue(endsAt)
   const durationMs = startDate && endDate ? endDate.getTime() - startDate.getTime() : 0
   const validEnd = durationMs > 0
-  const validEmail = !clientEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)
+  // A client is mandatory — every event must belong to at least one client.
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())
   const canSubmit = name.trim().length > 0 && validEnd && validEmail && !createEvent.isPending
 
   function applyPreset(start: Date) {
@@ -184,18 +186,16 @@ export function SmartEventForm({ onCancel, onCreated }: SmartEventFormProps) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('events.starts')}>
-                <Input
-                  type="datetime-local"
+                <DateTimeInput
                   value={startsAt}
-                  onChange={(e) => setStartsAt(e.target.value)}
+                  onChange={(v) => setStartsAt(v)}
                   required
                 />
               </Field>
               <Field label={`${t('events.ends')} ${!endTouched ? t('events.endAuto') : ''}`.trim()}>
-                <Input
-                  type="datetime-local"
+                <DateTimeInput
                   value={endsAt}
-                  onChange={(e) => setEndsAtOverride(e.target.value)}
+                  onChange={(v) => setEndsAtOverride(v)}
                   required
                   className={validEnd ? '' : '!border-rose-500/60 !ring-rose-500/20'}
                 />
@@ -215,15 +215,19 @@ export function SmartEventForm({ onCancel, onCreated }: SmartEventFormProps) {
 
           {/* ───────── Section: Client ───────── */}
           <FormSection title={t('events.sectionClient')}>
-            <Field label={t('events.clientEmail')}>
+            <Field label={`${t('events.clientEmail')} *`}>
               <Input
                 type="email"
+                required
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
                 placeholder={t('events.clientEmailPlaceholder')}
-                className={validEmail ? '' : '!border-rose-500/60 !ring-rose-500/20'}
+                className={validEmail || !clientEmail.trim() ? '' : '!border-rose-500/60 !ring-rose-500/20'}
               />
-              {!validEmail && <p className="mt-1 text-[11px] text-rose-300">{t('events.invalidEmail')}</p>}
+              <p className="mt-1 text-[11px] text-slate-500">{t('events.clientRequiredHint')}</p>
+              {clientEmail.trim() !== '' && !validEmail && (
+                <p className="mt-1 text-[11px] text-rose-300">{t('events.invalidEmail')}</p>
+              )}
             </Field>
           </FormSection>
 
@@ -236,8 +240,8 @@ export function SmartEventForm({ onCancel, onCreated }: SmartEventFormProps) {
             <Button type="button" variant="ghost" onClick={onCancel}>
               {t('common.cancel')}
             </Button>
-            {!canSubmit && name.trim() === '' && (
-              <span className="ml-2 text-[11px] text-slate-500">Wypełnij nazwę, żeby kontynuować</span>
+            {!canSubmit && (name.trim() === '' || !validEmail) && (
+              <span className="ml-2 text-[11px] text-slate-500">{t('events.fillRequiredHint')}</span>
             )}
           </div>
         </form>

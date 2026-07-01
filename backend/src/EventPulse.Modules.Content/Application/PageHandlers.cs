@@ -32,6 +32,22 @@ public sealed class GetDraftHandler(IAppDbContext db) : IRequestHandler<GetDraft
         => PageDto.From(await PageStore.EnsureAsync(db, request.EventId, ct));
 }
 
+/// <summary>Minimal branding (logo + colours) for the participant app header. Read-only — never creates a page.</summary>
+public sealed record ParticipantBrandingDto(string? LogoUrl, string? PrimaryColor, string? AccentColor);
+
+public sealed record GetParticipantBrandingQuery(Guid EventId) : IRequest<ParticipantBrandingDto>;
+
+public sealed class GetParticipantBrandingHandler(IAppDbContext db)
+    : IRequestHandler<GetParticipantBrandingQuery, ParticipantBrandingDto>
+{
+    public async Task<ParticipantBrandingDto> Handle(GetParticipantBrandingQuery request, CancellationToken ct)
+    {
+        var page = await db.Set<EventPage>().AsNoTracking()
+            .FirstOrDefaultAsync(p => p.EventId == request.EventId, ct);
+        return new ParticipantBrandingDto(page?.LogoUrl, page?.PrimaryColor, page?.AccentColor);
+    }
+}
+
 public sealed record SaveDraftCommand(Guid EventId, string ContentJson) : IRequest<PageDto>;
 
 public sealed class SaveDraftHandler(IAppDbContext db) : IRequestHandler<SaveDraftCommand, PageDto>

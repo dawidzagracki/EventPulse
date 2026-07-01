@@ -10,6 +10,7 @@ namespace EventPulse.Modules.Events.Application.Queries;
 public sealed record EventSummaryDto(
     Guid Id,
     string Name,
+    string Slug,
     EventStatus Status,
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
@@ -20,7 +21,10 @@ public sealed record EventSummaryDto(
     bool AllowCompanions,
     int MaxCompanions,
     string? CustomPhotosUrl,
-    string? CustomPhotosText);
+    string? CustomPhotosText,
+    bool ShowAgendaTab,
+    bool ShowActivitiesTab,
+    bool ShowGalleryTab);
 
 /// <summary>
 /// Loads a lightweight event summary for the in-app participant view. Tenant-scoped
@@ -41,8 +45,9 @@ public sealed class GetEventSummaryHandler : IRequestHandler<GetEventSummaryQuer
             ?? throw new NotFoundException("Event not found.");
 
         return new EventSummaryDto(
-            ev.Id, ev.Name, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description,
+            ev.Id, ev.Name, ev.Slug, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description,
             ev.UsesLocationData, ev.PhoneRequired, ev.AllowCompanions, ev.MaxCompanions,
-            ev.CustomPhotosUrl, ev.CustomPhotosText);
+            ev.CustomPhotosUrl, ev.CustomPhotosText,
+            ev.ShowAgendaTab, ev.ShowActivitiesTab, ev.ShowGalleryTab);
     }
 }

@@ -25,6 +25,7 @@ public class PageBuilderEndpointsTests : IClassFixture<ApiFactory>
         var resp = await client.PostAsJsonAsync("/api/events", new
         {
             name = $"PageEvent {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow.AddDays(20),
             endsAt = DateTimeOffset.UtcNow.AddDays(21),
         });

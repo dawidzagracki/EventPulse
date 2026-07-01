@@ -91,7 +91,10 @@ public sealed class EventsController : ControllerBase
             body.AnonymizeEnabled,
             body.AnonymizeAfterDays,
             body.CustomPhotosUrl,
-            body.CustomPhotosText);
+            body.CustomPhotosText,
+            body.ShowAgendaTab,
+            body.ShowActivitiesTab,
+            body.ShowGalleryTab);
         return Ok(await _mediator.Send(command, ct));
     }
 
@@ -146,5 +149,8 @@ public sealed class EventsController : ControllerBase
         bool AnonymizeEnabled,
         int AnonymizeAfterDays,
         string? CustomPhotosUrl,
-        string? CustomPhotosText);
+        string? CustomPhotosText,
+        bool ShowAgendaTab = true,
+        bool ShowActivitiesTab = true,
+        bool ShowGalleryTab = true);
 }

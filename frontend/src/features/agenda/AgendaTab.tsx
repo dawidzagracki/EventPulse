@@ -2,16 +2,57 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useCreateAgendaItem,
+  useUpdateAgendaItem,
   useAgenda,
   useDeleteAgendaItem,
   useAgendaTypes,
   useSaveAgendaTypes,
 } from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
+import { ColorPicker } from '../../components/ColorPicker'
+import { EmojiPicker } from '../../components/EmojiPicker'
+import { DateTimeInput } from '../../components/DateTimeInput'
 import { Icon, type IconName } from '../../components/Icon'
-import type { AgendaItemDto, AgendaTypeDto, AgendaTypeInput } from '../../types/api'
+import type { AgendaItemDto, AgendaItemInput, AgendaTypeDto, AgendaTypeInput } from '../../types/api'
 
-type View = { kind: 'empty' } | { kind: 'new' } | { kind: 'detail'; item: AgendaItemDto }
+type View =
+  | { kind: 'empty' }
+  | { kind: 'new' }
+  | { kind: 'detail'; item: AgendaItemDto }
+  | { kind: 'edit'; item: AgendaItemDto }
+
+// ISO (UTC) → `YYYY-MM-DDTHH:mm` in LOCAL time for datetime inputs (mirror of the
+// create form's `new Date(local).toISOString()`).
+function toLocalInputValue(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// Copy the editable fields of an existing item into an input, so an edit that
+// only touches the basic fields never wipes description/location/speaker/etc.
+function inputFromItem(item: AgendaItemDto): AgendaItemInput {
+  return {
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
+    titlePl: item.titlePl,
+    titleEn: item.titleEn,
+    descriptionPl: item.descriptionPl,
+    descriptionEn: item.descriptionEn,
+    type: item.type,
+    locationName: item.locationName,
+    locationMapUrl: item.locationMapUrl,
+    speakerName: item.speakerName,
+    speakerPhone: item.speakerPhone,
+    speakerPhotoUrl: item.speakerPhotoUrl,
+    menu: item.menu,
+    requiresCheckIn: item.requiresCheckIn,
+    dressCode: item.dressCode,
+    groupName: item.groupName,
+    customTypeId: item.customTypeId,
+  }
+}
 
 // Map agenda type ids → visual meta. Backend enum:
 // 0 Talk, 1 Meal, 2 Attraction, 3 Transport, 4 Networking, 5 Other
@@ -70,7 +111,7 @@ export function AgendaTab({ eventId }: { eventId: string }) {
         <EmptyAll onNew={() => setView({ kind: 'new' })} />
       ) : grouped.length === 0 && view.kind === 'new' ? (
         <div className="mx-auto w-full max-w-3xl">
-          <NewItemForm
+          <ItemForm
             eventId={eventId}
             customTypes={customTypes ?? []}
             onDone={(it) => setView({ kind: 'detail', item: it })}
@@ -106,7 +147,9 @@ export function AgendaTab({ eventId }: { eventId: string }) {
                           <AgendaListItem
                             item={it}
                             lang={i18n.language}
-                            active={view.kind === 'detail' && view.item.id === it.id}
+                            active={
+                              (view.kind === 'detail' || view.kind === 'edit') && view.item.id === it.id
+                            }
                             onClick={() => setView({ kind: 'detail', item: it })}
                           />
                         </li>
@@ -130,18 +173,30 @@ export function AgendaTab({ eventId }: { eventId: string }) {
         <div>
           {view.kind === 'empty' && <EmptyDetail />}
           {view.kind === 'new' && (
-            <NewItemForm
+            <ItemForm
               eventId={eventId}
               customTypes={customTypes ?? []}
               onDone={(it) => setView({ kind: 'detail', item: it })}
               onCancel={() => setView({ kind: 'empty' })}
             />
           )}
+          {view.kind === 'edit' && (
+            <ItemForm
+              key={view.item.id}
+              eventId={eventId}
+              customTypes={customTypes ?? []}
+              initial={view.item}
+              onDone={(it) => setView({ kind: 'detail', item: it })}
+              onCancel={() => setView({ kind: 'detail', item: view.item })}
+            />
+          )}
           {view.kind === 'detail' && (
             <ItemDetail
               key={view.item.id}
               item={view.item}
+              onEdit={() => setView({ kind: 'edit', item: view.item })}
               onDelete={async () => {
+                if (!window.confirm(t('agenda.confirmDelete'))) return
                 await deleteMut.mutateAsync(view.item.id)
                 setView({ kind: 'empty' })
               }}
@@ -260,26 +315,31 @@ function EmptyDetail() {
   )
 }
 
-function NewItemForm({
+function ItemForm({
   eventId,
   customTypes,
+  initial,
   onDone,
   onCancel,
 }: {
   eventId: string
   customTypes: AgendaTypeDto[]
+  initial?: AgendaItemDto
   onDone: (it: AgendaItemDto) => void
   onCancel: () => void
 }) {
   const { t } = useTranslation()
+  const isEdit = !!initial
   const create = useCreateAgendaItem(eventId)
-  const [titlePl, setTitlePl] = useState('')
-  const [titleEn, setTitleEn] = useState('')
-  const [startsAt, setStartsAt] = useState('')
-  const [endsAt, setEndsAt] = useState('')
-  const [type, setType] = useState(0)
-  const [customTypeId, setCustomTypeId] = useState<string | null>(null)
-  const [requiresCheckIn, setRequiresCheckIn] = useState(false)
+  const update = useUpdateAgendaItem(eventId)
+  const [titlePl, setTitlePl] = useState(initial?.titlePl ?? '')
+  const [titleEn, setTitleEn] = useState(initial?.titleEn ?? '')
+  const [startsAt, setStartsAt] = useState(initial ? toLocalInputValue(initial.startsAt) : '')
+  const [endsAt, setEndsAt] = useState(initial ? toLocalInputValue(initial.endsAt) : '')
+  const [type, setType] = useState(initial?.type ?? 0)
+  const [customTypeId, setCustomTypeId] = useState<string | null>(initial?.customTypeId ?? null)
+  const [requiresCheckIn, setRequiresCheckIn] = useState(initial?.requiresCheckIn ?? false)
+  const saving = create.isPending || update.isPending
 
   return (
     <Card>
@@ -288,7 +348,7 @@ function NewItemForm({
           <Icon name="calendar" className="h-4 w-4" />
         </span>
         <div>
-          <h3 className="text-base font-semibold text-white">{t('agenda.new')}</h3>
+          <h3 className="text-base font-semibold text-white">{isEdit ? t('agenda.edit') : t('agenda.new')}</h3>
           <p className="text-xs text-slate-400">{t('agenda.emptyHint')}</p>
         </div>
       </div>
@@ -296,7 +356,10 @@ function NewItemForm({
       <form
         onSubmit={async (e) => {
           e.preventDefault()
-          const it = await create.mutateAsync({
+          // Preserve fields not exposed in this basic form (the update handler
+          // overwrites every column from the input).
+          const input: AgendaItemInput = {
+            ...(initial ? inputFromItem(initial) : {}),
             titlePl,
             titleEn,
             startsAt: new Date(startsAt).toISOString(),
@@ -304,7 +367,10 @@ function NewItemForm({
             type,
             customTypeId,
             requiresCheckIn,
-          })
+          }
+          const it = initial
+            ? await update.mutateAsync({ id: initial.id, input })
+            : await create.mutateAsync(input)
           onDone(it)
         }}
         className="space-y-4"
@@ -376,10 +442,10 @@ function NewItemForm({
             <Input value={titleEn} onChange={(e) => setTitleEn(e.target.value)} required />
           </Field>
           <Field label={t('events.starts')}>
-            <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+            <DateTimeInput value={startsAt} onChange={setStartsAt} required />
           </Field>
           <Field label={t('events.ends')}>
-            <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
+            <DateTimeInput value={endsAt} onChange={setEndsAt} required />
           </Field>
         </div>
 
@@ -418,9 +484,9 @@ function NewItemForm({
         </button>
 
         <div className="flex gap-2 border-t border-slate-800/80 pt-3">
-          <Button type="submit" disabled={create.isPending}>
+          <Button type="submit" disabled={saving}>
             <Icon name="check" className="h-3.5 w-3.5" />
-            {t('common.create')}
+            {isEdit ? t('common.save') : t('common.create')}
           </Button>
           <Button type="button" variant="ghost" onClick={onCancel}>
             {t('common.cancel')}
@@ -483,19 +549,8 @@ function AgendaTypesForm({
         {rows.length === 0 && <p className="text-sm text-slate-500">{t('agenda.noCustomTypes')}</p>}
         {rows.map((r) => (
           <div key={r._key} className="flex items-center gap-2">
-            <input
-              type="color"
-              value={r.color}
-              onChange={(e) => update(r._key, { color: e.target.value })}
-              className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-transparent"
-              title={t('agenda.typeColor')}
-            />
-            <Input
-              className="w-16 text-center"
-              value={r.icon ?? ''}
-              onChange={(e) => update(r._key, { icon: e.target.value })}
-              placeholder="🏷"
-            />
+            <ColorPicker compact value={r.color} onChange={(v) => update(r._key, { color: v })} />
+            <EmojiPicker value={r.icon ?? ''} onChange={(v) => update(r._key, { icon: v })} />
             <Input
               value={r.namePl}
               onChange={(e) => update(r._key, { namePl: e.target.value })}
@@ -529,10 +584,12 @@ function AgendaTypesForm({
 
 function ItemDetail({
   item,
+  onEdit,
   onDelete,
   deleting,
 }: {
   item: AgendaItemDto
+  onEdit: () => void
   onDelete: () => Promise<void>
   deleting: boolean
 }) {
@@ -623,7 +680,10 @@ function ItemDetail({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-slate-800/80 pt-3">
+      <div className="mt-4 flex gap-2 border-t border-slate-800/80 pt-3">
+        <Button variant="subtle" onClick={onEdit}>
+          ✏️ {t('common.edit')}
+        </Button>
         <button
           onClick={onDelete}
           disabled={deleting}

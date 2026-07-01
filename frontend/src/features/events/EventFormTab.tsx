@@ -26,8 +26,12 @@ const TYPE_LABELS: Record<number, string> = {
   [CustomFieldType.Text]: 'Tekst',
   [CustomFieldType.Textarea]: 'Długi tekst',
   [CustomFieldType.Checkbox]: 'Tak / Nie',
-  [CustomFieldType.Select]: 'Lista wyboru',
+  [CustomFieldType.Select]: 'Lista wyboru (jedna)',
+  [CustomFieldType.MultiSelect]: 'Wielokrotny wybór',
 }
+
+// Field types that carry a comma-separated option list.
+const OPTION_TYPES: number[] = [CustomFieldType.Select, CustomFieldType.MultiSelect]
 
 const selectCls = 'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100'
 
@@ -74,7 +78,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
         labelPl: r.labelPl.trim(),
         labelEn: r.labelEn?.trim() || null,
         type: r.type,
-        options: r.type === CustomFieldType.Select ? (r.options ?? []).filter((o) => o.trim()) : null,
+        options: OPTION_TYPES.includes(r.type) ? (r.options ?? []).filter((o) => o.trim()) : null,
         required: r.required,
       }))
     await save.mutateAsync(payload)
@@ -119,7 +123,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
                 </button>
               </div>
             </div>
-            {r.type === CustomFieldType.Select && (
+            {OPTION_TYPES.includes(r.type) && (
               <Input
                 className="mt-2"
                 placeholder="Opcje oddzielone przecinkami (np. S, M, L, XL)"

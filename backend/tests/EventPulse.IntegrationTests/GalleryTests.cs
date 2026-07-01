@@ -26,6 +26,7 @@ public class GalleryTests : IClassFixture<ApiFactory>
         var eventId = (await (await admin.PostAsJsonAsync("/api/events", new
         {
             name = $"Gal {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow,
             endsAt = DateTimeOffset.UtcNow.AddHours(2),
         })).Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

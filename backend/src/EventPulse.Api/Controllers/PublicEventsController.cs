@@ -3,12 +3,14 @@ using EventPulse.Modules.Agenda.Domain;
 using EventPulse.Modules.Engagement;
 using EventPulse.Modules.Events.Domain;
 using EventPulse.Modules.Gallery;
+using EventPulse.Modules.Participants.Application.Auth;
 using EventPulse.Shared.Application;
 using EventPulse.Shared.Persistence;
 using EventPulse.Shared.Storage;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventPulse.Api.Controllers;
@@ -20,12 +22,36 @@ namespace EventPulse.Api.Controllers;
 public sealed class PublicEventsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public PublicEventsController(IMediator mediator) => _mediator = mediator;
+    public PublicEventsController(IMediator mediator, IConfiguration configuration)
+    {
+        _mediator = mediator;
+        _configuration = configuration;
+    }
+
+    private string ParticipantLinkBaseUrl =>
+        _configuration["App:ParticipantLinkBaseUrl"] ?? "http://localhost:5173/p";
 
     [HttpGet]
     public async Task<ActionResult<PublicEventDto>> Event(Guid eventId, CancellationToken ct)
         => Ok(await _mediator.Send(new PublicEventQuery(eventId), ct));
+
+    /// <summary>Second login path: e-mail me my personal token link. Always returns a generic OK.</summary>
+    [HttpPost("request-link")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> RequestLink(Guid eventId, RequestLinkBody body, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(body.Email))
+        {
+            await _mediator.Send(new RequestLoginLinkCommand(eventId, body.Email, ParticipantLinkBaseUrl), ct);
+        }
+
+        // Never reveal whether the address is registered.
+        return Ok(new { ok = true });
+    }
+
+    public sealed record RequestLinkBody(string Email);
 
     [HttpGet("agenda")]
     public async Task<ActionResult<IReadOnlyList<AgendaItemDto>>> Agenda(Guid eventId, CancellationToken ct)
@@ -123,8 +149,11 @@ public sealed class PublicEventBySlugHandler(IAppDbContext db) : IRequestHandler
 {
     public async Task<PublicEventDto> Handle(PublicEventBySlugQuery request, CancellationToken ct)
     {
+        // Slug resolution is just a friendly alias for the event id — gate it the SAME way as the
+        // id-based page route (which serves any event whose page snapshot is published), so the
+        // short URL works whenever the GUID URL does. Publishing the PAGE is the real public gate.
         var ev = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
-            .Where(e => e.Slug == request.Slug && e.Status >= EventStatus.Published)
+            .Where(e => e.Slug == request.Slug && e.Status != EventStatus.Archived)
             .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status))
             .FirstOrDefaultAsync(ct);
 

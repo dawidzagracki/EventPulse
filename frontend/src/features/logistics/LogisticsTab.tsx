@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCreateTransfer, useDeleteTransfer, useTransfers } from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
+import { DateTimeInput } from '../../components/DateTimeInput'
 import { Icon } from '../../components/Icon'
 import type { TransferDto } from '../../types/api'
 
@@ -247,7 +248,7 @@ function NewTransferForm({
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t('logistics.departure')}>
-            <Input type="datetime-local" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} required />
+            <DateTimeInput value={departureTime} onChange={setDepartureTime} required />
           </Field>
           <Field label={t('logistics.meetingPoint')}>
             <Input value={meetingPoint} onChange={(e) => setMeetingPoint(e.target.value)} required placeholder={t('logistics.meetingPlaceholder')} />

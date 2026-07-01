@@ -29,6 +29,7 @@ public class AgendaEndpointsTests : IClassFixture<ApiFactory>
         var resp = await client.PostAsJsonAsync("/api/events", new
         {
             name = $"AgendaEvent {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow.AddDays(7),
             endsAt = DateTimeOffset.UtcNow.AddDays(8),
         });

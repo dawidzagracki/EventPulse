@@ -153,6 +153,13 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient(); // used by auto-branding URL extraction
+// Auto-branding fetches third-party pages that are usually gzip/brotli-compressed;
+// decompress transparently so the HTML is parseable (otherwise nothing is extracted).
+builder.Services.AddHttpClient("branding")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AutomaticDecompression = System.Net.DecompressionMethods.All,
+    });
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<AppExceptionHandler>();

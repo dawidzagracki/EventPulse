@@ -29,6 +29,46 @@ function pickSettings(block: PageBlock) {
   return (block.settings ?? {}) as Record<string, unknown>
 }
 
+/** A link that leaves the SPA (opens in a new tab); in-page anchors (#…) stay in place. */
+function isExternal(url?: string | null): boolean {
+  return !!url && /^https?:\/\//i.test(url)
+}
+
+// ---------- Contrast helpers ----------
+// Ensure text stays readable on brand-coloured backgrounds (hero/CTA). When the brand
+// colour is light, we flip to dark text instead of the default white — otherwise a light
+// brand colour on a light page leaves white text invisible.
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  let h = hex.trim().replace(/^#/, '')
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+}
+
+function relLuminance([r, g, b]: [number, number, number]): number {
+  const chan = [r, g, b].map((v) => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2]
+}
+
+/** Average two hex colours (the middle of a two-stop gradient, where text usually sits). */
+function mixHex(a: string, b: string): string {
+  const ra = hexToRgb(a)
+  const rb = hexToRgb(b)
+  if (!ra || !rb) return a
+  const m = ra.map((v, i) => Math.round((v + rb[i]) / 2))
+  return `#${m.map((v) => v.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** True when a background colour is light enough that it needs dark (not white) text. */
+function isLightBg(hex: string): boolean {
+  const rgb = hexToRgb(hex)
+  return rgb ? relLuminance(rgb) > 0.6 : false
+}
+
 /** Inline-editable text. Renders plain text in public mode, contentEditable in editor mode. */
 function E({
   block,
@@ -74,6 +114,15 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const defaultBg = bg
     ? `linear-gradient(180deg, rgba(15,18,32,0.40), rgba(15,18,32,0.75)), url('${bg}') center/cover`
     : `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`
+  // With a background image the dark overlay keeps white legible; otherwise adapt to the brand colour.
+  const lightBg = !bg && isLightBg(mixHex(primary, accent))
+  const cText = lightBg ? 'text-slate-900' : 'text-white'
+  const cBadge = lightBg ? 'border-slate-900/20 bg-slate-900/5 text-slate-900' : 'border-white/25 bg-white/10 text-white/95'
+  const cDot = lightBg ? 'bg-slate-900' : 'bg-white'
+  const cSoft = lightBg ? 'text-slate-900/80' : 'text-white/95'
+  const cDim = lightBg ? 'text-slate-900/50' : 'text-white/70'
+  const cSep = lightBg ? 'bg-slate-900/30' : 'bg-white/40'
+  const cBtn = lightBg ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'
   return (
     <section
       id={`block-${block.id}`}
@@ -97,32 +146,43 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
         }}
       />
 
-      <div className="relative px-6 py-24 text-center text-white sm:px-12 sm:py-36">
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/95 backdrop-blur-md">
+      <div className={`relative px-6 py-24 text-center sm:px-12 sm:py-36 ${cText}`}>
+        {ctx.branding.logoUrl && (
+          <img
+            src={ctx.branding.logoUrl}
+            alt=""
+            className="mx-auto mb-7 h-16 w-auto object-contain drop-shadow-lg"
+          />
+        )}
+        <span className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.3em] backdrop-blur-md ${cBadge}`}>
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+            <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${cDot}`} />
+            <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${cDot}`} />
           </span>
           <E block={block} k="subtitle" ctx={ctx} placeholder="NADTYTUŁ" />
         </span>
         <h1 className="mt-7 text-balance text-5xl font-black leading-[1.02] tracking-tight drop-shadow-2xl sm:text-7xl lg:text-8xl">
           <E block={block} k="title" ctx={ctx} placeholder="Tytuł wydarzenia" />
         </h1>
-        <div className="mx-auto mt-8 flex max-w-xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-base text-white/95 sm:text-lg">
+        <div className={`mx-auto mt-8 flex max-w-xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-base sm:text-lg ${cSoft}`}>
           <span className="inline-flex items-center gap-2">
-            <span className="text-white/70">📅</span>
+            <span className={cDim}>📅</span>
             <E block={block} k="dateLabel" ctx={ctx} placeholder="Data" />
           </span>
-          <span className="hidden h-1 w-1 rounded-full bg-white/40 sm:inline-block" />
+          <span className={`hidden h-1 w-1 rounded-full sm:inline-block ${cSep}`} />
           <span className="inline-flex items-center gap-2">
-            <span className="text-white/70">📍</span>
+            <span className={cDim}>📍</span>
             <E block={block} k="location" ctx={ctx} placeholder="Miejsce" />
           </span>
         </div>
         <a
-          href="#"
-          onClick={(e) => e.preventDefault()}
-          className="group mt-12 inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold tracking-wide text-slate-900 shadow-2xl shadow-black/40 transition hover:scale-[1.03] hover:shadow-white/20"
+          href={ctx.edit || !c.ctaUrl ? '#' : c.ctaUrl}
+          onClick={(e) => {
+            if (ctx.edit || !c.ctaUrl) e.preventDefault()
+          }}
+          target={!ctx.edit && isExternal(c.ctaUrl) ? '_blank' : undefined}
+          rel={!ctx.edit && isExternal(c.ctaUrl) ? 'noopener noreferrer' : undefined}
+          className={`group mt-12 inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-bold tracking-wide shadow-2xl shadow-black/40 transition hover:scale-[1.03] ${cBtn}`}
         >
           <E block={block} k="ctaLabel" ctx={ctx} placeholder="Zarejestruj się" />
           <span className="transition group-hover:translate-x-1">→</span>
@@ -636,12 +696,18 @@ function SponsorsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
 }
 
 function CtaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
+  const c = pick(block, ctx.lang)
   const stl = getBlockStyle(block)
   const primary = stl.accentColor ?? ctx.branding.primaryColor
+  // Adapt text/button to the brand-colour background so light palettes stay readable.
+  const lightBg = isLightBg(mixHex(primary, ctx.branding.accentColor))
+  const cText = lightBg ? 'text-slate-900' : 'text-white'
+  const cSub = lightBg ? 'text-slate-900/80' : 'text-white/90'
+  const cBtn = lightBg ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'
   return (
     <section
       id={`block-${block.id}`}
-      className={`overflow-hidden rounded-3xl p-12 text-center text-white sm:p-16 ${stl.className}`}
+      className={`overflow-hidden rounded-3xl p-12 text-center sm:p-16 ${cText} ${stl.className}`}
       style={{
         background: `linear-gradient(135deg, ${primary}, ${ctx.branding.accentColor})`,
         ...stl.style,
@@ -650,12 +716,20 @@ function CtaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
       <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
         <E block={block} k="title" ctx={ctx} placeholder="Dołącz do nas" />
       </h2>
-      <p className="mx-auto mt-4 max-w-2xl text-lg text-white/90">
+      <p className={`mx-auto mt-4 max-w-2xl text-lg ${cSub}`}>
         <E block={block} k="body" ctx={ctx} placeholder="Krótki tekst zachęcający" />
       </p>
-      <span className="mt-8 inline-flex items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-slate-900 shadow-2xl shadow-black/30 transition hover:scale-[1.02]">
+      <a
+        href={ctx.edit || !c.buttonUrl ? '#' : c.buttonUrl}
+        onClick={(e) => {
+          if (ctx.edit || !c.buttonUrl) e.preventDefault()
+        }}
+        target={!ctx.edit && isExternal(c.buttonUrl) ? '_blank' : undefined}
+        rel={!ctx.edit && isExternal(c.buttonUrl) ? 'noopener noreferrer' : undefined}
+        className={`mt-8 inline-flex items-center justify-center rounded-full px-7 py-3.5 text-sm font-semibold shadow-2xl shadow-black/30 transition hover:scale-[1.02] ${cBtn}`}
+      >
         <E block={block} k="buttonLabel" ctx={ctx} placeholder="Zarejestruj się" />
-      </span>
+      </a>
     </section>
   )
 }

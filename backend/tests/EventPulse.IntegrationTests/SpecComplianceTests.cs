@@ -38,6 +38,7 @@ public class SpecComplianceTests : IClassFixture<ApiFactory>
         var resp = await client.PostAsJsonAsync("/api/events", new
         {
             name = $"Compliance {Guid.NewGuid():N}",
+            clientEmail = "other-client@test.local",
             startsAt = DateTimeOffset.UtcNow,
             endsAt = DateTimeOffset.UtcNow.AddHours(6),
         });

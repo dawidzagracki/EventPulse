@@ -78,6 +78,7 @@ export const CustomFieldType = {
   Textarea: 1,
   Checkbox: 2,
   Select: 3,
+  MultiSelect: 4,
 } as const
 export type CustomFieldType = (typeof CustomFieldType)[keyof typeof CustomFieldType]
 
@@ -128,6 +129,9 @@ export interface EventSettingsDto {
   anonymizedAt: string | null
   customPhotosUrl: string | null
   customPhotosText: string | null
+  showAgendaTab: boolean
+  showActivitiesTab: boolean
+  showGalleryTab: boolean
 }
 
 export interface EventDto {
@@ -184,6 +188,7 @@ export interface ParticipantDto {
   status: number
   parentParticipantId: string | null
   age: number | null
+  accessToken: string
 }
 
 export interface CompanionDto {

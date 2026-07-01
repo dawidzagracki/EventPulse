@@ -30,6 +30,7 @@ public class ParticipantsEndpointsTests : IClassFixture<ApiFactory>
         var resp = await client.PostAsJsonAsync("/api/events", new
         {
             name = $"Event {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow.AddDays(10),
             endsAt = DateTimeOffset.UtcNow.AddDays(11),
             defaultLanguage = "pl",

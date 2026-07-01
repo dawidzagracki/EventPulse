@@ -49,7 +49,7 @@ public sealed class SaveCustomFieldsHandler : IRequestHandler<SaveCustomFieldsCo
             entity.Type = input.Type;
             entity.Required = input.Required;
             entity.Order = order++;
-            entity.OptionsJson = input.Type == CustomFieldType.Select
+            entity.OptionsJson = input.Type is CustomFieldType.Select or CustomFieldType.MultiSelect
                 ? JsonSerializer.Serialize(input.Options ?? [])
                 : null;
         }
@@ -132,7 +132,9 @@ public sealed class SaveMyCustomFieldsHandler : IRequestHandler<SaveMyCustomFiel
 
         foreach (var field in fields.Where(f => f.Required))
         {
-            var hasValue = request.Values.TryGetValue(field.Id, out var v) && !string.IsNullOrWhiteSpace(v);
+            var present = request.Values.TryGetValue(field.Id, out var v) && !string.IsNullOrWhiteSpace(v);
+            // A multi-select answer is a JSON array; an empty "[]" counts as unfilled.
+            var hasValue = present && (field.Type != CustomFieldType.MultiSelect || v!.Trim() is not ("[]" or "[ ]"));
             if (!hasValue)
             {
                 throw new ConflictException($"Field '{field.LabelPl}' is required.");

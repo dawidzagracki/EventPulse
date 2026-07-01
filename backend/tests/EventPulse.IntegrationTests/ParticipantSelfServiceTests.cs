@@ -40,6 +40,7 @@ public class ParticipantSelfServiceTests : IClassFixture<ApiFactory>
         var createEvent = await admin.PostAsJsonAsync("/api/events", new
         {
             name = $"Onboarding {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow.AddDays(5),
             endsAt = DateTimeOffset.UtcNow.AddDays(6),
             defaultLanguage = "pl",
@@ -106,6 +107,7 @@ public class ParticipantSelfServiceTests : IClassFixture<ApiFactory>
         var createEvent = await admin.PostAsJsonAsync("/api/events", new
         {
             name = $"Invite {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow.AddDays(5),
             endsAt = DateTimeOffset.UtcNow.AddDays(6),
         });

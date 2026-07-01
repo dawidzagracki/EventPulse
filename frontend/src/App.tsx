@@ -7,6 +7,7 @@ import { ParticipantTokenPage } from './features/participant/ParticipantTokenPag
 import { ParticipantHome } from './features/participant/ParticipantHome'
 import { ScannerPage } from './features/scanner/ScannerPage'
 import { PublicEventPage } from './features/public/PublicEventPage'
+import { RequestLinkPage } from './features/public/RequestLinkPage'
 import { OperatorLandingPage } from './features/operator/OperatorLandingPage'
 import { TeamPage } from './features/team/TeamPage'
 
@@ -25,6 +26,7 @@ const scannerGuard = (element: React.ReactNode) => (
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/p/:token', element: <ParticipantTokenPage /> },
+  { path: '/e/:eventId/login', element: <RequestLinkPage /> },
   { path: '/op/:token', element: <OperatorLandingPage /> },
   { path: '/public/events/:eventId', element: <PublicEventPage /> },
   { path: '/public/:slug', element: <PublicEventPage /> },

@@ -6,6 +6,7 @@ import {
   useCompleteOnboarding,
   useDeleteCompanion,
   useMyAgenda,
+  useMyBranding,
   useMyCompanions,
   useMyCustomFields,
   useMyEvent,
@@ -32,6 +33,7 @@ import {
 } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { recordStationScan } from './api'
+import { startQrScanner, type QrScanHandle } from '../../lib/qrScanner'
 import { createQuizConnection } from '../../lib/signalr'
 import { useMyGallery } from '../gallery/api'
 import { fetchPhotoUrl } from '../gallery/api'
@@ -74,9 +76,11 @@ export function ParticipantHome() {
 function ParticipantShell({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
   const { t } = useTranslation()
   const { data: steps, isLoading } = useMyOnboarding()
+  const { data: fields } = useMyCustomFields()
   const complete = useCompleteOnboarding()
+  const saveFields = useSaveMyCustomFields()
 
-  if (isLoading || steps === undefined) {
+  if (isLoading || steps === undefined || fields === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-slate-500">{t('common.loading')}</p>
@@ -84,9 +88,22 @@ function ParticipantShell({ profile, onLogout }: { profile: MyProfileDto; onLogo
     )
   }
 
-  const needsOnboarding = !profile.onboardingCompleted && steps.length > 0
+  // The onboarding gate now also collects the custom form, so it fires whenever
+  // there are info steps OR custom fields to fill — right after login, mandatory.
+  const needsOnboarding = !profile.onboardingCompleted && (steps.length > 0 || fields.length > 0)
   if (needsOnboarding) {
-    return <OnboardingGate steps={steps} onDone={() => complete.mutate()} onLogout={onLogout} />
+    return (
+      <OnboardingGate
+        steps={steps}
+        fields={fields}
+        initialValues={profile.customFields}
+        onFinish={async (values) => {
+          if (fields.length > 0) await saveFields.mutateAsync(values)
+          await complete.mutateAsync()
+        }}
+        onLogout={onLogout}
+      />
+    )
   }
 
   return <ParticipantApp profile={profile} onLogout={onLogout} />
@@ -95,6 +112,8 @@ function ParticipantShell({ profile, onLogout }: { profile: MyProfileDto; onLogo
 // ===================== Tabbed app shell =====================
 function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
   const { t } = useTranslation()
+  const { data: ev } = useMyEvent()
+  const { data: branding } = useMyBranding()
   const [tab, setTab] = useState<Tab>('agenda')
   const [liveQuizId, setLiveQuizId] = useState<string | null>(null)
   const announced = useLiveQuizAnnounce(profile.eventId)
@@ -105,21 +124,48 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
     setTab('activities')
   }
 
-  const tabs: { id: Tab; label: string; emoji: string }[] = [
+  // Tabs the organiser can hide per event (default visible). QR + Profile always stay.
+  const allTabs: { id: Tab; label: string; emoji: string }[] = [
     { id: 'agenda', label: t('participant.tabAgenda'), emoji: '📅' },
     { id: 'activities', label: t('participant.tabActivities'), emoji: '🎯' },
     { id: 'qr', label: t('participant.tabQr'), emoji: '🎟' },
     { id: 'gallery', label: t('participant.tabGallery'), emoji: '📸' },
     { id: 'profile', label: t('participant.tabProfile'), emoji: '👤' },
   ]
+  const tabs = allTabs.filter((tb) => {
+    if (tb.id === 'agenda') return ev?.showAgendaTab !== false
+    if (tb.id === 'activities') return ev?.showActivitiesTab !== false
+    if (tb.id === 'gallery') return ev?.showGalleryTab !== false
+    return true
+  })
+
+  // Never leave a hidden tab active (e.g. agenda hidden while it's the default).
+  const activeTab: Tab = tabs.some((tb) => tb.id === tab) ? tab : (tabs[0]?.id ?? 'qr')
+  // The public event page is only live once published (status ≥ 1).
+  const publicUrl = ev?.slug && ev.status >= 1 ? `/public/${ev.slug}` : null
 
   return (
     <div className="min-h-screen pb-24">
       {/* Slim header */}
       <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <Logo size={26} />
+          {branding?.logoUrl ? (
+            <img src={branding.logoUrl} alt={ev?.name ?? ''} className="h-7 max-w-[160px] object-contain" />
+          ) : (
+            <Logo size={26} />
+          )}
           <div className="flex items-center gap-2">
+            {publicUrl && (
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('participant.viewPage')}
+                className="rounded-lg border border-slate-700/60 bg-slate-800/60 px-2.5 py-1.5 text-sm text-slate-200 transition hover:bg-slate-800"
+              >
+                🌐
+              </a>
+            )}
             <LanguageSwitcher />
             <Button variant="ghost" onClick={onLogout}>
               {t('common.logout')}
@@ -147,14 +193,14 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
       )}
 
       <main className="mx-auto max-w-2xl px-4 py-5">
-        {tab === 'agenda' && (
+        {activeTab === 'agenda' && (
           <div className="space-y-5">
             <GreetingHero profile={profile} />
             <EventSummaryCard />
             <AgendaSection />
           </div>
         )}
-        {tab === 'activities' && (
+        {activeTab === 'activities' && (
           <div className="space-y-5">
             <StationScanSection />
             <QuizzesSection liveQuizId={liveQuizId} setLiveQuizId={setLiveQuizId} />
@@ -163,9 +209,9 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
             <FeedbackSection />
           </div>
         )}
-        {tab === 'qr' && <MyQrScreen profile={profile} />}
-        {tab === 'gallery' && <GallerySection />}
-        {tab === 'profile' && (
+        {activeTab === 'qr' && <MyQrScreen profile={profile} />}
+        {activeTab === 'gallery' && <GallerySection />}
+        {activeTab === 'profile' && (
           <div className="space-y-5">
             <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
             <CompanionsSection />
@@ -180,7 +226,7 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800/70 bg-slate-950/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-2xl items-stretch">
           {tabs.map((tb) => {
-            const active = tab === tb.id
+            const active = activeTab === tb.id
             const isQr = tb.id === 'qr'
             return (
               <button
@@ -360,59 +406,30 @@ function StationScanSection() {
   const busyRef = useRef(false)
 
   useEffect(() => {
-    if (!open) return
+    if (!open || !videoRef.current) return
     let cancelled = false
-    let stream: MediaStream | undefined
-    let timer: number | undefined
+    let handle: QrScanHandle | undefined
 
-    async function start() {
-      const w = window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => { detect: (v: HTMLVideoElement) => Promise<{ rawValue: string }[]> } }
-      if (!w.BarcodeDetector || !navigator.mediaDevices?.getUserMedia) {
-        setCamOk(false)
-        return
-      }
+    const onResult = async (raw: string) => {
+      if (busyRef.current) return
+      busyRef.current = true
+      const code = parseStationCode(raw)
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        if (cancelled) {
-          stream.getTracks().forEach((tr) => tr.stop())
-          return
-        }
-        const video = videoRef.current!
-        video.srcObject = stream
-        await video.play()
-        setCamOk(true)
-        const detector = new w.BarcodeDetector({ formats: ['qr_code'] })
-        const tick = async () => {
-          if (cancelled) return
-          try {
-            const codes = await detector.detect(video)
-            if (codes[0]?.rawValue && !busyRef.current) {
-              busyRef.current = true
-              const code = parseStationCode(codes[0].rawValue)
-              try {
-                const r = await recordStationScan(code)
-                setResult({ name: r.stationCode, dup: r.duplicate, limit: r.limitReached, notAllowed: r.allowed === false })
-                setOpen(false)
-              } finally {
-                window.setTimeout(() => (busyRef.current = false), 1500)
-              }
-              return
-            }
-          } catch {
-            /* transient */
-          }
-          timer = window.setTimeout(() => void tick(), 400)
-        }
-        void tick()
-      } catch {
-        setCamOk(false)
+        const r = await recordStationScan(code)
+        setResult({ name: r.stationCode, dup: r.duplicate, limit: r.limitReached, notAllowed: r.allowed === false })
+        setOpen(false)
+      } finally {
+        window.setTimeout(() => (busyRef.current = false), 1500)
       }
     }
-    void start()
+
+    void startQrScanner(videoRef.current, (raw) => void onResult(raw), (s) => setCamOk(s === 'on')).then((h) => {
+      if (cancelled) h.stop()
+      else handle = h
+    })
     return () => {
       cancelled = true
-      if (timer) window.clearTimeout(timer)
-      stream?.getTracks().forEach((tr) => tr.stop())
+      handle?.stop()
     }
   }, [open])
 
@@ -707,33 +724,52 @@ function ConsentRow({
 // ===================== Custom onboarding (full screen, before the app) =====================
 function OnboardingGate({
   steps,
-  onDone,
+  fields,
+  initialValues,
+  onFinish,
   onLogout,
 }: {
   steps: OnboardingStepDto[]
-  onDone: () => void
+  fields: CustomFieldDto[]
+  initialValues: Record<string, string>
+  onFinish: (values: Record<string, string>) => Promise<void>
   onLogout: () => void
 }) {
   const { t, i18n } = useTranslation()
   const en = i18n.resolvedLanguage === 'en'
   const [idx, setIdx] = useState(0)
   const [confirmed, setConfirmed] = useState(false)
+  const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }))
+  const [submitting, setSubmitting] = useState(false)
 
-  const step = steps[idx]
-  const title = (en && step.titleEn) || step.titlePl
-  const body = (en ? step.bodyEn : step.bodyPl) ?? step.bodyPl
-  const isLast = idx === steps.length - 1
-  const blocked = step.requireConfirm && !confirmed
+  // Screens = the info steps, then one mandatory "form" screen if there are custom fields.
+  const hasForm = fields.length > 0
+  const total = steps.length + (hasForm ? 1 : 0)
+  const onFormScreen = hasForm && idx === steps.length
+  const step = onFormScreen ? null : steps[idx]
+  const isLast = idx === total - 1
 
-  function next() {
+  const infoBlocked = !!step?.requireConfirm && !confirmed
+  const formBlocked = onFormScreen && fields.some((f) => f.required && isEmptyAnswer(f, values[f.id]))
+  const blocked = infoBlocked || formBlocked || submitting
+
+  async function next() {
     if (blocked) return
     if (isLast) {
-      onDone()
+      setSubmitting(true)
+      try {
+        await onFinish(values)
+      } finally {
+        setSubmitting(false)
+      }
       return
     }
     setIdx((i) => i + 1)
     setConfirmed(false)
   }
+
+  const title = onFormScreen ? t('participant.formStepTitle') : (en && step!.titleEn) || step!.titlePl
+  const body = onFormScreen ? null : (en ? step!.bodyEn : step!.bodyPl) ?? step!.bodyPl
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -753,9 +789,9 @@ function OnboardingGate({
         <Card glow>
           {/* progress dots */}
           <div className="mb-4 flex items-center gap-1.5">
-            {steps.map((s, i) => (
+            {Array.from({ length: total }).map((_, i) => (
               <span
-                key={s.id}
+                key={i}
                 className={`h-1.5 flex-1 rounded-full transition ${i <= idx ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-slate-700'}`}
               />
             ))}
@@ -764,7 +800,24 @@ function OnboardingGate({
           <h1 className="text-lg font-bold text-white">{title}</h1>
           {body && <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-300">{body}</p>}
 
-          {step.requireConfirm && (
+          {onFormScreen && (
+            <div className="mt-4 space-y-3">
+              {fields.map((f) => {
+                const label = (en && f.labelEn) || f.labelPl
+                return (
+                  <Field key={f.id} label={f.required ? `${label} *` : label}>
+                    <CustomFieldControl
+                      field={f}
+                      value={values[f.id] ?? ''}
+                      onChange={(v) => setValues((vs) => ({ ...vs, [f.id]: v }))}
+                    />
+                  </Field>
+                )
+              })}
+            </div>
+          )}
+
+          {step?.requireConfirm && (
             <button
               type="button"
               onClick={() => setConfirmed((v) => !v)}
@@ -862,7 +915,9 @@ function CompanionsSection() {
                   {qrId === c.id ? t('companions.hideQr') : t('companions.showQr')}
                 </button>
                 <button
-                  onClick={() => del.mutate(c.id)}
+                  onClick={() => {
+                    if (window.confirm(t('companions.confirmRemove'))) del.mutate(c.id)
+                  }}
                   className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
                 >
                   ✕
@@ -921,6 +976,81 @@ function CustomFieldsSection() {
   return <CustomFieldsForm key={profile.id} fields={fields} initialValues={profile.customFields} />
 }
 
+/** Parse a multi-select answer (JSON array string) into a string[]. */
+function parseStringArray(v: string | undefined): string[] {
+  if (!v) return []
+  try {
+    const parsed = JSON.parse(v)
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/** True when a required field has no meaningful answer (mirrors the server's check). */
+function isEmptyAnswer(field: CustomFieldDto, v: string | undefined): boolean {
+  if (!v || !v.trim()) return true
+  if (field.type === CustomFieldType.MultiSelect) return parseStringArray(v).length === 0
+  return false
+}
+
+/** Renders a single custom-field input. Shared by the Profile form and the onboarding gate. */
+function CustomFieldControl({
+  field,
+  value,
+  onChange,
+}: {
+  field: CustomFieldDto
+  value: string
+  onChange: (v: string) => void
+}) {
+  const { t } = useTranslation()
+  const cls = 'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100'
+
+  if (field.type === CustomFieldType.Textarea) {
+    return <textarea className={cls} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
+  }
+  if (field.type === CustomFieldType.Checkbox) {
+    return (
+      <label className="flex items-center gap-2 text-sm text-slate-200">
+        <input type="checkbox" checked={value === 'true'} onChange={(e) => onChange(e.target.checked ? 'true' : 'false')} />
+        {t('common.yes')}
+      </label>
+    )
+  }
+  if (field.type === CustomFieldType.Select) {
+    return (
+      <select className={cls} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">—</option>
+        {field.options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    )
+  }
+  if (field.type === CustomFieldType.MultiSelect) {
+    const selected = parseStringArray(value)
+    const toggle = (o: string) => {
+      const set = new Set(selected)
+      set.has(o) ? set.delete(o) : set.add(o)
+      onChange(JSON.stringify([...set]))
+    }
+    return (
+      <div className="space-y-1.5">
+        {field.options.map((o) => (
+          <label key={o} className="flex items-center gap-2 text-sm text-slate-200">
+            <input type="checkbox" checked={selected.includes(o)} onChange={() => toggle(o)} />
+            {o}
+          </label>
+        ))}
+      </div>
+    )
+  }
+  return <Input value={value} onChange={(e) => onChange(e.target.value)} />
+}
+
 function CustomFieldsForm({
   fields,
   initialValues,
@@ -933,8 +1063,6 @@ function CustomFieldsForm({
   const en = i18n.resolvedLanguage === 'en'
 
   const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }))
-
-  const selectCls = 'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100'
   const set = (id: string, v: string) => setValues((vs) => ({ ...vs, [id]: v }))
 
   async function persist(e: React.FormEvent) {
@@ -948,37 +1076,9 @@ function CustomFieldsForm({
       <form onSubmit={persist} className="space-y-3">
         {fields.map((f: CustomFieldDto) => {
           const label = (en && f.labelEn) || f.labelPl
-          const val = values[f.id] ?? ''
           return (
             <Field key={f.id} label={f.required ? `${label} *` : label}>
-              {f.type === CustomFieldType.Textarea ? (
-                <textarea
-                  className={selectCls}
-                  rows={3}
-                  value={val}
-                  onChange={(e) => set(f.id, e.target.value)}
-                />
-              ) : f.type === CustomFieldType.Checkbox ? (
-                <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={val === 'true'}
-                    onChange={(e) => set(f.id, e.target.checked ? 'true' : 'false')}
-                  />
-                  {t('common.yes')}
-                </label>
-              ) : f.type === CustomFieldType.Select ? (
-                <select className={selectCls} value={val} onChange={(e) => set(f.id, e.target.value)}>
-                  <option value="">—</option>
-                  {f.options.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <Input value={val} onChange={(e) => set(f.id, e.target.value)} />
-              )}
+              <CustomFieldControl field={f} value={values[f.id] ?? ''} onChange={(v) => set(f.id, v)} />
             </Field>
           )
         })}

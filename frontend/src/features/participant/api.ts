@@ -25,6 +25,7 @@ export function useMyProfile() {
 export interface MyEventDto {
   id: string
   name: string
+  slug: string
   status: number
   startsAt: string
   endsAt: string
@@ -36,12 +37,28 @@ export interface MyEventDto {
   maxCompanions: number
   customPhotosUrl: string | null
   customPhotosText: string | null
+  showAgendaTab: boolean
+  showActivitiesTab: boolean
+  showGalleryTab: boolean
 }
 
 export function useMyEvent() {
   return useQuery({
     queryKey: ['me', 'event'],
     queryFn: async () => (await api.get<MyEventDto>('/api/me/event')).data,
+  })
+}
+
+export interface MyBrandingDto {
+  logoUrl: string | null
+  primaryColor: string | null
+  accentColor: string | null
+}
+
+export function useMyBranding() {
+  return useQuery({
+    queryKey: ['me', 'branding'],
+    queryFn: async () => (await api.get<MyBrandingDto>('/api/me/branding')).data,
   })
 }
 

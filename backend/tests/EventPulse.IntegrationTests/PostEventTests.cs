@@ -29,6 +29,7 @@ public class PostEventTests : IClassFixture<ApiFactory>
         var eventId = (await (await admin.PostAsJsonAsync("/api/events", new
         {
             name = $"Post {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow.AddDays(-1),
             endsAt = DateTimeOffset.UtcNow,
         })).Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

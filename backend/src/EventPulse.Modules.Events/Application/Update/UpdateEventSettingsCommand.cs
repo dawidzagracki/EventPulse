@@ -20,7 +20,10 @@ public sealed record UpdateEventSettingsCommand(
     bool AnonymizeEnabled,
     int AnonymizeAfterDays,
     string? CustomPhotosUrl,
-    string? CustomPhotosText) : IRequest<EventDto>;
+    string? CustomPhotosText,
+    bool ShowAgendaTab,
+    bool ShowActivitiesTab,
+    bool ShowGalleryTab) : IRequest<EventDto>;
 
 public sealed class UpdateEventSettingsValidator : AbstractValidator<UpdateEventSettingsCommand>
 {
@@ -78,6 +81,9 @@ public sealed class UpdateEventSettingsHandler : IRequestHandler<UpdateEventSett
         ev.AnonymizeAfterDays = request.AnonymizeAfterDays;
         ev.CustomPhotosUrl = string.IsNullOrWhiteSpace(request.CustomPhotosUrl) ? null : request.CustomPhotosUrl.Trim();
         ev.CustomPhotosText = string.IsNullOrWhiteSpace(request.CustomPhotosText) ? null : request.CustomPhotosText.Trim();
+        ev.ShowAgendaTab = request.ShowAgendaTab;
+        ev.ShowActivitiesTab = request.ShowActivitiesTab;
+        ev.ShowGalleryTab = request.ShowGalleryTab;
 
         await _db.SaveChangesAsync(cancellationToken);
         return EventDto.From(ev);

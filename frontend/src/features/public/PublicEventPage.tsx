@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import type { AgendaItemDto, BrandingDto, PageBlock, PageContentDoc, SeoDto } from '../../types/api'
 import { RenderBlock, type BlockContext } from '../content/EventBlocks'
+import { ensureGoogleFont } from '../content/fonts'
 import { Logo } from '../../components/Logo'
 
 interface PublishedPage {
@@ -79,6 +80,11 @@ export function PublicEventPage() {
   useEffect(() => {
     if (page.data?.seo.title) document.title = page.data.seo.title
   }, [page.data])
+
+  // Load the brand web font for the published page.
+  useEffect(() => {
+    ensureGoogleFont(document, page.data?.branding.fontFamily)
+  }, [page.data?.branding.fontFamily])
 
   // Page-scoped light theme: override the body's dark gradient for the public landing only.
   useEffect(() => {

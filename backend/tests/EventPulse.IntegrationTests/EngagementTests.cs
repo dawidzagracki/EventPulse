@@ -26,6 +26,7 @@ public class EngagementTests : IClassFixture<ApiFactory>
         (await (await admin.PostAsJsonAsync("/api/events", new
         {
             name = $"Eng {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow,
             endsAt = DateTimeOffset.UtcNow.AddHours(3),
         })).Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

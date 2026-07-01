@@ -19,10 +19,11 @@ public sealed record ParticipantDto(
     string? DietaryPreferences,
     ParticipantStatus Status,
     Guid? ParentParticipantId,
-    int? Age)
+    int? Age,
+    Guid AccessToken)
 {
     public static ParticipantDto From(Participant p) => new(
         p.Id, p.EventId, p.FirstName, p.LastName, p.Email, p.Phone, p.Company, p.Position,
         p.Language, p.GroupName, p.TableName, p.RoomNumber, p.AirportTransfer, p.DietaryPreferences, p.Status,
-        p.ParentParticipantId, p.Age);
+        p.ParentParticipantId, p.Age, p.AccessToken);
 }

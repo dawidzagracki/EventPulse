@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Ai;
+using EventPulse.Modules.Content.Application;
 using EventPulse.Modules.Engagement;
 using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Gallery;
@@ -46,6 +47,11 @@ public sealed class ParticipantMeController : ControllerBase
     [HttpGet("event")]
     public async Task<ActionResult<EventSummaryDto>> MyEvent(CancellationToken ct)
         => Ok(await _mediator.Send(new GetEventSummaryQuery(EventId), ct));
+
+    /// <summary>Event logo + colours for theming the participant app header.</summary>
+    [HttpGet("branding")]
+    public async Task<ActionResult<ParticipantBrandingDto>> Branding(CancellationToken ct)
+        => Ok(await _mediator.Send(new GetParticipantBrandingQuery(EventId), ct));
 
     /// <summary>The logged-in participant's own check-in QR (PNG), to show at the gate.</summary>
     [HttpGet("qr")]

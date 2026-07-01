@@ -7,11 +7,13 @@ import {
   useAddParticipant,
   useImportParticipants,
   useParticipants,
+  useSendClientLinks,
   useSendInvitations,
 } from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { FileButton } from '../../components/FileButton'
 import { Icon } from '../../components/Icon'
+import { useAuthStore } from '../../stores/authStore'
 import { ParticipantStatusName, type ImportResult, type ParticipantDto } from '../../types/api'
 
 type View = { kind: 'empty' } | { kind: 'new' } | { kind: 'detail'; participant: ParticipantDto }
@@ -60,6 +62,8 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { data: participants, isLoading } = useParticipants(eventId)
   const inviteMut = useSendInvitations(eventId)
+  const clientLinksMut = useSendClientLinks(eventId)
+  const isAgency = useAuthStore((s) => s.principalType) === 'Agency'
   const [view, setView] = useState<View>({ kind: 'empty' })
   const [showImport, setShowImport] = useState(false)
   const [query, setQuery] = useState('')
@@ -124,10 +128,27 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
           <Icon name="document" className="h-3.5 w-3.5" />
           {showImport ? t('participants.importCollapse') : t('participants.importExpand')}
         </Button>
-        <Button variant="ghost" onClick={() => inviteMut.mutate()} disabled={inviteMut.isPending}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (window.confirm(t('participants.confirmInvite'))) inviteMut.mutate()
+          }}
+          disabled={inviteMut.isPending}
+        >
           <Icon name="sparkles" className="h-3.5 w-3.5" />
           {t('participants.invite')}
         </Button>
+        {isAgency && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (window.confirm(t('participants.confirmClientLinks'))) clientLinksMut.mutate()
+            }}
+            disabled={clientLinksMut.isPending || stats.total === 0}
+          >
+            📧 {t('participants.clientLinks')}
+          </Button>
+        )}
         <Button variant="ghost" onClick={() => void exportParticipants(eventId)} disabled={stats.total === 0}>
           <Icon name="document" className="h-3.5 w-3.5" />
           {t('participants.export')}
@@ -146,6 +167,34 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
           ✓ {t('participants.invited', { count: inviteMut.data.sentCount })}
         </p>
       )}
+      {clientLinksMut.data && (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          ✓ {t('participants.clientLinksSent', { count: clientLinksMut.data.linkCount })}
+        </p>
+      )}
+      {clientLinksMut.isError && (
+        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {t('participants.clientLinksError')}
+        </p>
+      )}
+
+      {/* Universal self-service login link — guests enter their e-mail and get their token link. */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-800/70 bg-slate-950/40 px-3 py-2 text-xs">
+        <span className="shrink-0 text-slate-400">🔗 {t('participants.universalLink')}:</span>
+        <input
+          readOnly
+          value={`${window.location.origin}/e/${eventId}/login`}
+          onFocus={(e) => e.currentTarget.select()}
+          className="min-w-[180px] flex-1 rounded bg-transparent font-mono text-slate-300 outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => void navigator.clipboard.writeText(`${window.location.origin}/e/${eventId}/login`)}
+          className="shrink-0 rounded border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-slate-200 hover:bg-slate-800"
+        >
+          {t('participants.copy')}
+        </button>
+      </div>
 
       {/* SEARCH + FILTER */}
       <div className="flex flex-wrap items-center gap-3">
@@ -551,6 +600,30 @@ function ParticipantDetail({ eventId, participant }: { eventId: string; particip
           QR
         </button>
       </div>
+
+      {/* Personal login link — for primary guests with an e-mail (clients can copy/share it). */}
+      {participant.email && !participant.parentParticipantId && (
+        <div className="mb-4 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+            {t('participants.loginLink')}
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={`${window.location.origin}/p/${participant.accessToken}`}
+              onFocus={(e) => e.currentTarget.select()}
+              className="w-full truncate rounded-md border border-slate-700/70 bg-slate-900/60 px-2 py-1.5 text-xs text-slate-300 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard.writeText(`${window.location.origin}/p/${participant.accessToken}`)}
+              className="shrink-0 rounded-md border border-slate-700/60 bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
+            >
+              {t('participants.copy')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Sections */}
       <div className="space-y-4">

@@ -60,4 +60,19 @@ public sealed class Event : AggregateRoot
 
     /// <summary>Optional free-text info shown in the participant app's photos section.</summary>
     public string? CustomPhotosText { get; set; }
+
+    // ---------------------------------------------------------------------
+    // Participant-app tiles — let the organiser hide tabs they don't use
+    // (e.g. an event with no quizzes can hide "Aktywności"). QR + Profile
+    // are always shown, so they have no flag.
+    // ---------------------------------------------------------------------
+
+    /// <summary>Show the Agenda tab in the participant app.</summary>
+    public bool ShowAgendaTab { get; set; } = true;
+
+    /// <summary>Show the Activities (quizzes/networking/feedback) tab in the participant app.</summary>
+    public bool ShowActivitiesTab { get; set; } = true;
+
+    /// <summary>Show the Gallery tab in the participant app.</summary>
+    public bool ShowGalleryTab { get; set; } = true;
 }

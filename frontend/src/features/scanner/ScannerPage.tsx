@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { extractToken, fetchActiveStations, flushQueue } from './api'
 import { feedback } from './feedback'
 import { enqueueScan, queueCount } from '../../lib/scanQueue'
+import { startQrScanner, type QrScanHandle } from '../../lib/qrScanner'
 import { Button, Card, Input } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { ScanKind, type ScanResultItem, type StationDto } from '../../types/api'
@@ -200,49 +201,22 @@ export function ScannerPage() {
   }, [])
 
   // Camera scanning (best-effort; manual entry always works). Only starts once a station is chosen.
+  // Uses native BarcodeDetector where present and a jsQR fallback otherwise (Safari/iOS).
   useEffect(() => {
-    if (!station) return
+    if (!station || !videoRef.current) return
     let cancelled = false
-    let stream: MediaStream | undefined
-    let timer: number | undefined
-
-    async function start() {
-      if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
-        setCamera('unsupported')
-        return
-      }
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        if (cancelled) {
-          stream.getTracks().forEach((tr) => tr.stop())
-          return
-        }
-        const video = videoRef.current!
-        video.srcObject = stream
-        await video.play()
-        const detector = new BarcodeDetector({ formats: ['qr_code'] })
-        setCamera('on')
-        const tick = async () => {
-          if (cancelled) return
-          try {
-            const codes = await detector.detect(video)
-            if (codes[0]?.rawValue) await handleScanRef.current(codes[0].rawValue)
-          } catch {
-            // transient detect error; keep going
-          }
-          timer = window.setTimeout(() => void tick(), 400)
-        }
-        void tick()
-      } catch {
-        setCamera('denied')
-      }
-    }
-
-    void start()
+    let handle: QrScanHandle | undefined
+    void startQrScanner(
+      videoRef.current,
+      (raw) => void handleScanRef.current(raw),
+      setCamera,
+    ).then((h) => {
+      if (cancelled) h.stop()
+      else handle = h
+    })
     return () => {
       cancelled = true
-      if (timer) window.clearTimeout(timer)
-      stream?.getTracks().forEach((tr) => tr.stop())
+      handle?.stop()
     }
   }, [station])
 

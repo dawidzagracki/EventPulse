@@ -9,6 +9,7 @@ using EventPulse.Modules.Participants.Application.Invitations;
 using EventPulse.Modules.Participants.Application.Qr;
 using EventPulse.Modules.Participants.Application.Queries;
 using EventPulse.Modules.Participants.Domain;
+using EventPulse.Shared.Application;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -112,6 +113,22 @@ public sealed class ParticipantsController : ControllerBase
         var ev = await EnsureEventInTenantAsync(eventId, ct);
         var result = await _mediator.Send(
             new SendInvitationsCommand(eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, onlyNotInvited), ct);
+        return Ok(result);
+    }
+
+    /// <summary>Emails the event's client a single digest of all participant login links, to distribute themselves.</summary>
+    [HttpPost("client-links")]
+    [Authorize(Policy = AuthPolicies.Agency)]
+    public async Task<ActionResult<SendClientLinksResult>> SendClientLinks(Guid eventId, CancellationToken ct)
+    {
+        var ev = await EnsureEventInTenantAsync(eventId, ct);
+        if (string.IsNullOrWhiteSpace(ev.ClientEmail))
+        {
+            throw new ConflictException("Set the client e-mail on the event first (Przegląd).");
+        }
+
+        var result = await _mediator.Send(
+            new SendClientLinksCommand(eventId, ev.Name, ev.ClientEmail, ParticipantLinkBaseUrl), ct);
         return Ok(result);
     }
 

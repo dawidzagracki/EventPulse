@@ -18,6 +18,15 @@ export function useCreateAgendaItem(eventId: string) {
   })
 }
 
+export function useUpdateAgendaItem(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: AgendaItemInput }) =>
+      (await api.put<AgendaItemDto>(`/api/events/${eventId}/agenda/${id}`, input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['agenda', eventId] }),
+  })
+}
+
 export function useDeleteAgendaItem(eventId: string) {
   const qc = useQueryClient()
   return useMutation({

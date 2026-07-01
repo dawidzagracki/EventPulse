@@ -33,9 +33,13 @@ public sealed record EventSettingsDto(
     int AnonymizeAfterDays,
     DateTimeOffset? AnonymizedAt,
     string? CustomPhotosUrl,
-    string? CustomPhotosText)
+    string? CustomPhotosText,
+    bool ShowAgendaTab,
+    bool ShowActivitiesTab,
+    bool ShowGalleryTab)
 {
     public static EventSettingsDto From(Event e) => new(
         e.UsesLocationData, e.PhoneRequired, e.AllowCompanions, e.MaxCompanions,
-        e.AnonymizeEnabled, e.AnonymizeAfterDays, e.AnonymizedAt, e.CustomPhotosUrl, e.CustomPhotosText);
+        e.AnonymizeEnabled, e.AnonymizeAfterDays, e.AnonymizedAt, e.CustomPhotosUrl, e.CustomPhotosText,
+        e.ShowAgendaTab, e.ShowActivitiesTab, e.ShowGalleryTab);
 }

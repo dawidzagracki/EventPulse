@@ -29,6 +29,7 @@ public class EventsEndpointsTests : IClassFixture<ApiFactory>
     {
         name,
         startsAt = DateTimeOffset.UtcNow.AddDays(30),
+        clientEmail = "klient@test.local",
         endsAt = DateTimeOffset.UtcNow.AddDays(31),
         location = "Warszawa",
         defaultLanguage = "pl",

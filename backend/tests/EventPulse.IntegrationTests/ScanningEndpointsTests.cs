@@ -32,6 +32,7 @@ public class ScanningEndpointsTests : IClassFixture<ApiFactory>
         var resp = await client.PostAsJsonAsync("/api/events", new
         {
             name = $"ScanEvent {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
             startsAt = DateTimeOffset.UtcNow,
             endsAt = DateTimeOffset.UtcNow.AddHours(6),
         })
