@@ -132,6 +132,7 @@ export interface EventSettingsDto {
   showAgendaTab: boolean
   showActivitiesTab: boolean
   showGalleryTab: boolean
+  showPreferencesTile: boolean
 }
 
 export interface EventDto {

@@ -40,6 +40,7 @@ export interface MyEventDto {
   showAgendaTab: boolean
   showActivitiesTab: boolean
   showGalleryTab: boolean
+  showPreferencesTile: boolean
 }
 
 export function useMyEvent() {

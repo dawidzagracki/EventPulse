@@ -7,6 +7,7 @@ import type { AgendaItemDto, BrandingDto, PageBlock, PageContentDoc, SeoDto } fr
 import { RenderBlock, type BlockContext } from '../content/EventBlocks'
 import { ensureGoogleFont } from '../content/fonts'
 import { Logo } from '../../components/Logo'
+import { assetUrl } from '../../lib/api'
 
 interface PublishedPage {
   content: PageContentDoc
@@ -85,6 +86,17 @@ export function PublicEventPage() {
   useEffect(() => {
     ensureGoogleFont(document, page.data?.branding.fontFamily)
   }, [page.data?.branding.fontFamily])
+
+  // Start the public page in the event's default language (once). After that the
+  // visitor's toggle choice sticks (i18n is reactive, so blocks re-render on change).
+  const initialLangSet = useRef(false)
+  useEffect(() => {
+    const def = event.data?.defaultLanguage
+    if (!initialLangSet.current && (def === 'pl' || def === 'en')) {
+      initialLangSet.current = true
+      if (i18n.resolvedLanguage !== def) void i18n.changeLanguage(def)
+    }
+  }, [event.data?.defaultLanguage, i18n])
 
   // Page-scoped light theme: override the body's dark gradient for the public landing only.
   useEffect(() => {
@@ -338,7 +350,7 @@ function GlassNav({
             className="relative flex shrink-0 items-center gap-2.5 rounded-full outline-none"
           >
             {logoUrl ? (
-              <img src={logoUrl} alt="" className={`w-auto drop-shadow-sm transition-all ${scrolled ? 'h-7' : 'h-9'}`} />
+              <img src={assetUrl(logoUrl) ?? undefined} alt="" className={`w-auto drop-shadow-sm transition-all ${scrolled ? 'h-7' : 'h-9'}`} />
             ) : (
               <Logo size={scrolled ? 28 : 34} />
             )}

@@ -29,6 +29,19 @@ export function useApplyTemplate(eventId: string) {
   })
 }
 
+/** Upload a JPG/PNG logo file (alternative to pasting a URL). Returns the updated page. */
+export function useUploadLogo(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return (await api.post<PageDto>(`/api/events/${eventId}/page/logo`, form)).data
+    },
+    onSuccess: (data) => qc.setQueryData(pageKey(eventId), data),
+  })
+}
+
 export function useUpdateBranding(eventId: string) {
   const qc = useQueryClient()
   return useMutation({

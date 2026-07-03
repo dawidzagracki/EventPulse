@@ -94,7 +94,8 @@ public sealed class EventsController : ControllerBase
             body.CustomPhotosText,
             body.ShowAgendaTab,
             body.ShowActivitiesTab,
-            body.ShowGalleryTab);
+            body.ShowGalleryTab,
+            body.ShowPreferencesTile);
         return Ok(await _mediator.Send(command, ct));
     }
 
@@ -152,5 +153,6 @@ public sealed class EventsController : ControllerBase
         string? CustomPhotosText,
         bool ShowAgendaTab = true,
         bool ShowActivitiesTab = true,
-        bool ShowGalleryTab = true);
+        bool ShowGalleryTab = true,
+        bool ShowPreferencesTile = true);
 }

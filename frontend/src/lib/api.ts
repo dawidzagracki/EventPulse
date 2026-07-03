@@ -6,6 +6,16 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 export const api = axios.create({ baseURL })
 
+/**
+ * Resolves an asset URL for use in <img src>. App-relative URLs (e.g. an uploaded
+ * logo served from "/api/public/...") get the API base prepended so they load in
+ * local dev (cross-origin) and prod (same-origin); absolute http(s) URLs pass through.
+ */
+export function assetUrl(url?: string | null): string | null | undefined {
+  if (!url) return url
+  return url.startsWith('/') ? `${baseURL}${url}` : url
+}
+
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) {

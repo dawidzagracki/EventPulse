@@ -25,6 +25,7 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.ShowAgendaTab).HasDefaultValue(true);
         builder.Property(e => e.ShowActivitiesTab).HasDefaultValue(true);
         builder.Property(e => e.ShowGalleryTab).HasDefaultValue(true);
+        builder.Property(e => e.ShowPreferencesTile).HasDefaultValue(true);
 
         builder.HasIndex(e => e.Slug).IsUnique();
         builder.HasIndex(e => e.TenantId);

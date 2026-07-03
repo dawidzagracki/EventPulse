@@ -52,6 +52,27 @@ public sealed class PageBuilderController : ControllerBase
         return Ok(await _mediator.Send(new UpdateSeoCommand(eventId, seo), ct));
     }
 
+    /// <summary>Uploads a JPG/PNG logo (alternative to pasting a URL) and stores it on the page branding.</summary>
+    [HttpPost("logo")]
+    [RequestSizeLimit(5_000_000)]
+    public async Task<ActionResult<PageDto>> UploadLogo(Guid eventId, IFormFile file, CancellationToken ct)
+    {
+        await EnsureEventAsync(eventId, ct);
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { error = "Empty file." });
+        }
+
+        if (file.ContentType is not ("image/jpeg" or "image/png"))
+        {
+            return BadRequest(new { error = "Only JPG or PNG images are allowed." });
+        }
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms, ct);
+        return Ok(await _mediator.Send(new UploadLogoCommand(eventId, file.ContentType, ms.ToArray()), ct));
+    }
+
     [HttpPost("publish")]
     public async Task<ActionResult<PageDto>> Publish(Guid eventId, CancellationToken ct)
     {

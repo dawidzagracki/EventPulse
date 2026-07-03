@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useEvent } from '../events/api'
+import { useAuthStore } from '../../stores/authStore'
 import {
   useCreateAgendaItem,
   useUpdateAgendaItem,
@@ -70,6 +72,10 @@ const TYPE_META: Record<
 
 export function AgendaTab({ eventId }: { eventId: string }) {
   const { t, i18n } = useTranslation()
+  // Clients may VIEW the agenda but not edit it — hide every mutating control.
+  const readOnly = useAuthStore((s) => s.principalType) === 'Client'
+  const { data: event } = useEvent(eventId)
+  const eventStartsAt = event?.startsAt
   const { data: items, isLoading } = useAgenda(eventId)
   const { data: customTypes } = useAgendaTypes(eventId)
   const deleteMut = useDeleteAgendaItem(eventId)
@@ -96,23 +102,28 @@ export function AgendaTab({ eventId }: { eventId: string }) {
           <span className="text-sm font-semibold text-white">{t('agenda.title')}</span>
           <span className="rounded-full bg-slate-800/80 px-1.5 text-[10px] text-slate-400">{items?.length ?? 0}</span>
         </div>
-        <Button variant="subtle" className="ml-auto" onClick={() => setTypesOpen((v) => !v)}>
-          🏷 {t('agenda.manageTypes')}
-        </Button>
-        <Button onClick={() => setView({ kind: 'new' })}>
-          <Icon name="plus" className="h-4 w-4" />
-          {t('agenda.new')}
-        </Button>
+        {!readOnly && (
+          <>
+            <Button variant="subtle" className="ml-auto" onClick={() => setTypesOpen((v) => !v)}>
+              🏷 {t('agenda.manageTypes')}
+            </Button>
+            <Button onClick={() => setView({ kind: 'new' })}>
+              <Icon name="plus" className="h-4 w-4" />
+              {t('agenda.new')}
+            </Button>
+          </>
+        )}
       </div>
 
       {typesOpen && <AgendaTypesManager eventId={eventId} onClose={() => setTypesOpen(false)} />}
 
       {grouped.length === 0 && view.kind === 'empty' && !isLoading ? (
-        <EmptyAll onNew={() => setView({ kind: 'new' })} />
+        <EmptyAll readOnly={readOnly} onNew={() => setView({ kind: 'new' })} />
       ) : grouped.length === 0 && view.kind === 'new' ? (
         <div className="mx-auto w-full max-w-3xl">
           <ItemForm
             eventId={eventId}
+            eventStartsAt={eventStartsAt}
             customTypes={customTypes ?? []}
             onDone={(it) => setView({ kind: 'detail', item: it })}
             onCancel={() => setView({ kind: 'empty' })}
@@ -158,13 +169,15 @@ export function AgendaTab({ eventId }: { eventId: string }) {
                   </div>
                 )
               })}
-              <button
-                onClick={() => setView({ kind: 'new' })}
-                className="flex w-full items-center gap-2 rounded-lg border border-dashed border-slate-700/60 px-3 py-2.5 text-sm text-slate-400 transition hover:border-indigo-400/60 hover:bg-indigo-500/5 hover:text-white"
-              >
-                <Icon name="plus" className="h-3.5 w-3.5" />
-                {t('agenda.new')}
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => setView({ kind: 'new' })}
+                  className="flex w-full items-center gap-2 rounded-lg border border-dashed border-slate-700/60 px-3 py-2.5 text-sm text-slate-400 transition hover:border-indigo-400/60 hover:bg-indigo-500/5 hover:text-white"
+                >
+                  <Icon name="plus" className="h-3.5 w-3.5" />
+                  {t('agenda.new')}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -175,6 +188,7 @@ export function AgendaTab({ eventId }: { eventId: string }) {
           {view.kind === 'new' && (
             <ItemForm
               eventId={eventId}
+              eventStartsAt={eventStartsAt}
               customTypes={customTypes ?? []}
               onDone={(it) => setView({ kind: 'detail', item: it })}
               onCancel={() => setView({ kind: 'empty' })}
@@ -194,6 +208,7 @@ export function AgendaTab({ eventId }: { eventId: string }) {
             <ItemDetail
               key={view.item.id}
               item={view.item}
+              readOnly={readOnly}
               onEdit={() => setView({ kind: 'edit', item: view.item })}
               onDelete={async () => {
                 if (!window.confirm(t('agenda.confirmDelete'))) return
@@ -210,7 +225,7 @@ export function AgendaTab({ eventId }: { eventId: string }) {
   )
 }
 
-function EmptyAll({ onNew }: { onNew: () => void }) {
+function EmptyAll({ onNew, readOnly }: { onNew: () => void; readOnly?: boolean }) {
   const { t } = useTranslation()
   return (
     <Card className="relative overflow-hidden">
@@ -222,10 +237,12 @@ function EmptyAll({ onNew }: { onNew: () => void }) {
         </div>
         <p className="mt-4 text-base font-semibold text-white">{t('agenda.empty')}</p>
         <p className="mt-1 max-w-md text-sm text-slate-400">{t('agenda.emptyHint')}</p>
-        <Button className="mt-5" onClick={onNew}>
-          <Icon name="plus" className="h-4 w-4" />
-          {t('agenda.new')}
-        </Button>
+        {!readOnly && (
+          <Button className="mt-5" onClick={onNew}>
+            <Icon name="plus" className="h-4 w-4" />
+            {t('agenda.new')}
+          </Button>
+        )}
       </div>
     </Card>
   )
@@ -317,12 +334,14 @@ function EmptyDetail() {
 
 function ItemForm({
   eventId,
+  eventStartsAt,
   customTypes,
   initial,
   onDone,
   onCancel,
 }: {
   eventId: string
+  eventStartsAt?: string
   customTypes: AgendaTypeDto[]
   initial?: AgendaItemDto
   onDone: (it: AgendaItemDto) => void
@@ -334,8 +353,18 @@ function ItemForm({
   const update = useUpdateAgendaItem(eventId)
   const [titlePl, setTitlePl] = useState(initial?.titlePl ?? '')
   const [titleEn, setTitleEn] = useState(initial?.titleEn ?? '')
-  const [startsAt, setStartsAt] = useState(initial ? toLocalInputValue(initial.startsAt) : '')
-  const [endsAt, setEndsAt] = useState(initial ? toLocalInputValue(initial.endsAt) : '')
+  // New items default to the event's start date/time (end = +1h) so the organiser
+  // doesn't retype it; editing keeps the item's own times.
+  const [startsAt, setStartsAt] = useState(
+    initial ? toLocalInputValue(initial.startsAt) : eventStartsAt ? toLocalInputValue(eventStartsAt) : '',
+  )
+  const [endsAt, setEndsAt] = useState(
+    initial
+      ? toLocalInputValue(initial.endsAt)
+      : eventStartsAt
+        ? toLocalInputValue(new Date(new Date(eventStartsAt).getTime() + 3_600_000).toISOString())
+        : '',
+  )
   const [type, setType] = useState(initial?.type ?? 0)
   const [customTypeId, setCustomTypeId] = useState<string | null>(initial?.customTypeId ?? null)
   const [requiresCheckIn, setRequiresCheckIn] = useState(initial?.requiresCheckIn ?? false)
@@ -587,11 +616,13 @@ function ItemDetail({
   onEdit,
   onDelete,
   deleting,
+  readOnly,
 }: {
   item: AgendaItemDto
   onEdit: () => void
   onDelete: () => Promise<void>
   deleting: boolean
+  readOnly?: boolean
 }) {
   const { t, i18n } = useTranslation()
   const meta = TYPE_META[item.type] ?? TYPE_META[5]
@@ -680,18 +711,20 @@ function ItemDetail({
         </div>
       </div>
 
-      <div className="mt-4 flex gap-2 border-t border-slate-800/80 pt-3">
-        <Button variant="subtle" onClick={onEdit}>
-          ✏️ {t('common.edit')}
-        </Button>
-        <button
-          onClick={onDelete}
-          disabled={deleting}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"
-        >
-          ✕ {t('agenda.delete')}
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="mt-4 flex gap-2 border-t border-slate-800/80 pt-3">
+          <Button variant="subtle" onClick={onEdit}>
+            ✏️ {t('common.edit')}
+          </Button>
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"
+          >
+            ✕ {t('agenda.delete')}
+          </button>
+        </div>
+      )}
     </Card>
   )
 }

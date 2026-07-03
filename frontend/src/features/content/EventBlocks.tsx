@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { AgendaItemDto, BrandingDto, PageBlock } from '../../types/api'
 import { AgendaItemTypeName } from '../../types/api'
+import { assetUrl } from '../../lib/api'
+import { parseInstant } from '../../lib/parseInstant'
 import { getBlockStyle } from './blockStyles'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, type BlockCategory } from './blockSchema'
 
@@ -22,11 +24,46 @@ export interface BlockContext {
 }
 
 function pick(block: PageBlock, lang: 'pl' | 'en') {
-  return (block.content?.[lang] ?? block.content?.pl ?? {}) as Record<string, string | undefined>
+  // Two-way fallback: prefer the active language, then the other one, so a block
+  // authored in only one language still renders after switching.
+  return (block.content?.[lang] ?? block.content?.pl ?? block.content?.en ?? {}) as Record<
+    string,
+    string | undefined
+  >
 }
 
 function pickSettings(block: PageBlock) {
   return (block.settings ?? {}) as Record<string, unknown>
+}
+
+/** Cross-browser HH:MM label from a server timestamp (Safari-safe). Empty string if unparseable. */
+function timeLabel(value?: string | null): string {
+  const ms = parseInstant(value)
+  return ms === null ? '' : new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * Builds a Google-Maps embed URL. Accepts either a plain address (geocoded by
+ * text) OR a pasted Google Maps link — from which we extract q=/query= or the
+ * "@lat,lng" coordinates so we don't double-encode the whole URL (which shows an
+ * empty map). Short share links (maps.app.goo.gl) can't be resolved client-side,
+ * so we best-effort embed them directly.
+ */
+function mapEmbedSrc(address?: string): string | null {
+  const a = address?.trim()
+  if (!a) return null
+  if (/^https?:\/\//i.test(a)) {
+    try {
+      const url = new URL(a)
+      const at = url.pathname.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+      const q = url.searchParams.get('q') || url.searchParams.get('query') || (at ? `${at[1]},${at[2]}` : null)
+      if (q) return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed`
+      return `${a}${a.includes('?') ? '&' : '?'}output=embed`
+    } catch {
+      return null
+    }
+  }
+  return `https://maps.google.com/maps?q=${encodeURIComponent(a)}&output=embed`
 }
 
 /** A link that leaves the SPA (opens in a new tab); in-page anchors (#…) stay in place. */
@@ -70,6 +107,25 @@ function isLightBg(hex: string): boolean {
 }
 
 /** Inline-editable text. Renders plain text in public mode, contentEditable in editor mode. */
+// Per-text typography presets (size + bold/italic) stored on block.styles under
+// "{key}Size" / "{key}Bold" / "{key}Italic". Size is an em multiplier so it scales
+// relative to each field's designed base size and stays responsive. Returns
+// undefined when nothing is set, keeping the default look untouched.
+const TEXT_SIZE_EM: Record<string, string> = { s: '0.85em', m: '1em', l: '1.25em', xl: '1.5em' }
+
+function textPresetStyle(block: PageBlock, k: string): CSSProperties | undefined {
+  const s = (block.styles ?? {}) as Record<string, unknown>
+  const size = s[`${k}Size`] as string | undefined
+  const bold = !!s[`${k}Bold`]
+  const italic = !!s[`${k}Italic`]
+  if ((!size || size === 'm') && !bold && !italic) return undefined
+  return {
+    fontSize: size && size !== 'm' ? TEXT_SIZE_EM[size] : undefined,
+    fontWeight: bold ? 700 : undefined,
+    fontStyle: italic ? 'italic' : undefined,
+  }
+}
+
 function E({
   block,
   k,
@@ -84,12 +140,14 @@ function E({
   className?: string
 }) {
   const value = (block.content?.[ctx.lang]?.[k] ?? '') as string
+  const ts = textPresetStyle(block, k)
   if (!ctx.edit) {
-    return <span className={className}>{value || placeholder || ''}</span>
+    return <span className={className} style={ts}>{value || placeholder || ''}</span>
   }
   return (
     <span
       className={`${className} -mx-1 cursor-text rounded px-1 outline-none transition focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-400/60 hover:bg-indigo-50/40`}
+      style={ts}
       contentEditable
       suppressContentEditableWarning
       data-placeholder={placeholder}
@@ -149,7 +207,7 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
       <div className={`relative px-6 py-24 text-center sm:px-12 sm:py-36 ${cText}`}>
         {ctx.branding.logoUrl && (
           <img
-            src={ctx.branding.logoUrl}
+            src={assetUrl(ctx.branding.logoUrl) ?? undefined}
             alt=""
             className="mx-auto mb-7 h-16 w-auto object-contain drop-shadow-lg"
           />
@@ -198,8 +256,8 @@ function DescriptionBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext 
   return (
     <section
       id={`block-${block.id}`}
-      className={`relative overflow-hidden rounded-3xl bg-white p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
-      style={stl.style}
+      className={`relative overflow-hidden rounded-3xl p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="mx-auto max-w-4xl">
         <div className="flex items-center gap-3">
@@ -272,8 +330,8 @@ function FeaturesBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
@@ -324,8 +382,8 @@ function TestimonialBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext 
   return (
     <section
       id={`block-${block.id}`}
-      className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 to-white p-10 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
-      style={stl.style}
+      className={`relative overflow-hidden rounded-3xl p-10 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="mx-auto max-w-3xl text-center">
         <svg viewBox="0 0 32 32" className="mx-auto h-12 w-12 opacity-20" fill="currentColor" style={{ color: primary }} aria-hidden>
@@ -361,8 +419,8 @@ function SplitBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 ${stl.className}`}
-      style={stl.style}
+      className={`overflow-hidden rounded-3xl shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <div className={`grid items-center gap-0 lg:grid-cols-2 ${reverse ? 'lg:[&>*:first-child]:order-2' : ''}`}>
         {/* Text side */}
@@ -416,8 +474,8 @@ function AgendaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Agenda" />
@@ -437,7 +495,7 @@ function AgendaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
                 style={{ background: primary }}
               />
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                {new Date(item.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {timeLabel(item.startsAt)}
                 {' · '}
                 {AgendaItemTypeName[item.type]}
               </p>
@@ -457,13 +515,13 @@ function AgendaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
 function MapBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const c = pick(block, ctx.lang)
   const address = c.address
-  const src = address ? `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed` : null
+  const src = mapEmbedSrc(address)
   const stl = getBlockStyle(block)
   return (
     <section
       id={`block-${block.id}`}
-      className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${stl.className}`}
-      style={stl.style}
+      className={`overflow-hidden rounded-3xl shadow-sm ring-1 ring-slate-200 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="p-10 sm:p-14">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -490,8 +548,8 @@ function GalleryBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Galeria" />
@@ -522,7 +580,7 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
-  const target = ctx.startsAt ? new Date(ctx.startsAt).getTime() : null
+  const target = parseInstant(ctx.startsAt)
   const diff = target ? Math.max(0, target - now) : 0
   const days = Math.floor(diff / 86_400_000)
   const hours = Math.floor((diff / 3_600_000) % 24)
@@ -567,8 +625,8 @@ function FaqBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Najczęstsze pytania" />
@@ -604,8 +662,8 @@ function TeamBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         <E block={block} k="title" ctx={ctx} placeholder="Zespół" />
@@ -637,8 +695,8 @@ function VideoBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${stl.className}`}
-      style={stl.style}
+      className={`overflow-hidden rounded-3xl shadow-sm ring-1 ring-slate-200 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="p-10 sm:p-14">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -668,8 +726,8 @@ function SponsorsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
         <E block={block} k="title" ctx={ctx} placeholder="Partnerzy" />
@@ -746,8 +804,8 @@ function ContestsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>
         <E block={block} k="title" ctx={ctx} placeholder="Konkursy" />
@@ -782,8 +840,8 @@ function QuizzesBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
-      style={stl.style}
+      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>
         <E block={block} k="title" ctx={ctx} placeholder="Quizy" />

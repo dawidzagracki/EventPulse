@@ -36,10 +36,11 @@ public sealed record EventSettingsDto(
     string? CustomPhotosText,
     bool ShowAgendaTab,
     bool ShowActivitiesTab,
-    bool ShowGalleryTab)
+    bool ShowGalleryTab,
+    bool ShowPreferencesTile)
 {
     public static EventSettingsDto From(Event e) => new(
         e.UsesLocationData, e.PhoneRequired, e.AllowCompanions, e.MaxCompanions,
         e.AnonymizeEnabled, e.AnonymizeAfterDays, e.AnonymizedAt, e.CustomPhotosUrl, e.CustomPhotosText,
-        e.ShowAgendaTab, e.ShowActivitiesTab, e.ShowGalleryTab);
+        e.ShowAgendaTab, e.ShowActivitiesTab, e.ShowGalleryTab, e.ShowPreferencesTile);
 }

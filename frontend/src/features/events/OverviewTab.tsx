@@ -10,6 +10,7 @@ import { useAgenda } from '../agenda/api'
 import { usePage } from '../content/api'
 import { useClients } from '../team/api'
 import { useAuthStore } from '../../stores/authStore'
+import { assetUrl } from '../../lib/api'
 import { EventStatus } from '../../types/api'
 
 export function OverviewTab({ eventId }: { eventId: string }) {
@@ -572,7 +573,7 @@ function BrandingPreview({
       <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">{t('eventDetail.logo')}</p>
         {branding.logoUrl ? (
-          <img src={branding.logoUrl} alt="" className="h-10 w-auto rounded bg-white/5 object-contain p-1" />
+          <img src={assetUrl(branding.logoUrl) ?? undefined} alt="" className="h-10 w-auto rounded bg-white/5 object-contain p-1" />
         ) : (
           <p className="text-xs text-slate-500">{t('eventDetail.noLogo')}</p>
         )}

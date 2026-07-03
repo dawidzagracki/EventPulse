@@ -1,6 +1,7 @@
 using EventPulse.Modules.Content.Domain;
 using EventPulse.Shared.Application;
 using EventPulse.Shared.Persistence;
+using EventPulse.Shared.Storage;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -96,6 +97,28 @@ public sealed class UpdateBrandingHandler(IAppDbContext db) : IRequestHandler<Up
         page.LogoUrl = b.LogoUrl;
         page.FaviconUrl = b.FaviconUrl;
         page.BackgroundColor = b.BackgroundColor;
+        await db.SaveChangesAsync(ct);
+        return PageDto.From(page);
+    }
+}
+
+/// <summary>
+/// Uploads a logo image to object storage and points the page's LogoUrl at the anonymous public
+/// logo endpoint. Key is deterministic per event (one logo), so re-upload overwrites; a cache-bust
+/// query on the URL makes the new image show immediately.
+/// </summary>
+public sealed record UploadLogoCommand(Guid EventId, string ContentType, byte[] Content) : IRequest<PageDto>;
+
+public sealed class UploadLogoHandler(IAppDbContext db, IFileStorage storage) : IRequestHandler<UploadLogoCommand, PageDto>
+{
+    public async Task<PageDto> Handle(UploadLogoCommand request, CancellationToken ct)
+    {
+        var page = await PageStore.EnsureAsync(db, request.EventId, ct);
+        var key = $"events/{request.EventId}/branding/logo";
+        using var ms = new MemoryStream(request.Content);
+        await storage.UploadAsync(key, ms, request.ContentType, ct);
+        // App-relative URL — the front-end resolves it against the API base (same-origin in prod).
+        page.LogoUrl = $"/api/public/events/{request.EventId}/logo?v={Guid.NewGuid():N}";
         await db.SaveChangesAsync(ct);
         return PageDto.From(page);
     }

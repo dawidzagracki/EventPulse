@@ -24,7 +24,8 @@ public sealed record EventSummaryDto(
     string? CustomPhotosText,
     bool ShowAgendaTab,
     bool ShowActivitiesTab,
-    bool ShowGalleryTab);
+    bool ShowGalleryTab,
+    bool ShowPreferencesTile);
 
 /// <summary>
 /// Loads a lightweight event summary for the in-app participant view. Tenant-scoped
@@ -48,6 +49,6 @@ public sealed class GetEventSummaryHandler : IRequestHandler<GetEventSummaryQuer
             ev.Id, ev.Name, ev.Slug, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description,
             ev.UsesLocationData, ev.PhoneRequired, ev.AllowCompanions, ev.MaxCompanions,
             ev.CustomPhotosUrl, ev.CustomPhotosText,
-            ev.ShowAgendaTab, ev.ShowActivitiesTab, ev.ShowGalleryTab);
+            ev.ShowAgendaTab, ev.ShowActivitiesTab, ev.ShowGalleryTab, ev.ShowPreferencesTile);
     }
 }

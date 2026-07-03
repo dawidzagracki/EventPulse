@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { assetUrl } from '../../lib/api'
 import {
   useAddCompanion,
   useCompleteOnboarding,
@@ -150,7 +151,7 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
       <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           {branding?.logoUrl ? (
-            <img src={branding.logoUrl} alt={ev?.name ?? ''} className="h-7 max-w-[160px] object-contain" />
+            <img src={assetUrl(branding.logoUrl) ?? undefined} alt={ev?.name ?? ''} className="h-7 max-w-[160px] object-contain" />
           ) : (
             <Logo size={26} />
           )}
@@ -213,7 +214,9 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         {activeTab === 'gallery' && <GallerySection />}
         {activeTab === 'profile' && (
           <div className="space-y-5">
-            <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
+            {ev?.showPreferencesTile !== false && (
+              <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
+            )}
             <CompanionsSection />
             <CustomFieldsSection />
             <LogisticsSection profile={profile} />
@@ -1034,7 +1037,8 @@ function CustomFieldControl({
     const selected = parseStringArray(value)
     const toggle = (o: string) => {
       const set = new Set(selected)
-      set.has(o) ? set.delete(o) : set.add(o)
+      if (set.has(o)) set.delete(o)
+      else set.add(o)
       onChange(JSON.stringify([...set]))
     }
     return (

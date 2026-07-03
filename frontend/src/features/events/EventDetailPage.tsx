@@ -22,7 +22,7 @@ import { EventStatus, EventStatusName } from '../../types/api'
 
 // Clients get a focused subset — the tabs they actually care about when
 // reviewing their event. Agency staff see everything.
-const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'page', 'participants', 'gallery', 'form', 'settings']
+const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'agenda', 'page', 'participants', 'gallery', 'form', 'settings']
 
 type Tab =
   | 'dashboard'

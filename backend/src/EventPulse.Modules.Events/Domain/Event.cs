@@ -75,4 +75,7 @@ public sealed class Event : AggregateRoot
 
     /// <summary>Show the Gallery tab in the participant app.</summary>
     public bool ShowGalleryTab { get; set; } = true;
+
+    /// <summary>Show the Preferences tile (language/diet/shirt/transfer) in the participant profile tab.</summary>
+    public bool ShowPreferencesTile { get; set; } = true;
 }

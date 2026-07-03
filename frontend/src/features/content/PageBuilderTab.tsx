@@ -9,6 +9,7 @@ import {
   useRestoreVersion,
   useSaveDraft,
   useUpdateBranding,
+  useUploadLogo,
   useVersions,
 } from './api'
 import { useEvent } from '../events/api'
@@ -457,6 +458,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
 
         {showBranding && (
           <BrandingEditor
+            eventId={eventId}
             branding={branding}
             onChange={setBranding}
             onSave={handleBranding}
@@ -837,17 +839,42 @@ function serializeBackground(mode: 'color' | 'gradient' | 'image', color: string
 }
 
 function BrandingEditor({
+  eventId,
   branding,
   onChange,
   onSave,
   saving,
 }: {
+  eventId: string
   branding: BrandingDto
   onChange: (b: BrandingDto) => void
   onSave: () => Promise<void> | void
   saving: boolean
 }) {
   const { t } = useTranslation()
+  const uploadLogo = useUploadLogo(eventId)
+  const [logoErr, setLogoErr] = useState<string | null>(null)
+
+  async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!file) return
+    setLogoErr(null)
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setLogoErr(t('page.logoBadType'))
+      return
+    }
+    if (file.size > 5_000_000) {
+      setLogoErr(t('page.logoTooBig'))
+      return
+    }
+    try {
+      const updated = await uploadLogo.mutateAsync(file)
+      onChange({ ...branding, logoUrl: updated.branding.logoUrl })
+    } catch {
+      setLogoErr(t('page.logoUploadError'))
+    }
+  }
   const parsed = parseBackground(branding.backgroundColor)
   const [mode, setMode] = useState(parsed.mode)
   const [color, setColor] = useState(parsed.color)
@@ -930,11 +957,24 @@ function BrandingEditor({
           />
         </Field>
         <Field label={t('page.logoUrl')}>
-          <Input
-            placeholder="https://…"
-            value={branding.logoUrl ?? ''}
-            onChange={(e) => onChange({ ...branding, logoUrl: e.target.value || null })}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              className="min-w-0 flex-1"
+              placeholder="https://…"
+              value={branding.logoUrl ?? ''}
+              onChange={(e) => onChange({ ...branding, logoUrl: e.target.value || null })}
+            />
+            <label
+              className={`shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm text-slate-200 transition hover:bg-slate-800 ${
+                uploadLogo.isPending ? 'pointer-events-none opacity-60' : ''
+              }`}
+              title={t('page.logoUpload')}
+            >
+              {uploadLogo.isPending ? '…' : `⬆ ${t('page.logoUpload')}`}
+              <input type="file" accept="image/jpeg,image/png" className="hidden" onChange={onLogoFile} />
+            </label>
+          </div>
+          {logoErr && <p className="mt-1 text-[11px] text-rose-400">{logoErr}</p>}
         </Field>
         <Button variant="subtle" onClick={onSave} disabled={saving}>
           {t('page.saveBranding')}
@@ -1459,6 +1499,67 @@ function RepeaterEditor({
 }
 
 // ===================== StyleTab =====================
+// Text fields that expose per-text typography presets (size + bold/italic), per block type.
+const TEXT_FIELDS: Record<string, { key: string; label: string }[]> = {
+  hero: [{ key: 'subtitle', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }, { key: 'ctaLabel', label: 'Przycisk' }],
+  description: [{ key: 'eyebrow', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }, { key: 'body', label: 'Treść' }],
+  stats: [{ key: 'title', label: 'Tytuł' }],
+  features: [{ key: 'eyebrow', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }],
+  testimonial: [{ key: 'quote', label: 'Cytat' }, { key: 'author', label: 'Autor' }],
+  split: [{ key: 'eyebrow', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }, { key: 'body', label: 'Treść' }],
+  agenda: [{ key: 'title', label: 'Tytuł' }],
+  map: [{ key: 'title', label: 'Tytuł' }],
+  gallery: [{ key: 'title', label: 'Tytuł' }],
+  countdown: [{ key: 'title', label: 'Tytuł' }],
+  faq: [{ key: 'title', label: 'Tytuł' }],
+  team: [{ key: 'title', label: 'Tytuł' }],
+  video: [{ key: 'title', label: 'Tytuł' }],
+  sponsors: [{ key: 'title', label: 'Tytuł' }],
+  cta: [{ key: 'title', label: 'Tytuł' }, { key: 'body', label: 'Treść' }, { key: 'buttonLabel', label: 'Przycisk' }],
+  contests: [{ key: 'title', label: 'Tytuł' }],
+  quizzes: [{ key: 'title', label: 'Tytuł' }],
+}
+
+function TypographyField({
+  block,
+  styles,
+  field,
+  onStyle,
+}: {
+  block: PageBlock
+  styles: Record<string, unknown>
+  field: { key: string; label: string }
+  onStyle: (id: string, k: string, v: unknown) => void
+}) {
+  const size = (styles[`${field.key}Size`] as string) ?? 'm'
+  const bold = !!styles[`${field.key}Bold`]
+  const italic = !!styles[`${field.key}Italic`]
+  const chip = (active: boolean) =>
+    `rounded px-2 py-0.5 text-[11px] transition ${
+      active ? 'bg-indigo-500/30 text-white ring-1 ring-inset ring-indigo-400/40' : 'text-slate-400 hover:text-white'
+    }`
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-2">
+      <p className="mb-1 text-[11px] text-slate-300">{field.label}</p>
+      <div className="flex flex-wrap items-center gap-1">
+        <div className="flex gap-0.5 rounded-md border border-slate-700/60 bg-slate-950/60 p-0.5">
+          {(['s', 'm', 'l', 'xl'] as const).map((s) => (
+            <button key={s} type="button" onClick={() => onStyle(block.id, `${field.key}Size`, s)} className={chip(size === s)}>
+              {s.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={() => onStyle(block.id, `${field.key}Bold`, !bold)} className={`${chip(bold)} font-bold`}>
+          B
+        </button>
+        <button type="button" onClick={() => onStyle(block.id, `${field.key}Italic`, !italic)} className={`${chip(italic)} italic`}>
+          I
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function StyleTab({
   block,
   schema,
@@ -1601,7 +1702,16 @@ function StyleTab({
         </Field>
       )}
 
-      {Object.keys(opts).length === 0 && (
+      {(TEXT_FIELDS[block.type] ?? []).length > 0 && (
+        <div className="space-y-2 border-t border-slate-800 pt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t('page.typography')}</p>
+          {(TEXT_FIELDS[block.type] ?? []).map((f) => (
+            <TypographyField key={f.key} block={block} styles={styles} field={f} onStyle={onStyle} />
+          ))}
+        </div>
+      )}
+
+      {Object.keys(opts).length === 0 && (TEXT_FIELDS[block.type] ?? []).length === 0 && (
         <p className="py-6 text-center text-xs text-slate-500">Brak opcji stylu dla tego bloku.</p>
       )}
     </div>

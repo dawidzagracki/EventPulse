@@ -32,6 +32,7 @@ public sealed class AgendaController : ControllerBase
     }
 
     [HttpPut("types")]
+    [Authorize(Policy = AuthPolicies.Agency)]
     public async Task<ActionResult<IReadOnlyList<AgendaTypeDto>>> SaveTypes(
         Guid eventId, SaveTypesBody body, CancellationToken ct)
     {
@@ -42,6 +43,7 @@ public sealed class AgendaController : ControllerBase
     public sealed record SaveTypesBody(IReadOnlyList<AgendaTypeInput> Types);
 
     [HttpPost]
+    [Authorize(Policy = AuthPolicies.Agency)]
     public async Task<ActionResult<AgendaItemDto>> Create(Guid eventId, AgendaItemInput input, CancellationToken ct)
     {
         var ev = await EnsureEventAsync(eventId, ct);
@@ -49,6 +51,7 @@ public sealed class AgendaController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthPolicies.Agency)]
     public async Task<ActionResult<AgendaItemDto>> Update(Guid eventId, Guid id, AgendaItemInput input, CancellationToken ct)
     {
         var ev = await EnsureEventAsync(eventId, ct);
@@ -56,6 +59,7 @@ public sealed class AgendaController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthPolicies.Agency)]
     public async Task<IActionResult> Delete(Guid eventId, Guid id, CancellationToken ct)
     {
         var ev = await EnsureEventAsync(eventId, ct);

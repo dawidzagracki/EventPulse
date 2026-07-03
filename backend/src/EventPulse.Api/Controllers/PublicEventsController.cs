@@ -75,6 +75,31 @@ public sealed class PublicEventsController : ControllerBase
     [HttpGet("quizzes")]
     public async Task<ActionResult<IReadOnlyList<PublicQuizDto>>> Quizzes(Guid eventId, CancellationToken ct)
         => Ok(await _mediator.Send(new PublicQuizzesQuery(eventId), ct));
+
+    /// <summary>Serves an uploaded branding logo (referenced by the page's LogoUrl). Anonymous.</summary>
+    [HttpGet("logo")]
+    public async Task<IActionResult> Logo(Guid eventId, CancellationToken ct)
+    {
+        var stored = await _mediator.Send(new PublicLogoQuery(eventId), ct);
+        return File(stored.Content, stored.ContentType);
+    }
+}
+
+public sealed record PublicLogoQuery(Guid EventId) : IRequest<StoredFile>;
+
+public sealed class PublicLogoHandler(IFileStorage storage) : IRequestHandler<PublicLogoQuery, StoredFile>
+{
+    public async Task<StoredFile> Handle(PublicLogoQuery request, CancellationToken ct)
+    {
+        try
+        {
+            return await storage.DownloadAsync($"events/{request.EventId}/branding/logo", ct);
+        }
+        catch
+        {
+            throw new NotFoundException("Logo not found.");
+        }
+    }
 }
 
 public sealed record PublicContestDto(Guid Id, string Name, int Mode);
@@ -86,7 +111,7 @@ public sealed class PublicContestsHandler(IAppDbContext db) : IRequestHandler<Pu
     public async Task<IReadOnlyList<PublicContestDto>> Handle(PublicContestsQuery request, CancellationToken ct)
     {
         var allowed = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
-            .AnyAsync(e => e.Id == request.EventId && e.Status >= EventStatus.Published, ct);
+            .AnyAsync(e => e.Id == request.EventId && e.Status != EventStatus.Archived, ct);
         if (!allowed) throw new NotFoundException("Event not available.");
 
         return await db.Set<Contest>().AsNoTracking().IgnoreQueryFilters()
@@ -106,7 +131,7 @@ public sealed class PublicQuizzesHandler(IAppDbContext db) : IRequestHandler<Pub
     public async Task<IReadOnlyList<PublicQuizDto>> Handle(PublicQuizzesQuery request, CancellationToken ct)
     {
         var allowed = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
-            .AnyAsync(e => e.Id == request.EventId && e.Status >= EventStatus.Published, ct);
+            .AnyAsync(e => e.Id == request.EventId && e.Status != EventStatus.Archived, ct);
         if (!allowed) throw new NotFoundException("Event not available.");
 
         return await db.Set<Quiz>().AsNoTracking().IgnoreQueryFilters()
@@ -133,8 +158,12 @@ public sealed class PublicEventHandler(IAppDbContext db) : IRequestHandler<Publi
 {
     public async Task<PublicEventDto> Handle(PublicEventQuery request, CancellationToken ct)
     {
+        // Gate the public event (and its sub-resources: agenda/gallery/countdown) the SAME way as the
+        // published page and by-slug route — the real public gate is publishing the PAGE, not the event
+        // status. Otherwise a Draft event with a published page renders the page but 404s here, which
+        // silently starves the agenda and countdown (they key off this event's data).
         var ev = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
-            .Where(e => e.Id == request.EventId && e.Status >= EventStatus.Published)
+            .Where(e => e.Id == request.EventId && e.Status != EventStatus.Archived)
             .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status))
             .FirstOrDefaultAsync(ct);
 
@@ -183,7 +212,7 @@ public sealed class PublicAgendaHandler(IAppDbContext db) : IRequestHandler<Publ
     public async Task<IReadOnlyList<AgendaItemDto>> Handle(PublicAgendaQuery request, CancellationToken ct)
     {
         var allowed = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
-            .AnyAsync(e => e.Id == request.EventId && e.Status >= EventStatus.Published, ct);
+            .AnyAsync(e => e.Id == request.EventId && e.Status != EventStatus.Archived, ct);
         if (!allowed) throw new NotFoundException("Event not available.");
 
         var items = await db.Set<AgendaItem>().AsNoTracking().IgnoreQueryFilters()
@@ -203,7 +232,7 @@ public sealed class PublicGalleryHandler(IAppDbContext db) : IRequestHandler<Pub
     public async Task<IReadOnlyList<PhotoDto>> Handle(PublicGalleryQuery request, CancellationToken ct)
     {
         var allowed = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
-            .AnyAsync(e => e.Id == request.EventId && e.Status >= EventStatus.Published, ct);
+            .AnyAsync(e => e.Id == request.EventId && e.Status != EventStatus.Archived, ct);
         if (!allowed) throw new NotFoundException("Event not available.");
 
         var photos = await db.Set<Photo>().AsNoTracking().IgnoreQueryFilters()

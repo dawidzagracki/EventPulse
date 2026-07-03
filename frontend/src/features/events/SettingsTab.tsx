@@ -171,6 +171,12 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
             label="Galeria"
             description="Zdjęcia z wydarzenia (lub Twój link do zdjęć)."
           />
+          <Toggle
+            checked={form.showPreferencesTile}
+            onChange={(v) => set('showPreferencesTile', v)}
+            label="Preferencje (w Profilu)"
+            description="Kafelek preferencji gościa: język, dieta, rozmiar koszulki, transfer."
+          />
         </div>
       </Card>
 
@@ -238,5 +244,6 @@ function serverForm(s: import('../../types/api').EventSettingsDto): UpdateEventS
     showAgendaTab: s.showAgendaTab,
     showActivitiesTab: s.showActivitiesTab,
     showGalleryTab: s.showGalleryTab,
+    showPreferencesTile: s.showPreferencesTile,
   }
 }
