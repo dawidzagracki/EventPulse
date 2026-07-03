@@ -15,11 +15,24 @@ export function getBlockStyle(block: PageBlock): {
   const style: React.CSSProperties = {}
 
   const bgType = (s.bgType as string) ?? 'default'
-  if (bgType === 'color' && typeof s.bgColor === 'string') {
-    style.background = s.bgColor
-  } else if (bgType === 'gradient' && typeof s.bgGradientFrom === 'string' && typeof s.bgGradientTo === 'string') {
-    const angle = typeof s.bgGradientAngle === 'number' ? s.bgGradientAngle : 135
-    style.background = `linear-gradient(${angle}deg, ${s.bgGradientFrom}, ${s.bgGradientTo})`
+  const bgColor = typeof s.bgColor === 'string' ? s.bgColor : undefined
+  const gFrom = typeof s.bgGradientFrom === 'string' ? s.bgGradientFrom : undefined
+  const gTo = typeof s.bgGradientTo === 'string' ? s.bgGradientTo : undefined
+  if (bgType === 'color' && bgColor) {
+    style.background = bgColor
+  } else if (bgType === 'gradient') {
+    // Tolerate partially-set gradients: the Style tab shows default "from"/"to"
+    // colours but only persists the one the user actually changes, so a block can
+    // end up with just "to" (or a leftover bgColor). Fall back from→to→bgColor so
+    // the chosen colour still renders instead of nothing (which showed as white).
+    // When NONE are set, leave background unset so the block keeps its own default
+    // (e.g. countdown's brand gradient).
+    const from = gFrom ?? bgColor ?? gTo
+    const to = gTo ?? bgColor ?? gFrom
+    if (from || to) {
+      const angle = typeof s.bgGradientAngle === 'number' ? s.bgGradientAngle : 135
+      style.background = `linear-gradient(${angle}deg, ${from ?? to}, ${to ?? from})`
+    }
   }
 
   if (typeof s.padding === 'number') style.padding = s.padding

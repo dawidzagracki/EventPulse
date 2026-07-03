@@ -1582,7 +1582,24 @@ function StyleTab({
       {opts.background && (
         <div className="space-y-2">
           <Field label={t('page.bgType')}>
-            <Select value={bgType} onChange={(e) => onStyle(block.id, 'bgType', e.target.value)}>
+            <Select
+              value={bgType}
+              onChange={(e) => {
+                const v = e.target.value
+                onStyle(block.id, 'bgType', v)
+                // Seed both gradient stops (or the solid colour) so a freshly-picked
+                // gradient always has From+To persisted — not just the one the user tweaks.
+                if (v === 'gradient') {
+                  if (typeof styles.bgGradientFrom !== 'string')
+                    onStyle(block.id, 'bgGradientFrom', (styles.bgColor as string) || '#ffffff')
+                  if (typeof styles.bgGradientTo !== 'string')
+                    onStyle(block.id, 'bgGradientTo', branding.primaryColor)
+                } else if (v === 'color') {
+                  if (typeof styles.bgColor !== 'string')
+                    onStyle(block.id, 'bgColor', (styles.bgGradientFrom as string) || branding.primaryColor)
+                }
+              }}
+            >
               <option value="default">{t('page.bgNone')}</option>
               <option value="color">{t('page.bgColor')}</option>
               <option value="gradient">{t('page.bgGradient')}</option>
