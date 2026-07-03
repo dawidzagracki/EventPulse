@@ -346,6 +346,8 @@
     "logoTooBig": "Plik jest za duży (maks. 5 MB).",
     "logoUploadError": "Nie udało się wgrać logo.",
     "typography": "Typografia (rozmiar i styl tekstu)",
+    "contentLang": "Język treści",
+    "contentLangHint": "Przełącz na EN, aby wpisywać treści bloków (tytuły, teksty) po angielsku — zapisują się osobno dla każdego języka. Napisy stałe tłumaczą się same.",
     "font": "Czcionka strony",
     "confirmPublish": "Opublikować stronę? Aktualna wersja stanie się widoczna publicznie.",
     "confirmRestore": "Przywrócić wersję {{version}}? Bieżący szkic zostanie nadpisany.",

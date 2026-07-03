@@ -346,6 +346,8 @@
     "logoTooBig": "File too large (max 5 MB).",
     "logoUploadError": "Could not upload the logo.",
     "typography": "Typography (text size & style)",
+    "contentLang": "Content language",
+    "contentLangHint": "Switch to EN to type block content (titles, text) in English — saved separately per language. Fixed labels translate automatically.",
     "font": "Page font",
     "confirmPublish": "Publish the page? The current version becomes publicly visible.",
     "confirmRestore": "Restore version {{version}}? The current draft will be overwritten.",

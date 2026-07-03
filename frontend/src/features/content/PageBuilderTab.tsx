@@ -411,12 +411,16 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             {leftOpen ? '⟨⟩' : '☰'} {t('page.panels')}
           </button>
 
-          <span className="ml-auto" />
-
-          <Select value={lang} onChange={(e) => setLang(e.target.value as 'pl' | 'en')} className="!w-20 !py-1.5 !text-xs">
-            <option value="pl">PL</option>
-            <option value="en">EN</option>
-          </Select>
+          <label
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-2 py-1"
+            title={t('page.contentLangHint')}
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-200">🌐 {t('page.contentLang')}</span>
+            <Select value={lang} onChange={(e) => setLang(e.target.value as 'pl' | 'en')} className="!w-16 !py-1 !text-xs">
+              <option value="pl">PL</option>
+              <option value="en">EN</option>
+            </Select>
+          </label>
 
           <Select
             value=""
