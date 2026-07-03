@@ -121,12 +121,14 @@ function textPresetStyle(block: PageBlock, k: string): CSSProperties | undefined
   const bold = !!s[`${k}Bold`]
   const italic = !!s[`${k}Italic`]
   const font = fontStackById(s[`${k}Font`] as string | undefined)
-  if ((!size || size === 'm') && !bold && !italic && !font) return undefined
+  const color = typeof s[`${k}Color`] === 'string' ? (s[`${k}Color`] as string) : undefined
+  if ((!size || size === 'm') && !bold && !italic && !font && !color) return undefined
   return {
     fontSize: size && size !== 'm' ? TEXT_SIZE_EM[size] : undefined,
     fontWeight: bold ? 700 : undefined,
     fontStyle: italic ? 'italic' : undefined,
     fontFamily: font,
+    color,
   }
 }
 
@@ -637,6 +639,15 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
   ]
   const stl = getBlockStyle(block)
   const primary = stl.accentColor ?? ctx.branding.primaryColor
+  // Per-text styling for the timer numbers (font/size/bold/italic/colour), edited
+  // via the synthetic "digits" field in the Style tab. Labels share the font and
+  // colour but keep their small uppercase size.
+  const digitStyle = textPresetStyle(block, 'digits')
+  const digitFont = fontStackById((block.styles as Record<string, unknown> | undefined)?.digitsFont as string | undefined)
+  const digitColor =
+    typeof (block.styles as Record<string, unknown> | undefined)?.digitsColor === 'string'
+      ? ((block.styles as Record<string, unknown>).digitsColor as string)
+      : undefined
   return (
     <section
       id={`block-${block.id}`}
@@ -652,8 +663,15 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
       <div className="mx-auto mt-8 grid max-w-2xl grid-cols-4 gap-3 sm:gap-5">
         {cells.map((cell, i) => (
           <div key={i} className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm sm:p-6">
-            <p className="text-3xl font-black tabular-nums sm:text-5xl">{String(cell.v).padStart(2, '0')}</p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">{cell.l}</p>
+            <p className="text-3xl font-black tabular-nums sm:text-5xl" style={digitStyle}>
+              {String(cell.v).padStart(2, '0')}
+            </p>
+            <p
+              className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80"
+              style={{ fontFamily: digitFont, color: digitColor }}
+            >
+              {cell.l}
+            </p>
           </div>
         ))}
       </div>

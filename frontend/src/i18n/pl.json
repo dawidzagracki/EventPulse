@@ -390,6 +390,7 @@
     "borderRadius": "Zaokrąglenie",
     "titleColor": "Kolor nagłówka",
     "textColor": "Kolor tekstu",
+    "reset": "Domyślny",
     "accentOverride": "Akcent (override brand)",
     "animation": "Animacja wjazdu",
     "animNone": "Brak",

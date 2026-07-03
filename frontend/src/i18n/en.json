@@ -390,6 +390,7 @@
     "borderRadius": "Border radius",
     "titleColor": "Heading color",
     "textColor": "Text color",
+    "reset": "Default",
     "accentOverride": "Accent (override brand)",
     "animation": "Entrance animation",
     "animNone": "None",

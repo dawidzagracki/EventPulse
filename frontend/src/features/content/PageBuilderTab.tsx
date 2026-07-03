@@ -1538,16 +1538,23 @@ function RepeaterEditor({
 }
 
 // ===================== StyleTab =====================
+// Synthetic typography targets that aren't schema content fields but are still
+// user-visible text worth styling (e.g. the countdown's timer digits).
+const EXTRA_TEXT_FIELDS: Record<string, { key: string; label: string }[]> = {
+  countdown: [{ key: 'digits', label: 'Liczby (cyfry)' }],
+}
+
 // Every editable text field of a block (from its schema) gets per-text typography:
-// font family, size and bold/italic. url/image fields are excluded — there is no
-// text to style there. Derived from the schema so ANY text field, in any block,
-// automatically exposes these controls.
+// font family, colour, size and bold/italic. url/image fields are excluded — there
+// is no text to style there. Derived from the schema so ANY text field, in any
+// block, automatically exposes these controls, plus any synthetic targets above.
 function textFieldsForBlock(type: string): { key: string; label: string }[] {
   const schema = blockSchema(type)
   if (!schema) return []
-  return schema.contentFields
+  const fromSchema = schema.contentFields
     .filter((f) => f.kind === 'text' || f.kind === 'longtext')
     .map((f) => ({ key: f.key, label: f.label }))
+  return [...fromSchema, ...(EXTRA_TEXT_FIELDS[type] ?? [])]
 }
 
 function TypographyField({
@@ -1566,6 +1573,7 @@ function TypographyField({
   const bold = !!styles[`${field.key}Bold`]
   const italic = !!styles[`${field.key}Italic`]
   const font = (styles[`${field.key}Font`] as string) ?? ''
+  const color = typeof styles[`${field.key}Color`] === 'string' ? (styles[`${field.key}Color`] as string) : undefined
   const chip = (active: boolean) =>
     `rounded px-2 py-0.5 text-[11px] transition ${
       active ? 'bg-indigo-500/30 text-white ring-1 ring-inset ring-indigo-400/40' : 'text-slate-400 hover:text-white'
@@ -1602,6 +1610,32 @@ function TypographyField({
         <button type="button" onClick={() => onStyle(block.id, `${field.key}Italic`, !italic)} className={`${chip(italic)} italic`}>
           I
         </button>
+      </div>
+      <div className="mt-1.5 flex items-center gap-2">
+        {color ? (
+          <>
+            <span className="text-[11px] text-slate-400">{t('page.textColor')}</span>
+            <div className="min-w-0 flex-1">
+              <ColorPicker compact value={color} onChange={(v) => onStyle(block.id, `${field.key}Color`, v)} />
+            </div>
+            <button
+              type="button"
+              title={t('page.reset')}
+              onClick={() => onStyle(block.id, `${field.key}Color`, undefined)}
+              className="rounded px-1.5 py-0.5 text-[11px] text-slate-400 transition hover:text-white"
+            >
+              ✕
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onStyle(block.id, `${field.key}Color`, '#111827')}
+            className="rounded-md border border-slate-700/60 bg-slate-950/60 px-2 py-1 text-[11px] text-slate-300 transition hover:text-white"
+          >
+            + {t('page.textColor')}
+          </button>
+        )}
       </div>
     </div>
   )
