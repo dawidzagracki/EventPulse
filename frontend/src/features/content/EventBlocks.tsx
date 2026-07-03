@@ -126,6 +126,38 @@ function textPresetStyle(block: PageBlock, k: string): CSSProperties | undefined
   }
 }
 
+// English variants of the PL default placeholders, so an untouched block shows a
+// sensible title in EN too (e.g. "Lokalizacja" → "Location") instead of PL text.
+const PLACEHOLDER_EN: Record<string, string> = {
+  Lokalizacja: 'Location',
+  Agenda: 'Agenda',
+  Galeria: 'Gallery',
+  Zespół: 'Team',
+  Wideo: 'Video',
+  Partnerzy: 'Sponsors',
+  'Do startu zostało': 'Time left to start',
+  'Najczęstsze pytania': 'FAQ',
+  Konkursy: 'Contests',
+  Quizy: 'Quizzes',
+  'W liczbach': 'By the numbers',
+  'Tytuł sekcji': 'Section title',
+  'Tytuł wydarzenia': 'Event title',
+  'O wydarzeniu': 'About the event',
+  'Opisz tu swoje wydarzenie...': 'Describe your event...',
+  'Opisz szczegóły...': 'Describe the details...',
+  'Dołącz do nas': 'Join us',
+  'Krótki tekst zachęcający': 'A short inviting line',
+  'Zarejestruj się': 'Register',
+  Data: 'Date',
+  Miejsce: 'Venue',
+  NADTYTUŁ: 'EYEBROW',
+  'Co Cię czeka': "What's in store",
+  'Najważniejsze elementy': 'Highlights',
+  'Najlepsze wydarzenie roku!': 'Best event of the year!',
+  'Jan Kowalski': 'Jane Doe',
+  'CEO, Firma': 'CEO, Company',
+}
+
 function E({
   block,
   k,
@@ -139,10 +171,17 @@ function E({
   placeholder?: string
   className?: string
 }) {
-  const value = (block.content?.[ctx.lang]?.[k] ?? '') as string
+  // Current-language value (used verbatim for editing / change detection).
+  const cur = (block.content?.[ctx.lang]?.[k] ?? '') as string
+  // In VIEW mode fall back to the other language when this one is empty, so a page
+  // filled in only one language still shows its content everywhere. In EDIT mode
+  // stay strict (empty stays empty) so you always edit the right language field.
+  const other = ctx.lang === 'en' ? 'pl' : 'en'
+  const shown = ctx.edit ? cur : cur || ((block.content?.[other]?.[k] as string) ?? '')
+  const ph = ctx.lang === 'en' && placeholder ? PLACEHOLDER_EN[placeholder] ?? placeholder : placeholder
   const ts = textPresetStyle(block, k)
   if (!ctx.edit) {
-    return <span className={className} style={ts}>{value || placeholder || ''}</span>
+    return <span className={className} style={ts}>{shown || ph || ''}</span>
   }
   return (
     <span
@@ -150,13 +189,13 @@ function E({
       style={ts}
       contentEditable
       suppressContentEditableWarning
-      data-placeholder={placeholder}
+      data-placeholder={ph}
       onBlur={(e) => {
         const next = e.currentTarget.textContent ?? ''
-        if (next !== value) ctx.edit!.onTextChange(block.id, k, next)
+        if (next !== cur) ctx.edit!.onTextChange(block.id, k, next)
       }}
     >
-      {value || placeholder || ''}
+      {shown || ph || ''}
     </span>
   )
 }

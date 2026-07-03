@@ -132,11 +132,13 @@ body {
 
 /* Default scroll-reveal applied by the public page — fade + slight upward
  * translate when the section enters the viewport. JS toggles `.reveal-in`. */
+/* No `will-change` here: keeping it on every section forced a permanent
+ * compositing layer that, combined with the gradient backgrounds, could make a
+ * section vanish while scrolling. The transition animates fine without it. */
 .reveal-on-scroll {
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
 }
 .reveal-on-scroll.reveal-in {
   opacity: 1;

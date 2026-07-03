@@ -489,6 +489,12 @@ function RevealOnScroll({ children, delayMs = 0 }: { children: React.ReactNode; 
     if (revealed) return
     const node = ref.current
     if (!node) return
+    // Anything already in or above the viewport on mount is revealed immediately —
+    // no stuck-hidden content and no flash for above-the-fold sections.
+    if (node.getBoundingClientRect().top < window.innerHeight) {
+      setRevealed(true)
+      return
+    }
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -502,7 +508,12 @@ function RevealOnScroll({ children, delayMs = 0 }: { children: React.ReactNode; 
       { rootMargin: '0px 0px -10% 0px', threshold: 0.05 },
     )
     io.observe(node)
-    return () => io.disconnect()
+    // Safety net: never leave a section invisible if the observer misses it.
+    const t = window.setTimeout(() => setRevealed(true), 1500)
+    return () => {
+      io.disconnect()
+      window.clearTimeout(t)
+    }
   }, [revealed])
 
   return (
