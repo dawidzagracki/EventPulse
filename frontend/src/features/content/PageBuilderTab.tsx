@@ -181,11 +181,13 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
     blocksHistory.set((prev) => markDirty(prev.map((b) => (b.id === id ? fn(b) : b))), { skipHistory })
   }
 
-  function setText(blockId: string, key: string, value: string) {
+  function setText(blockId: string, key: string, value: string, textLang: 'pl' | 'en' = lang) {
     // Inline contentEditable fires onBlur once per edit; coalesce into history.
+    // textLang defaults to the canvas language, but the Content tab passes it
+    // explicitly so both PL and EN can be edited side by side.
     patchBlock(blockId, (b) => ({
       ...b,
-      content: { ...b.content, [lang]: { ...(b.content[lang] ?? {}), [key]: value } },
+      content: { ...b.content, [textLang]: { ...(b.content[textLang] ?? {}), [key]: value } },
     }))
   }
 
@@ -1235,7 +1237,7 @@ function PropertyPanel({
   tab: 'content' | 'style' | 'advanced'
   onTabChange: (t: 'content' | 'style' | 'advanced') => void
   branding: BrandingDto
-  onTextChange: (id: string, k: string, v: string) => void
+  onTextChange: (id: string, k: string, v: string, textLang?: 'pl' | 'en') => void
   onStyleChange: (id: string, k: string, v: unknown) => void
   onSettingChange: (id: string, k: string, v: unknown) => void
   onDuplicate: () => void
@@ -1297,7 +1299,7 @@ function PropertyPanel({
       {/* Tab content */}
       <div className="space-y-3 p-3">
         {tab === 'content' && (
-          <ContentTab block={block} schema={schema} lang={lang} onText={onTextChange} onSetting={onSettingChange} />
+          <ContentTab block={block} schema={schema} onText={onTextChange} onSetting={onSettingChange} />
         )}
         {tab === 'style' && (
           <StyleTab block={block} schema={schema} styles={styles} branding={branding} onStyle={onStyleChange} />
@@ -1319,38 +1321,55 @@ function PropertyPanel({
 function ContentTab({
   block,
   schema,
-  lang,
   onText,
   onSetting,
 }: {
   block: PageBlock
   schema: BlockSchema
-  lang: 'pl' | 'en'
-  onText: (id: string, k: string, v: string) => void
+  onText: (id: string, k: string, v: string, textLang?: 'pl' | 'en') => void
   onSetting: (id: string, k: string, v: unknown) => void
 }) {
+  const inputCls =
+    'w-full rounded-md border border-slate-700/60 bg-slate-950/60 px-2.5 py-1.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20'
+  const renderInput = (f: (typeof schema.contentFields)[number], val: string, onChange: (v: string) => void) =>
+    f.kind === 'longtext' ? (
+      <textarea value={val} placeholder={f.placeholder} rows={3} onChange={(e) => onChange(e.target.value)} className={inputCls} />
+    ) : (
+      <Input value={val} placeholder={f.placeholder} onChange={(e) => onChange(e.target.value)} />
+    )
+
   return (
     <div className="space-y-3">
       {schema.contentFields.map((f) => {
-        const value = (block.content?.[lang]?.[f.key] ?? '') as string
+        // URL / image fields are language-neutral → one input, written to both languages.
+        if (f.kind === 'url' || f.kind === 'image') {
+          const v = (block.content?.pl?.[f.key] ?? block.content?.en?.[f.key] ?? '') as string
+          return (
+            <Field key={f.key} label={f.label}>
+              {renderInput(f, v, (val) => {
+                onText(block.id, f.key, val, 'pl')
+                onText(block.id, f.key, val, 'en')
+              })}
+            </Field>
+          )
+        }
+        // Text fields → PL + EN side by side, so both languages are always in view.
+        const plVal = (block.content?.pl?.[f.key] ?? '') as string
+        const enVal = (block.content?.en?.[f.key] ?? '') as string
         return (
-          <Field key={f.key} label={f.label}>
-            {f.kind === 'longtext' ? (
-              <textarea
-                value={value}
-                placeholder={f.placeholder}
-                onChange={(e) => onText(block.id, f.key, e.target.value)}
-                rows={4}
-                className="w-full rounded-md border border-slate-700/60 bg-slate-950/60 px-2.5 py-1.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
-              />
-            ) : (
-              <Input
-                value={value}
-                placeholder={f.placeholder}
-                onChange={(e) => onText(block.id, f.key, e.target.value)}
-              />
-            )}
-          </Field>
+          <div key={f.key} className="rounded-lg border border-slate-800 bg-slate-950/30 p-2.5">
+            <p className="mb-2 text-[11px] font-semibold text-slate-300">{f.label}</p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="mt-2 w-9 shrink-0 text-[10px] font-bold text-slate-400">🇵🇱 PL</span>
+                <div className="min-w-0 flex-1">{renderInput(f, plVal, (val) => onText(block.id, f.key, val, 'pl'))}</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="mt-2 w-9 shrink-0 text-[10px] font-bold text-slate-400">🇬🇧 EN</span>
+                <div className="min-w-0 flex-1">{renderInput(f, enVal, (val) => onText(block.id, f.key, val, 'en'))}</div>
+              </div>
+            </div>
+          </div>
         )
       })}
 
