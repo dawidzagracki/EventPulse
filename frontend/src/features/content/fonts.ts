@@ -30,6 +30,27 @@ export function fontOptionByStack(stack?: string | null): FontOption {
   return FONT_OPTIONS.find((f) => f.stack === stack) ?? FONT_OPTIONS[0]
 }
 
+/** Resolve a per-text font *id* (as stored on `block.styles["{key}Font"]`) to a CSS stack. */
+export function fontStackById(id?: string | null): string | undefined {
+  if (!id || id === 'inherit') return undefined
+  return FONT_OPTIONS.find((f) => f.id === id)?.stack
+}
+
+/** Every distinct CSS stack used by per-text `*Font` overrides across a set of blocks. */
+export function blockFontStacks(blocks: Array<{ styles?: Record<string, unknown> | null }>): string[] {
+  const out: string[] = []
+  for (const b of blocks) {
+    const s = b.styles ?? {}
+    for (const [k, v] of Object.entries(s)) {
+      if (k.endsWith('Font') && typeof v === 'string') {
+        const stack = fontStackById(v)
+        if (stack) out.push(stack)
+      }
+    }
+  }
+  return out
+}
+
 export function googleFontHref(stack?: string | null): string | null {
   const opt = fontOptionByStack(stack)
   return opt.google ? `https://fonts.googleapis.com/css2?family=${opt.google}&display=swap` : null
@@ -37,14 +58,21 @@ export function googleFontHref(stack?: string | null): string | null {
 
 const FONT_LINK_ID = 'ep-google-font'
 
-/** Idempotently attach (or remove) the Google Fonts stylesheet for a stack to a document head. */
-export function ensureGoogleFont(doc: Document, stack?: string | null): void {
-  const href = googleFontHref(stack)
+/**
+ * Idempotently attach ONE combined Google Fonts stylesheet covering every stack used
+ * on the page (the brand font plus any per-text font overrides). Passing an empty /
+ * all-system list removes the sheet. Multiple `family=` params are valid for css2.
+ */
+export function ensureGoogleFonts(doc: Document, stacks: Array<string | null | undefined>): void {
+  const families = Array.from(
+    new Set(stacks.map((s) => fontOptionByStack(s).google).filter((g): g is string => !!g)),
+  )
   const existing = doc.getElementById(FONT_LINK_ID) as HTMLLinkElement | null
-  if (!href) {
+  if (families.length === 0) {
     existing?.remove()
     return
   }
+  const href = `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join('&')}&display=swap`
   if (existing) {
     if (existing.href !== href) existing.href = href
     return
@@ -54,4 +82,9 @@ export function ensureGoogleFont(doc: Document, stack?: string | null): void {
   link.rel = 'stylesheet'
   link.href = href
   doc.head.appendChild(link)
+}
+
+/** Convenience single-font wrapper around {@link ensureGoogleFonts}. */
+export function ensureGoogleFont(doc: Document, stack?: string | null): void {
+  ensureGoogleFonts(doc, [stack])
 }

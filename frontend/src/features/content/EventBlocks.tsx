@@ -4,6 +4,7 @@ import { AgendaItemTypeName } from '../../types/api'
 import { assetUrl } from '../../lib/api'
 import { parseInstant } from '../../lib/parseInstant'
 import { getBlockStyle } from './blockStyles'
+import { fontStackById } from './fonts'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, type BlockCategory } from './blockSchema'
 
 export interface EditMode {
@@ -107,9 +108,10 @@ function isLightBg(hex: string): boolean {
 }
 
 /** Inline-editable text. Renders plain text in public mode, contentEditable in editor mode. */
-// Per-text typography presets (size + bold/italic) stored on block.styles under
-// "{key}Size" / "{key}Bold" / "{key}Italic". Size is an em multiplier so it scales
-// relative to each field's designed base size and stays responsive. Returns
+// Per-text typography presets stored on block.styles under "{key}Size" / "{key}Bold"
+// / "{key}Italic" / "{key}Font". Size is an em multiplier so it scales relative to
+// each field's designed base size and stays responsive; Font is a font-option id
+// (see fonts.ts) that overrides the inherited page font for just this text. Returns
 // undefined when nothing is set, keeping the default look untouched.
 const TEXT_SIZE_EM: Record<string, string> = { s: '0.85em', m: '1em', l: '1.25em', xl: '1.5em' }
 
@@ -118,11 +120,13 @@ function textPresetStyle(block: PageBlock, k: string): CSSProperties | undefined
   const size = s[`${k}Size`] as string | undefined
   const bold = !!s[`${k}Bold`]
   const italic = !!s[`${k}Italic`]
-  if ((!size || size === 'm') && !bold && !italic) return undefined
+  const font = fontStackById(s[`${k}Font`] as string | undefined)
+  if ((!size || size === 'm') && !bold && !italic && !font) return undefined
   return {
     fontSize: size && size !== 'm' ? TEXT_SIZE_EM[size] : undefined,
     fontWeight: bold ? 700 : undefined,
     fontStyle: italic ? 'italic' : undefined,
+    fontFamily: font,
   }
 }
 

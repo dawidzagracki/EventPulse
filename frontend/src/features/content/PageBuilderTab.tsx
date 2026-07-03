@@ -21,7 +21,7 @@ import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, b
 import { Button, Card, Field, Input, Select } from '../../components/ui'
 import { ColorPicker } from '../../components/ColorPicker'
 import { Icon } from '../../components/Icon'
-import { FONT_OPTIONS, fontOptionByStack, ensureGoogleFont } from './fonts'
+import { FONT_OPTIONS, fontOptionByStack, fontStackById, ensureGoogleFonts, blockFontStacks } from './fonts'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
 
 const TEMPLATES = ['gala', 'konferencja', 'integracja', 'premiera', 'blank']
@@ -108,11 +108,14 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
   const blocksHistory = useHistoryState<PageBlock[]>(page.content.blocks ?? [])
   const blocks = blocksHistory.value
   const [branding, setBranding] = useState<BrandingDto>(page.branding)
-  // Load the chosen web font so the desktop canvas renders in it (the device
-  // iframe and public page load it into their own documents).
+  // Load the brand font AND every per-text font override so the desktop canvas
+  // renders them all (the device iframe and public page load into their own docs).
+  const perTextFontStacks = blockFontStacks(blocks)
+  const fontLoadKey = [branding.fontFamily, ...perTextFontStacks].join('|')
   useEffect(() => {
-    ensureGoogleFont(document, branding.fontFamily)
-  }, [branding.fontFamily])
+    ensureGoogleFonts(document, [branding.fontFamily, ...perTextFontStacks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontLoadKey])
   const [lang, setLang] = useState<'pl' | 'en'>('pl')
   const [device, setDevice] = useState<Device>('desktop')
   // On small laptops the 3 fixed columns force horizontal scroll — let the left
@@ -561,7 +564,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
               // Accurate device preview: an iframe whose width IS the device width, so
               // the page's responsive breakpoints evaluate exactly as on a real phone/tablet.
               // (Read-only — editing/drag-drop stays in the desktop canvas.)
-              <DevicePreviewFrame width={DEVICE_WIDTH[device]} fontFamily={branding.fontFamily}>
+              <DevicePreviewFrame width={DEVICE_WIDTH[device]} fontFamily={branding.fontFamily} fontStacks={perTextFontStacks}>
                 <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
                   {blocks.filter((b) => b.visible !== false).map((b) => (
                     <RenderBlock key={b.id} block={b} ctx={ctx} />
@@ -775,9 +778,21 @@ function LayersPanel({
  * breakpoints evaluate against the device width — so the preview matches a real
  * phone/tablet instead of cramming desktop layout into a narrow div.
  */
-function DevicePreviewFrame({ width, fontFamily, children }: { width: string; fontFamily?: string | null; children: React.ReactNode }) {
+function DevicePreviewFrame({
+  width,
+  fontFamily,
+  fontStacks = [],
+  children,
+}: {
+  width: string
+  fontFamily?: string | null
+  /** Per-text font overrides used inside the previewed page, so their sheets load too. */
+  fontStacks?: string[]
+  children: React.ReactNode
+}) {
   const ref = useRef<HTMLIFrameElement>(null)
   const [body, setBody] = useState<HTMLElement | null>(null)
+  const fontKey = [fontFamily, ...fontStacks].join('|')
 
   useEffect(() => {
     const doc = ref.current?.contentDocument
@@ -794,9 +809,10 @@ function DevicePreviewFrame({ width, fontFamily, children }: { width: string; fo
     doc.body.style.background = '#fbfbfd'
     doc.body.style.color = '#0f172a'
     if (fontFamily) doc.body.style.fontFamily = fontFamily
-    ensureGoogleFont(doc, fontFamily)
+    ensureGoogleFonts(doc, [fontFamily, ...fontStacks])
     setBody(doc.body)
-  }, [fontFamily])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontKey])
 
   return (
     <iframe
@@ -1522,25 +1538,16 @@ function RepeaterEditor({
 }
 
 // ===================== StyleTab =====================
-// Text fields that expose per-text typography presets (size + bold/italic), per block type.
-const TEXT_FIELDS: Record<string, { key: string; label: string }[]> = {
-  hero: [{ key: 'subtitle', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }, { key: 'ctaLabel', label: 'Przycisk' }],
-  description: [{ key: 'eyebrow', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }, { key: 'body', label: 'Treść' }],
-  stats: [{ key: 'title', label: 'Tytuł' }],
-  features: [{ key: 'eyebrow', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }],
-  testimonial: [{ key: 'quote', label: 'Cytat' }, { key: 'author', label: 'Autor' }],
-  split: [{ key: 'eyebrow', label: 'Nadtytuł' }, { key: 'title', label: 'Tytuł' }, { key: 'body', label: 'Treść' }],
-  agenda: [{ key: 'title', label: 'Tytuł' }],
-  map: [{ key: 'title', label: 'Tytuł' }],
-  gallery: [{ key: 'title', label: 'Tytuł' }],
-  countdown: [{ key: 'title', label: 'Tytuł' }],
-  faq: [{ key: 'title', label: 'Tytuł' }],
-  team: [{ key: 'title', label: 'Tytuł' }],
-  video: [{ key: 'title', label: 'Tytuł' }],
-  sponsors: [{ key: 'title', label: 'Tytuł' }],
-  cta: [{ key: 'title', label: 'Tytuł' }, { key: 'body', label: 'Treść' }, { key: 'buttonLabel', label: 'Przycisk' }],
-  contests: [{ key: 'title', label: 'Tytuł' }],
-  quizzes: [{ key: 'title', label: 'Tytuł' }],
+// Every editable text field of a block (from its schema) gets per-text typography:
+// font family, size and bold/italic. url/image fields are excluded — there is no
+// text to style there. Derived from the schema so ANY text field, in any block,
+// automatically exposes these controls.
+function textFieldsForBlock(type: string): { key: string; label: string }[] {
+  const schema = blockSchema(type)
+  if (!schema) return []
+  return schema.contentFields
+    .filter((f) => f.kind === 'text' || f.kind === 'longtext')
+    .map((f) => ({ key: f.key, label: f.label }))
 }
 
 function TypographyField({
@@ -1554,9 +1561,11 @@ function TypographyField({
   field: { key: string; label: string }
   onStyle: (id: string, k: string, v: unknown) => void
 }) {
+  const { t } = useTranslation()
   const size = (styles[`${field.key}Size`] as string) ?? 'm'
   const bold = !!styles[`${field.key}Bold`]
   const italic = !!styles[`${field.key}Italic`]
+  const font = (styles[`${field.key}Font`] as string) ?? ''
   const chip = (active: boolean) =>
     `rounded px-2 py-0.5 text-[11px] transition ${
       active ? 'bg-indigo-500/30 text-white ring-1 ring-inset ring-indigo-400/40' : 'text-slate-400 hover:text-white'
@@ -1564,6 +1573,21 @@ function TypographyField({
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-2">
       <p className="mb-1 text-[11px] text-slate-300">{field.label}</p>
+      <div className="mb-1.5">
+        <Select
+          value={font}
+          onChange={(e) => onStyle(block.id, `${field.key}Font`, e.target.value)}
+          className="!py-1 text-xs"
+          style={font ? { fontFamily: fontStackById(font) } : undefined}
+        >
+          <option value="">{t('page.fontDefault')}</option>
+          {FONT_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id} style={{ fontFamily: o.stack }}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+      </div>
       <div className="flex flex-wrap items-center gap-1">
         <div className="flex gap-0.5 rounded-md border border-slate-700/60 bg-slate-950/60 p-0.5">
           {(['s', 'm', 'l', 'xl'] as const).map((s) => (
@@ -1599,6 +1623,7 @@ function StyleTab({
   const { t } = useTranslation()
   const bgType = (styles.bgType as string) ?? 'default'
   const opts = schema.styleOptions
+  const textFields = textFieldsForBlock(block.type)
 
   return (
     <div className="space-y-3">
@@ -1742,16 +1767,16 @@ function StyleTab({
         </Field>
       )}
 
-      {(TEXT_FIELDS[block.type] ?? []).length > 0 && (
+      {textFields.length > 0 && (
         <div className="space-y-2 border-t border-slate-800 pt-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t('page.typography')}</p>
-          {(TEXT_FIELDS[block.type] ?? []).map((f) => (
+          {textFields.map((f) => (
             <TypographyField key={f.key} block={block} styles={styles} field={f} onStyle={onStyle} />
           ))}
         </div>
       )}
 
-      {Object.keys(opts).length === 0 && (TEXT_FIELDS[block.type] ?? []).length === 0 && (
+      {Object.keys(opts).length === 0 && textFields.length === 0 && (
         <p className="py-6 text-center text-xs text-slate-500">Brak opcji stylu dla tego bloku.</p>
       )}
     </div>

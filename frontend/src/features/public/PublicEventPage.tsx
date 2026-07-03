@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import type { AgendaItemDto, BrandingDto, PageBlock, PageContentDoc, SeoDto } from '../../types/api'
 import { RenderBlock, type BlockContext } from '../content/EventBlocks'
-import { ensureGoogleFont } from '../content/fonts'
+import { ensureGoogleFonts, blockFontStacks } from '../content/fonts'
 import { Logo } from '../../components/Logo'
 import { assetUrl } from '../../lib/api'
 
@@ -82,10 +82,15 @@ export function PublicEventPage() {
     if (page.data?.seo.title) document.title = page.data.seo.title
   }, [page.data])
 
-  // Load the brand web font for the published page.
+  // Load the brand font AND every per-text font override used on the page, so a
+  // block that switches its title to e.g. Playfair actually renders in it.
+  const brandFont = page.data?.branding.fontFamily
+  const fontStacks = blockFontStacks(page.data?.content.blocks ?? [])
+  const fontLoadKey = [brandFont, ...fontStacks].join('|')
   useEffect(() => {
-    ensureGoogleFont(document, page.data?.branding.fontFamily)
-  }, [page.data?.branding.fontFamily])
+    ensureGoogleFonts(document, [brandFont, ...fontStacks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontLoadKey])
 
   // Start the public page in the event's default language (once). After that the
   // visitor's toggle choice sticks (i18n is reactive, so blocks re-render on change).
