@@ -133,6 +133,7 @@ export interface EventSettingsDto {
   showActivitiesTab: boolean
   showGalleryTab: boolean
   showPreferencesTile: boolean
+  allowSelfRegistration: boolean
 }
 
 export interface EventDto {

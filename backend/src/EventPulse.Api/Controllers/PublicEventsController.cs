@@ -37,21 +37,33 @@ public sealed class PublicEventsController : ControllerBase
     public async Task<ActionResult<PublicEventDto>> Event(Guid eventId, CancellationToken ct)
         => Ok(await _mediator.Send(new PublicEventQuery(eventId), ct));
 
-    /// <summary>Second login path: e-mail me my personal token link. Always returns a generic OK.</summary>
+    /// <summary>
+    /// Second login path: e-mail me my personal token link. When the event allows open
+    /// self-registration, an unknown e-mail plus a name REGISTERS a new participant instead.
+    /// Always returns a generic OK (no account enumeration).
+    /// </summary>
     [HttpPost("request-link")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> RequestLink(Guid eventId, RequestLinkBody body, CancellationToken ct)
     {
         if (!string.IsNullOrWhiteSpace(body.Email))
         {
-            await _mediator.Send(new RequestLoginLinkCommand(eventId, body.Email, ParticipantLinkBaseUrl), ct);
+            // The Participants module has no Events reference — resolve the event context here.
+            var ctx = await _mediator.Send(new SelfRegistrationContextQuery(eventId), ct);
+            if (ctx is not null)
+            {
+                await _mediator.Send(new RequestLoginLinkCommand(
+                    eventId, body.Email, ParticipantLinkBaseUrl,
+                    body.FirstName, body.LastName,
+                    ctx.AllowSelfRegistration, ctx.TenantId, ctx.DefaultLanguage), ct);
+            }
         }
 
         // Never reveal whether the address is registered.
         return Ok(new { ok = true });
     }
 
-    public sealed record RequestLinkBody(string Email);
+    public sealed record RequestLinkBody(string Email, string? FirstName = null, string? LastName = null);
 
     [HttpGet("agenda")]
     public async Task<ActionResult<IReadOnlyList<AgendaItemDto>>> Agenda(Guid eventId, CancellationToken ct)
@@ -150,7 +162,23 @@ public sealed record PublicEventDto(
     DateTimeOffset EndsAt,
     string? Location,
     string DefaultLanguage,
-    int Status);
+    int Status,
+    bool AllowSelfRegistration);
+
+/// <summary>Event context needed by the anonymous request-link flow (Participants module has no Events reference).</summary>
+public sealed record SelfRegistrationContext(bool AllowSelfRegistration, Guid TenantId, string DefaultLanguage);
+
+public sealed record SelfRegistrationContextQuery(Guid EventId) : IRequest<SelfRegistrationContext?>;
+
+public sealed class SelfRegistrationContextHandler(IAppDbContext db)
+    : IRequestHandler<SelfRegistrationContextQuery, SelfRegistrationContext?>
+{
+    public async Task<SelfRegistrationContext?> Handle(SelfRegistrationContextQuery request, CancellationToken ct)
+        => await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
+            .Where(e => e.Id == request.EventId && e.Status != EventStatus.Archived)
+            .Select(e => new SelfRegistrationContext(e.AllowSelfRegistration, e.TenantId, e.DefaultLanguage))
+            .FirstOrDefaultAsync(ct);
+}
 
 public sealed record PublicEventQuery(Guid EventId) : IRequest<PublicEventDto>;
 
@@ -164,7 +192,7 @@ public sealed class PublicEventHandler(IAppDbContext db) : IRequestHandler<Publi
         // silently starves the agenda and countdown (they key off this event's data).
         var ev = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.Id == request.EventId && e.Status != EventStatus.Archived)
-            .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status))
+            .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status, e.AllowSelfRegistration))
             .FirstOrDefaultAsync(ct);
 
         return ev ?? throw new NotFoundException("Event not available.");
@@ -183,7 +211,7 @@ public sealed class PublicEventBySlugHandler(IAppDbContext db) : IRequestHandler
         // short URL works whenever the GUID URL does. Publishing the PAGE is the real public gate.
         var ev = await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.Slug == request.Slug && e.Status != EventStatus.Archived)
-            .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status))
+            .Select(e => new PublicEventDto(e.Id, e.Name, e.Slug, e.StartsAt, e.EndsAt, e.Location, e.DefaultLanguage, (int)e.Status, e.AllowSelfRegistration))
             .FirstOrDefaultAsync(ct);
 
         return ev ?? throw new NotFoundException("Event not available.");

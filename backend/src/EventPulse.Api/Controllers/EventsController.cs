@@ -95,7 +95,8 @@ public sealed class EventsController : ControllerBase
             body.ShowAgendaTab,
             body.ShowActivitiesTab,
             body.ShowGalleryTab,
-            body.ShowPreferencesTile);
+            body.ShowPreferencesTile,
+            body.AllowSelfRegistration);
         return Ok(await _mediator.Send(command, ct));
     }
 
@@ -154,5 +155,6 @@ public sealed class EventsController : ControllerBase
         bool ShowAgendaTab = true,
         bool ShowActivitiesTab = true,
         bool ShowGalleryTab = true,
-        bool ShowPreferencesTile = true);
+        bool ShowPreferencesTile = true,
+        bool AllowSelfRegistration = false);
 }

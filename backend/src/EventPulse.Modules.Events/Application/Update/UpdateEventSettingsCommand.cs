@@ -24,7 +24,8 @@ public sealed record UpdateEventSettingsCommand(
     bool ShowAgendaTab,
     bool ShowActivitiesTab,
     bool ShowGalleryTab,
-    bool ShowPreferencesTile) : IRequest<EventDto>;
+    bool ShowPreferencesTile,
+    bool AllowSelfRegistration) : IRequest<EventDto>;
 
 public sealed class UpdateEventSettingsValidator : AbstractValidator<UpdateEventSettingsCommand>
 {
@@ -86,6 +87,7 @@ public sealed class UpdateEventSettingsHandler : IRequestHandler<UpdateEventSett
         ev.ShowActivitiesTab = request.ShowActivitiesTab;
         ev.ShowGalleryTab = request.ShowGalleryTab;
         ev.ShowPreferencesTile = request.ShowPreferencesTile;
+        ev.AllowSelfRegistration = request.AllowSelfRegistration;
 
         await _db.SaveChangesAsync(cancellationToken);
         return EventDto.From(ev);

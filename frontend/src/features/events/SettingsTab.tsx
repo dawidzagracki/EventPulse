@@ -180,6 +180,22 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
         </div>
       </Card>
 
+      {/* Rejestracja przez stronę */}
+      <Card>
+        <h3 className="text-base font-semibold text-white">Rejestracja przez stronę</h3>
+        <p className="mt-1 text-sm text-slate-400">
+          Strona logowania wydarzenia (/e/…/login) zawsze wysyła osobisty link osobom z listy gości.
+        </p>
+        <div className="mt-4">
+          <Toggle
+            checked={form.allowSelfRegistration}
+            onChange={(v) => set('allowSelfRegistration', v)}
+            label="Otwarta rejestracja (samodzielne zapisy)"
+            description="Gdy włączone: osoba spoza listy może podać imię, nazwisko i e-mail — zostanie dodana do listy gości i dostanie mailem swój link do aplikacji. Gdy wyłączone: linki dostają tylko osoby już będące na liście."
+          />
+        </div>
+      </Card>
+
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={!dirty || update.isPending}>
           {update.isPending ? 'Zapisywanie…' : 'Zapisz ustawienia'}
@@ -245,5 +261,6 @@ function serverForm(s: import('../../types/api').EventSettingsDto): UpdateEventS
     showActivitiesTab: s.showActivitiesTab,
     showGalleryTab: s.showGalleryTab,
     showPreferencesTile: s.showPreferencesTile,
+    allowSelfRegistration: s.allowSelfRegistration,
   }
 }

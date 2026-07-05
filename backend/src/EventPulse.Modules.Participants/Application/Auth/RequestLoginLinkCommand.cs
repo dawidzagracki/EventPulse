@@ -11,8 +11,20 @@ namespace EventPulse.Modules.Participants.Application.Auth;
 /// Second login path: a guest enters their e-mail on the event's universal login page and, if it
 /// matches a participant of that event, their personal token link is e-mailed to them. Always
 /// succeeds silently (never reveals whether an address is registered) to avoid enumeration.
+///
+/// When the event allows OPEN SELF-REGISTRATION the same form also carries a name: an unknown
+/// e-mail then CREATES a new participant and mails them their personal link. The event context
+/// (flag + tenant + language) is resolved by the caller — this module has no Events reference.
 /// </summary>
-public sealed record RequestLoginLinkCommand(Guid EventId, string Email, string LinkBaseUrl) : IRequest<Unit>;
+public sealed record RequestLoginLinkCommand(
+    Guid EventId,
+    string Email,
+    string LinkBaseUrl,
+    string? FirstName = null,
+    string? LastName = null,
+    bool AllowSelfRegistration = false,
+    Guid TenantId = default,
+    string DefaultLanguage = "pl") : IRequest<Unit>;
 
 public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email)
     : IRequestHandler<RequestLoginLinkCommand, Unit>
@@ -20,7 +32,7 @@ public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email
     public async Task<Unit> Handle(RequestLoginLinkCommand request, CancellationToken ct)
     {
         var normalized = request.Email.Trim().ToLowerInvariant();
-        if (normalized.Length == 0) return Unit.Value;
+        if (normalized.Length == 0 || normalized.Length > 320 || !normalized.Contains('@')) return Unit.Value;
 
         // Anonymous endpoint → no tenant context; scope strictly by the (unique) event id.
         var participant = await db.Set<Participant>().IgnoreQueryFilters()
@@ -30,6 +42,26 @@ public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email
                      && p.Email != null
                      && p.Email.ToLower() == normalized,
                 ct);
+
+        if (participant is null && request.AllowSelfRegistration && request.TenantId != Guid.Empty)
+        {
+            var first = request.FirstName?.Trim() ?? string.Empty;
+            var last = request.LastName?.Trim() ?? string.Empty;
+            if (first.Length is 0 or > 100 || last.Length is 0 or > 100) return Unit.Value;
+
+            participant = new Participant
+            {
+                TenantId = request.TenantId, // explicit — no tenant context on this anonymous path
+                EventId = request.EventId,
+                FirstName = first,
+                LastName = last,
+                Email = normalized,
+                Language = request.DefaultLanguage,
+                Status = ParticipantStatus.Invited,
+            };
+            db.Set<Participant>().Add(participant);
+            await db.SaveChangesAsync(ct);
+        }
 
         if (participant is not null)
         {

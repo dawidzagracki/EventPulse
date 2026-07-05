@@ -27,6 +27,9 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.ShowGalleryTab).HasDefaultValue(true);
         builder.Property(e => e.ShowPreferencesTile).HasDefaultValue(true);
 
+        // Open self-registration is opt-in — existing events keep a closed guest list.
+        builder.Property(e => e.AllowSelfRegistration).HasDefaultValue(false);
+
         builder.HasIndex(e => e.Slug).IsUnique();
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.TenantId, e.Status });

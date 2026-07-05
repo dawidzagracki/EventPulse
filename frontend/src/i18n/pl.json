@@ -9,7 +9,14 @@
     "emailPlaceholder": "twoj@email.pl",
     "send": "Wyślij mi link",
     "sent": "Jeśli Twój e-mail jest na liście gości, wysłaliśmy link.",
-    "sentHint": "Sprawdź skrzynkę (i folder spam). Link jest przypisany do Ciebie — nie udostępniaj go."
+    "sentHint": "Sprawdź skrzynkę (i folder spam). Link jest przypisany do Ciebie — nie udostępniaj go.",
+    "registerTitle": "Zapisz się na wydarzenie",
+    "registerPrompt": "Podaj swoje dane — wyślemy Ci na e-mail osobisty link do wejścia. Jeśli już jesteś na liście gości, po prostu odeślemy Ci Twój link.",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "register": "Zapisz się i wyślij link",
+    "registeredSent": "Gotowe! Wysłaliśmy Twój osobisty link na podany e-mail.",
+    "registerNote": "Podanie danych oznacza zapis na listę gości tego wydarzenia."
   },
   "common": {
     "loading": "Ładowanie...",

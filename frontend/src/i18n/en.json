@@ -9,6 +9,13 @@
     "emailPlaceholder": "you@email.com",
     "send": "Send me the link",
     "sent": "If your e-mail is on the guest list, we've sent a link.",
+    "registerTitle": "Sign up for the event",
+    "registerPrompt": "Enter your details — we'll e-mail you a personal link to enter. If you're already on the guest list, we'll simply resend your link.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "register": "Sign up & send my link",
+    "registeredSent": "Done! We've sent your personal link to the address provided.",
+    "registerNote": "Submitting your details adds you to this event's guest list.",
     "sentHint": "Check your inbox (and spam). The link is tied to you — please don't share it."
   },
   "common": {
