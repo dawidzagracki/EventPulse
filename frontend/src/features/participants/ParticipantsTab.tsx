@@ -5,6 +5,7 @@ import {
   exportParticipants,
   openParticipantQr,
   useAddParticipant,
+  useDeleteParticipant,
   useImportParticipants,
   useParticipants,
   useSendClientLinks,
@@ -305,7 +306,12 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
             />
           )}
           {view.kind === 'detail' && (
-            <ParticipantDetail key={view.participant.id} eventId={eventId} participant={view.participant} />
+            <ParticipantDetail
+              key={view.participant.id}
+              eventId={eventId}
+              participant={view.participant}
+              onDeleted={() => setView({ kind: 'empty' })}
+            />
           )}
         </div>
       </div>
@@ -564,9 +570,24 @@ function NewParticipantForm({
 }
 
 // ============ Participant detail ============
-function ParticipantDetail({ eventId, participant }: { eventId: string; participant: ParticipantDto }) {
+function ParticipantDetail({
+  eventId,
+  participant,
+  onDeleted,
+}: {
+  eventId: string
+  participant: ParticipantDto
+  onDeleted: () => void
+}) {
   const { t } = useTranslation()
   const status = statusMeta(participant.status)
+  const del = useDeleteParticipant(eventId)
+
+  async function remove() {
+    if (!window.confirm(t('participants.deleteConfirm', { name: `${participant.firstName} ${participant.lastName}` }))) return
+    await del.mutateAsync(participant.id)
+    onDeleted()
+  }
   return (
     <Card>
       {/* Header */}
@@ -654,6 +675,19 @@ function ParticipantDetail({ eventId, participant }: { eventId: string; particip
             )}
           </Section>
         )}
+      </div>
+
+      {/* Danger zone — remove this guest (and their plus-ones) from the event. */}
+      <div className="mt-5 border-t border-slate-800/70 pt-4">
+        <button
+          type="button"
+          onClick={() => void remove()}
+          disabled={del.isPending}
+          className="inline-flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:border-rose-400/50 hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-50"
+        >
+          ✕ {del.isPending ? '…' : t('participants.delete')}
+        </button>
+        <p className="mt-1.5 text-[11px] text-slate-500">{t('participants.deleteHint')}</p>
       </div>
     </Card>
   )

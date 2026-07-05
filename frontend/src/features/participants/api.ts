@@ -34,6 +34,16 @@ export function useAddParticipant(eventId: string) {
   })
 }
 
+export function useDeleteParticipant(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (participantId: string) => {
+      await api.delete(`/api/events/${eventId}/participants/${participantId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['participants', eventId] }),
+  })
+}
+
 export function useSendInvitations(eventId: string) {
   return useMutation({
     mutationFn: async () =>

@@ -96,6 +96,15 @@ public sealed class ParticipantsController : ControllerBase
         return Ok(await _mediator.Send(new UpdateParticipantStatusCommand(id, body.Status), ct));
     }
 
+    /// <summary>Removes a participant (and their plus-ones) from this event's guest list.</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid eventId, Guid id, CancellationToken ct)
+    {
+        await EnsureEventInTenantAsync(eventId, ct);
+        await _mediator.Send(new DeleteParticipantCommand(eventId, id), ct);
+        return NoContent();
+    }
+
     [HttpGet("{id:guid}/qr")]
     public async Task<IActionResult> Qr(Guid eventId, Guid id, CancellationToken ct)
     {
