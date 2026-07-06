@@ -414,6 +414,8 @@
     "moveUp": "Wyżej",
     "moveDown": "Niżej",
     "unsaved": "Niezapisane zmiany",
+    "unpublished": "Zmiany do opublikowania",
+    "unpublishedHint": "Zapisałeś zmiany, ale goście widzą jeszcze starą, opublikowaną wersję. Kliknij „Publikuj”, aby udostępnić je publicznie (dotyczy też tłumaczeń EN).",
     "hidden": "Ukryty"
   },
   "public": {

@@ -25,12 +25,19 @@ export interface BlockContext {
 }
 
 function pick(block: PageBlock, lang: 'pl' | 'en') {
-  // Two-way fallback: prefer the active language, then the other one, so a block
-  // authored in only one language still renders after switching.
-  return (block.content?.[lang] ?? block.content?.pl ?? block.content?.en ?? {}) as Record<
-    string,
-    string | undefined
-  >
+  // PER-FIELD two-way fallback: for each field prefer the active language, then fall
+  // back to the other one when it's empty/missing — the SAME rule as the inline <E>
+  // renderer. This matters for fields rendered straight from here (links, images,
+  // labels like ctaUrl/ctaLabel/address): a block translated in only one language,
+  // or with just some fields translated, still renders every field instead of leaving
+  // e.g. an EN CTA link dead because only the PL value was filled.
+  const primary = (block.content?.[lang] ?? {}) as Record<string, string | undefined>
+  const other = (block.content?.[lang === 'en' ? 'pl' : 'en'] ?? {}) as Record<string, string | undefined>
+  const merged: Record<string, string | undefined> = { ...other }
+  for (const [k, v] of Object.entries(primary)) {
+    if (v !== undefined && v !== null && String(v).trim() !== '') merged[k] = v
+  }
+  return merged
 }
 
 function pickSettings(block: PageBlock) {

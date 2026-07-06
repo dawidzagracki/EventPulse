@@ -34,6 +34,40 @@ const DEVICE_WIDTH: Record<Device, string> = {
   mobile: '375px',
 }
 
+/** Crisp Lucide-style device glyph (replaces OS-dependent emoji in the toolbar). */
+function DeviceIcon({ device }: { device: Device }) {
+  const p = {
+    viewBox: '0 0 24 24',
+    className: 'h-4 w-4',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  }
+  if (device === 'desktop')
+    return (
+      <svg {...p}>
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <path d="M8 21h8M12 17v4" />
+      </svg>
+    )
+  if (device === 'tablet')
+    return (
+      <svg {...p}>
+        <rect x="5" y="2" width="14" height="20" rx="2" />
+        <path d="M12 18h.01" />
+      </svg>
+    )
+  return (
+    <svg {...p}>
+      <rect x="7" y="2" width="10" height="20" rx="2" />
+      <path d="M11 18h2" />
+    </svg>
+  )
+}
+
 export function PageBuilderTab({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { data: page, isLoading } = usePage(eventId)
@@ -358,6 +392,16 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
               {t('page.unsaved')}
             </span>
           )}
+          {/* Saved edits that are not yet live — the guest still sees the old published version. */}
+          {!dirty && page.hasUnpublishedChanges && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-2.5 py-1 text-[11px] font-semibold text-amber-300 ring-1 ring-inset ring-amber-400/30"
+              title={t('page.unpublishedHint')}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              {t('page.unpublished')}
+            </span>
+          )}
           {message && <span className="text-xs text-emerald-300">{message}</span>}
 
           <span className="mx-2 hidden h-5 w-px bg-slate-700/60 sm:block" />
@@ -368,7 +412,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             onClick={blocksHistory.undo}
             disabled={!blocksHistory.canUndo}
             title={t('page.undo')}
-            className="rounded-md border border-slate-800 bg-slate-900/60 px-2 py-1.5 text-slate-300 transition hover:border-indigo-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900/60 text-slate-300 transition hover:border-indigo-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
               <path d="M12 5V2L5 9l7 7v-3c3.31 0 6 2.69 6 6h2c0-4.42-3.58-8-8-8z" />
@@ -379,7 +423,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             onClick={blocksHistory.redo}
             disabled={!blocksHistory.canRedo}
             title={t('page.redo')}
-            className="rounded-md border border-slate-800 bg-slate-900/60 px-2 py-1.5 text-slate-300 transition hover:border-indigo-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-800 bg-slate-900/60 text-slate-300 transition hover:border-indigo-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
               <path d="M12 5V2l7 7-7 7v-3c-3.31 0-6 2.69-6 6H4c0-4.42 3.58-8 8-8z" />
@@ -389,20 +433,21 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
           <span className="mx-2 hidden h-5 w-px bg-slate-700/60 sm:block" />
 
           {/* Device toggle */}
-          <div className="flex items-center gap-0.5 rounded-md border border-slate-800 bg-slate-950/60 p-0.5">
+          <div className="flex items-center gap-0.5 rounded-lg border border-slate-800 bg-slate-950/60 p-0.5">
             {(['desktop', 'tablet', 'mobile'] as Device[]).map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => setDevice(d)}
                 title={t(`page.device${d.charAt(0).toUpperCase()}${d.slice(1)}`)}
-                className={`rounded px-2 py-1 text-xs transition ${
+                aria-pressed={device === d}
+                className={`flex h-7 w-8 items-center justify-center rounded-md transition ${
                   device === d
-                    ? 'bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white ring-1 ring-inset ring-indigo-400/40'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm shadow-indigo-500/30'
+                    : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
                 }`}
               >
-                {d === 'desktop' ? '🖥' : d === 'tablet' ? '🟦' : '📱'}
+                <DeviceIcon device={d} />
               </button>
             ))}
           </div>
@@ -411,9 +456,27 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
             type="button"
             onClick={() => setLeftOpen((v) => !v)}
             title={leftOpen ? t('page.collapsePanel') : t('page.expandPanel')}
-            className="hidden items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-300 transition hover:bg-slate-800 lg:inline-flex"
+            aria-pressed={leftOpen}
+            className={`hidden h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition lg:inline-flex ${
+              leftOpen
+                ? 'border-indigo-400/40 bg-indigo-500/15 text-indigo-100'
+                : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-indigo-400/40 hover:text-white'
+            }`}
           >
-            {leftOpen ? '⟨⟩' : '☰'} {t('page.panels')}
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M10 4v16" />
+            </svg>
+            {t('page.panels')}
           </button>
 
           <label

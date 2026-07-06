@@ -414,6 +414,8 @@
     "moveUp": "Up",
     "moveDown": "Down",
     "unsaved": "Unsaved changes",
+    "unpublished": "Changes not published",
+    "unpublishedHint": "You saved changes, but visitors still see the previously published version. Click \"Publish\" to make them public (this includes EN translations).",
     "hidden": "Hidden"
   },
   "public": {

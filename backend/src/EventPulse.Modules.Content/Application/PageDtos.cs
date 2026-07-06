@@ -21,7 +21,11 @@ public sealed record PageDto(
     BrandingDto Branding,
     SeoDto Seo,
     int PublishedVersion,
-    bool HasPublished)
+    bool HasPublished,
+    // True when a published snapshot exists but the current draft differs from it,
+    // i.e. there are saved edits that are NOT yet live. Lets the editor warn "publish
+    // to make your changes public" instead of the guest seeing a stale version.
+    bool HasUnpublishedChanges)
 {
     public static PageDto From(EventPage page) => new(
         page.EventId,
@@ -30,7 +34,9 @@ public sealed record PageDto(
             page.LogoUrl, page.FaviconUrl, page.BackgroundColor),
         new SeoDto(page.SeoTitle, page.SeoDescription, page.OgImageUrl),
         page.PublishedVersion,
-        page.PublishedContent is not null);
+        page.PublishedContent is not null,
+        page.PublishedContent is not null
+            && !string.Equals(page.DraftContent, page.PublishedContent, StringComparison.Ordinal));
 
     internal static JsonElement Parse(string json) => JsonDocument.Parse(json).RootElement.Clone();
 }

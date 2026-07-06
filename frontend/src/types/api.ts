@@ -334,6 +334,8 @@ export interface PageDto {
   seo: SeoDto
   publishedVersion: number
   hasPublished: boolean
+  /** Published exists but the saved draft differs — there are changes not yet live. */
+  hasUnpublishedChanges: boolean
 }
 
 export interface PageVersionDto {
