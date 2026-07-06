@@ -41,6 +41,7 @@ export interface MyEventDto {
   showActivitiesTab: boolean
   showGalleryTab: boolean
   showPreferencesTile: boolean
+  showShirtSize: boolean
 }
 
 export function useMyEvent() {

@@ -96,6 +96,7 @@ public sealed class EventsController : ControllerBase
             body.ShowActivitiesTab,
             body.ShowGalleryTab,
             body.ShowPreferencesTile,
+            body.ShowShirtSize,
             body.AllowSelfRegistration);
         return Ok(await _mediator.Send(command, ct));
     }
@@ -156,5 +157,6 @@ public sealed class EventsController : ControllerBase
         bool ShowActivitiesTab = true,
         bool ShowGalleryTab = true,
         bool ShowPreferencesTile = true,
+        bool ShowShirtSize = true,
         bool AllowSelfRegistration = false);
 }

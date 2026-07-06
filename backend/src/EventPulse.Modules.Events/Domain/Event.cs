@@ -79,6 +79,9 @@ public sealed class Event : AggregateRoot
     /// <summary>Show the Preferences tile (language/diet/shirt/transfer) in the participant profile tab.</summary>
     public bool ShowPreferencesTile { get; set; } = true;
 
+    /// <summary>Show the shirt-size selector in the participant profile preferences (some events give no shirts).</summary>
+    public bool ShowShirtSize { get; set; } = true;
+
     /// <summary>
     /// Open self-registration: the public login page (/e/{id}/login) may CREATE a new participant
     /// for an unknown e-mail (name + e-mail form) and mail them their personal link. Off by default —

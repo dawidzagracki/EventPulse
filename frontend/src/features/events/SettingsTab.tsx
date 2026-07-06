@@ -146,13 +146,18 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
         </div>
       </Card>
 
-      {/* Panele w aplikacji uczestnika */}
-      <Card>
-        <h3 className="text-base font-semibold text-white">Panele w aplikacji uczestnika</h3>
+      {/* Widoczność w aplikacji gościa */}
+      <Card glow>
+        <h3 className="text-base font-semibold text-white">Widoczność w aplikacji gościa</h3>
         <p className="mt-1 text-sm text-slate-400">
-          Ukryj zakładki, których nie używasz na tym wydarzeniu. Zakładki „Mój QR" i „Profil" są zawsze widoczne.
+          Włącz tylko to, czego używasz na tym wydarzeniu — reszta zniknie z aplikacji uczestnika.
         </p>
-        <div className="mt-4 space-y-4">
+
+        <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Zakładki (dolna nawigacja)
+        </p>
+        <p className="mt-0.5 text-xs text-slate-500">Zakładki „Mój QR" i „Profil" są zawsze widoczne.</p>
+        <div className="mt-3 space-y-4">
           <Toggle
             checked={form.showAgendaTab}
             onChange={(v) => set('showAgendaTab', v)}
@@ -171,12 +176,28 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
             label="Galeria"
             description="Zdjęcia z wydarzenia (lub Twój link do zdjęć)."
           />
+        </div>
+
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Profil gościa
+        </p>
+        <div className="mt-3 space-y-4">
           <Toggle
             checked={form.showPreferencesTile}
             onChange={(v) => set('showPreferencesTile', v)}
-            label="Preferencje (w Profilu)"
-            description="Kafelek preferencji gościa: język, dieta, rozmiar koszulki, transfer."
+            label="Sekcja „Preferencje”"
+            description="Cały kafelek preferencji: język, dieta, rozmiar koszulki, transfer. Wyłącz, jeśli nie zbierasz tych danych."
           />
+          {form.showPreferencesTile && (
+            <div className="border-l-2 border-slate-800 pl-4">
+              <Toggle
+                checked={form.showShirtSize}
+                onChange={(v) => set('showShirtSize', v)}
+                label="Rozmiar koszulki"
+                description="Pole wyboru rozmiaru koszulki w Preferencjach. Wyłącz, gdy na tym wydarzeniu nie ma koszulek."
+              />
+            </div>
+          )}
         </div>
       </Card>
 
@@ -261,6 +282,7 @@ function serverForm(s: import('../../types/api').EventSettingsDto): UpdateEventS
     showActivitiesTab: s.showActivitiesTab,
     showGalleryTab: s.showGalleryTab,
     showPreferencesTile: s.showPreferencesTile,
+    showShirtSize: s.showShirtSize,
     allowSelfRegistration: s.allowSelfRegistration,
   }
 }

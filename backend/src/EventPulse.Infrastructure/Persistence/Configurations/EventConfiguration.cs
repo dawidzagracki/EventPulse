@@ -26,6 +26,7 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.ShowActivitiesTab).HasDefaultValue(true);
         builder.Property(e => e.ShowGalleryTab).HasDefaultValue(true);
         builder.Property(e => e.ShowPreferencesTile).HasDefaultValue(true);
+        builder.Property(e => e.ShowShirtSize).HasDefaultValue(true);
 
         // Open self-registration is opt-in — existing events keep a closed guest list.
         builder.Property(e => e.AllowSelfRegistration).HasDefaultValue(false);

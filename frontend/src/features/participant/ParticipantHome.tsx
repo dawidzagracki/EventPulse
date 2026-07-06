@@ -215,7 +215,11 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         {activeTab === 'profile' && (
           <div className="space-y-5">
             {ev?.showPreferencesTile !== false && (
-              <PreferencesSection key={`prefs-${profile.id}`} profile={profile} />
+              <PreferencesSection
+                key={`prefs-${profile.id}`}
+                profile={profile}
+                showShirt={ev?.showShirtSize !== false}
+              />
             )}
             <CompanionsSection />
             <CustomFieldsSection />
@@ -1151,7 +1155,7 @@ function ConsentsSection({ profile }: { profile: MyProfileDto }) {
 const DIET_OPTIONS = ['Standardowa', 'Wegetariańska', 'Wegańska', 'Bezglutenowa', 'Bez laktozy', 'Koszerna', 'Halal']
 const SHIRT_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
-function PreferencesSection({ profile }: { profile: MyProfileDto }) {
+function PreferencesSection({ profile, showShirt = true }: { profile: MyProfileDto; showShirt?: boolean }) {
   const { t, i18n } = useTranslation()
   const update = useUpdatePreferences()
 
@@ -1218,16 +1222,18 @@ function PreferencesSection({ profile }: { profile: MyProfileDto }) {
             />
           </div>
         )}
-        <Field label={t('participant.shirt')}>
-          <select value={shirt} onChange={(e) => setShirt(e.target.value)} className={selectCls}>
-            <option value="">{t('participant.shirtNone')}</option>
-            {shirtOptions.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {showShirt && (
+          <Field label={t('participant.shirt')}>
+            <select value={shirt} onChange={(e) => setShirt(e.target.value)} className={selectCls}>
+              <option value="">{t('participant.shirtNone')}</option>
+              {shirtOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         <label className="flex items-center gap-2 self-end text-sm text-slate-200">
           <input type="checkbox" checked={transfer} onChange={(e) => setTransfer(e.target.checked)} />
           {t('participant.transfer')}
