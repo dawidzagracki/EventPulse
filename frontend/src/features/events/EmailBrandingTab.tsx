@@ -22,11 +22,19 @@ function EmailBrandingForm({ eventId, event }: { eventId: string; event: EventDt
 
   const [accent, setAccent] = useState<string | null>(event.emailBranding.accentColor)
   const [logo, setLogo] = useState(event.emailBranding.logoUrl ?? '')
+  const [headerName, setHeaderName] = useState(event.emailBranding.headerName ?? '')
 
-  const dirty = accent !== event.emailBranding.accentColor || (logo || null) !== event.emailBranding.logoUrl
+  const dirty =
+    accent !== event.emailBranding.accentColor ||
+    (logo || null) !== event.emailBranding.logoUrl ||
+    (headerName.trim() || null) !== event.emailBranding.headerName
 
   async function save() {
-    await update.mutateAsync({ accentColor: accent, logoUrl: logo.trim() || null })
+    await update.mutateAsync({
+      accentColor: accent,
+      logoUrl: logo.trim() || null,
+      headerName: headerName.trim() || null,
+    })
   }
 
   return (
@@ -67,6 +75,17 @@ function EmailBrandingForm({ eventId, event }: { eventId: string; event: EventDt
               {!accent && <p className="mt-1.5 text-xs text-slate-500">{t('emailBranding.accentHint')}</p>}
             </div>
 
+            <Field label={t('emailBranding.headerName')}>
+              <Input
+                type="text"
+                maxLength={80}
+                placeholder="EventPulse"
+                value={headerName}
+                onChange={(e) => setHeaderName(e.target.value)}
+              />
+            </Field>
+            <p className="-mt-2 text-xs text-slate-500">{t('emailBranding.headerNameHint')}</p>
+
             <Field label={t('emailBranding.logo')}>
               <Input
                 type="url"
@@ -90,21 +109,31 @@ function EmailBrandingForm({ eventId, event }: { eventId: string; event: EventDt
 
       <div>
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">{t('emailBranding.preview')}</p>
-        <EmailPreview eventId={eventId} accent={accent} logo={logo.trim() || null} />
+        <EmailPreview eventId={eventId} accent={accent} logo={logo.trim() || null} header={headerName.trim() || null} />
       </div>
     </div>
   )
 }
 
-function EmailPreview({ eventId, accent, logo }: { eventId: string; accent: string | null; logo: string | null }) {
+function EmailPreview({
+  eventId,
+  accent,
+  logo,
+  header,
+}: {
+  eventId: string
+  accent: string | null
+  logo: string | null
+  header: string | null
+}) {
   const [html, setHtml] = useState<string>('')
-  // Debounce so dragging the colour picker / typing the logo URL doesn't hammer the API.
-  const key = useMemo(() => `${accent ?? ''}|${logo ?? ''}`, [accent, logo])
+  // Debounce so dragging the colour picker / typing doesn't hammer the API.
+  const key = useMemo(() => `${accent ?? ''}|${logo ?? ''}|${header ?? ''}`, [accent, logo, header])
 
   useEffect(() => {
     let alive = true
     const id = window.setTimeout(() => {
-      fetchEmailPreview(eventId, accent, logo)
+      fetchEmailPreview(eventId, accent, logo, header)
         .then((h) => alive && setHtml(h))
         .catch(() => {})
     }, 350)

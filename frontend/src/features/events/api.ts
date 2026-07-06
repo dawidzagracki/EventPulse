@@ -81,6 +81,7 @@ export function useUpdateEventSettings(eventId: string) {
 export interface UpdateEmailBrandingRequest {
   accentColor: string | null
   logoUrl: string | null
+  headerName: string | null
 }
 
 export function useUpdateEmailBranding(eventId: string) {
@@ -100,9 +101,10 @@ export async function fetchEmailPreview(
   eventId: string,
   accent: string | null,
   logo: string | null,
+  header: string | null,
 ): Promise<string> {
   const { data } = await api.get<string>(`/api/events/${eventId}/email/preview`, {
-    params: { accent: accent ?? undefined, logo: logo || undefined },
+    params: { accent: accent ?? undefined, logo: logo || undefined, header: header || undefined },
     responseType: 'text',
     transformResponse: (v) => v,
   })

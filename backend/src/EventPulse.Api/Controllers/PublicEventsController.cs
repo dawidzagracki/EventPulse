@@ -57,7 +57,7 @@ public sealed class PublicEventsController : ControllerBase
                     eventId, body.Email, ParticipantLinkBaseUrl,
                     body.FirstName, body.LastName,
                     ctx.AllowSelfRegistration, ctx.TenantId, ctx.DefaultLanguage,
-                    new EmailBrand(ctx.EmailAccentColor, ctx.EmailLogoUrl, ctx.EventName)), ct);
+                    new EmailBrand(ctx.EmailAccentColor, ctx.EmailLogoUrl, ctx.EventName, ctx.EmailHeaderName)), ct);
             }
         }
 
@@ -170,7 +170,7 @@ public sealed record PublicEventDto(
 /// <summary>Event context needed by the anonymous request-link flow (Participants module has no Events reference).</summary>
 public sealed record SelfRegistrationContext(
     bool AllowSelfRegistration, Guid TenantId, string DefaultLanguage,
-    string EventName, string? EmailAccentColor, string? EmailLogoUrl);
+    string EventName, string? EmailAccentColor, string? EmailLogoUrl, string? EmailHeaderName);
 
 public sealed record SelfRegistrationContextQuery(Guid EventId) : IRequest<SelfRegistrationContext?>;
 
@@ -182,7 +182,7 @@ public sealed class SelfRegistrationContextHandler(IAppDbContext db)
             .Where(e => e.Id == request.EventId && e.Status != EventStatus.Archived)
             .Select(e => new SelfRegistrationContext(
                 e.AllowSelfRegistration, e.TenantId, e.DefaultLanguage,
-                e.Name, e.EmailAccentColor, e.EmailLogoUrl))
+                e.Name, e.EmailAccentColor, e.EmailLogoUrl, e.EmailHeaderName))
             .FirstOrDefaultAsync(ct);
 }
 

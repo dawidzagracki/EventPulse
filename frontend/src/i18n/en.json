@@ -11,6 +11,8 @@
     "accentSet": "Set a custom colour",
     "accentDefault": "Default",
     "accentHint": "Left off: the default EventPulse purple gradient.",
+    "headerName": "Label above the event name",
+    "headerNameHint": "Text shown above the event name in the e-mail header (e.g. the client's company). Default: \"EventPulse\".",
     "logo": "Logo (URL)",
     "logoHint": "Full image URL (https). Shown in the e-mail header next to the event name.",
     "save": "Save e-mail appearance",

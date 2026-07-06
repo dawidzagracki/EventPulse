@@ -11,6 +11,8 @@
     "accentSet": "Ustaw własny kolor",
     "accentDefault": "Domyślny",
     "accentHint": "Bez zmian: domyślny fioletowy gradient EventPulse.",
+    "headerName": "Nazwa nad wydarzeniem",
+    "headerNameHint": "Tekst nad nazwą wydarzenia w nagłówku maila (np. nazwa firmy klienta). Domyślnie: „EventPulse”.",
     "logo": "Logo (URL)",
     "logoHint": "Pełny adres obrazka (https). Pokaże się w nagłówku maila obok nazwy wydarzenia.",
     "save": "Zapisz wygląd e-maili",

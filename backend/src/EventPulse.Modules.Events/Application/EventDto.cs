@@ -25,9 +25,9 @@ public sealed record EventDto(
 }
 
 /// <summary>Per-event transactional e-mail branding (header colour + logo).</summary>
-public sealed record EmailBrandingDto(string? AccentColor, string? LogoUrl)
+public sealed record EmailBrandingDto(string? AccentColor, string? LogoUrl, string? HeaderName)
 {
-    public static EmailBrandingDto From(Event e) => new(e.EmailAccentColor, e.EmailLogoUrl);
+    public static EmailBrandingDto From(Event e) => new(e.EmailAccentColor, e.EmailLogoUrl, e.EmailHeaderName);
 }
 
 /// <summary>Per-event configurable settings (privacy, phone, companions, anonymization, photos).</summary>

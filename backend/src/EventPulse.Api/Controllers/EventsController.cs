@@ -109,7 +109,7 @@ public sealed class EventsController : ControllerBase
     /// <summary>Per-event transactional-email branding (header accent colour + logo URL).</summary>
     [HttpPut("{id:guid}/email-branding")]
     public async Task<ActionResult<EventDto>> UpdateEmailBranding(Guid id, EmailBrandingBody body, CancellationToken ct)
-        => Ok(await _mediator.Send(new UpdateEmailBrandingCommand(id, body.AccentColor, body.LogoUrl), ct));
+        => Ok(await _mediator.Send(new UpdateEmailBrandingCommand(id, body.AccentColor, body.LogoUrl, body.HeaderName), ct));
 
     /// <summary>
     /// Live HTML preview of a sample e-mail with the given (unsaved) branding — used by the editor.
@@ -121,13 +121,15 @@ public sealed class EventsController : ControllerBase
         Guid id,
         [FromQuery] string? accent,
         [FromQuery] string? logo,
+        [FromQuery] string? header,
         CancellationToken ct)
     {
         var ev = await _mediator.Send(new GetEventByIdQuery(id), ct);
         var brand = new EmailBrand(
             accent ?? ev.EmailBranding.AccentColor,
             string.IsNullOrWhiteSpace(logo) ? ev.EmailBranding.LogoUrl : logo,
-            ev.Name);
+            ev.Name,
+            string.IsNullOrWhiteSpace(header) ? ev.EmailBranding.HeaderName : header);
 
         var content = new EmailContent
         {
@@ -147,7 +149,7 @@ public sealed class EventsController : ControllerBase
         return Content(EmailLayout.Render(content, brand), "text/html; charset=utf-8");
     }
 
-    public sealed record EmailBrandingBody(string? AccentColor, string? LogoUrl);
+    public sealed record EmailBrandingBody(string? AccentColor, string? LogoUrl, string? HeaderName);
 
     /// <summary>Client accounts granted access to this event (ids only). Agency-only.</summary>
     [HttpGet("{id:guid}/clients")]

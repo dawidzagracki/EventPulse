@@ -35,6 +35,9 @@ public sealed class Event : AggregateRoot
     /// <summary>Absolute URL of a logo shown in the e-mail header. Null = none.</summary>
     public string? EmailLogoUrl { get; set; }
 
+    /// <summary>Small label above the event name in the e-mail header (e.g. the client's company). Null = "EventPulse".</summary>
+    public string? EmailHeaderName { get; set; }
+
     // ---------------------------------------------------------------------
     // Per-event settings (configured from the dashboard "Ustawienia" tab).
     // ---------------------------------------------------------------------

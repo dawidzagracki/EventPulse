@@ -144,7 +144,7 @@ public sealed class ParticipantsController : ControllerBase
 
     // The event's transactional-email branding (accent colour + logo + name) for outgoing mail.
     private static EmailBrand EmailBrandOf(EventDto ev)
-        => new(ev.EmailBranding.AccentColor, ev.EmailBranding.LogoUrl, ev.Name);
+        => new(ev.EmailBranding.AccentColor, ev.EmailBranding.LogoUrl, ev.Name, ev.EmailBranding.HeaderName);
 
     private string ParticipantLinkBaseUrl =>
         _configuration["App:ParticipantLinkBaseUrl"] ?? "http://localhost:5173/p";

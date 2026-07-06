@@ -56,6 +56,9 @@ public static class EmailLayout
         var hasLogo = !string.IsNullOrEmpty(logo);
         var eventName = brand?.EventName?.Trim();
         var hasName = !string.IsNullOrEmpty(eventName);
+        // Small label above the event name — the client's brand, or "EventPulse" by default.
+        var customHeader = !string.IsNullOrWhiteSpace(brand?.HeaderName);
+        var headerName = customHeader ? brand!.HeaderName!.Trim() : "EventPulse";
 
         var sb = new StringBuilder();
 
@@ -85,7 +88,7 @@ public static class EmailLayout
         {
             sb.Append("""<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>""");
             sb.Append("""<td style="vertical-align:middle;font-family:Arial,Helvetica,sans-serif;">""");
-            sb.Append($"""<span style="font-size:14px;font-weight:bold;color:{onDim};letter-spacing:-0.2px;">EventPulse</span>""");
+            sb.Append($"""<span style="font-size:14px;font-weight:bold;color:{onDim};letter-spacing:-0.2px;">{Enc(headerName)}</span>""");
             if (hasName)
             {
                 sb.Append($"""<div style="font-size:20px;font-weight:bold;color:{on};margin-top:3px;line-height:1.25;">{Enc(eventName)}</div>""");
@@ -97,9 +100,9 @@ public static class EmailLayout
             }
             sb.Append("</tr></table>");
         }
-        else if (useAccent)
+        else if (useAccent || customHeader)
         {
-            sb.Append($"""<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;color:{on};letter-spacing:-0.3px;">EventPulse</span>""");
+            sb.Append($"""<span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;color:{on};letter-spacing:-0.3px;">{Enc(headerName)}</span>""");
         }
         else
         {
