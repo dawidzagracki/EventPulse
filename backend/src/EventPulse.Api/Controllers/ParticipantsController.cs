@@ -10,6 +10,7 @@ using EventPulse.Modules.Participants.Application.Qr;
 using EventPulse.Modules.Participants.Application.Queries;
 using EventPulse.Modules.Participants.Domain;
 using EventPulse.Shared.Application;
+using EventPulse.Shared.Notifications;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -121,7 +122,7 @@ public sealed class ParticipantsController : ControllerBase
     {
         var ev = await EnsureEventInTenantAsync(eventId, ct);
         var result = await _mediator.Send(
-            new SendInvitationsCommand(eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, onlyNotInvited), ct);
+            new SendInvitationsCommand(eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, onlyNotInvited, EmailBrandOf(ev)), ct);
         return Ok(result);
     }
 
@@ -137,9 +138,13 @@ public sealed class ParticipantsController : ControllerBase
         }
 
         var result = await _mediator.Send(
-            new SendClientLinksCommand(eventId, ev.Name, ev.ClientEmail, ParticipantLinkBaseUrl), ct);
+            new SendClientLinksCommand(eventId, ev.Name, ev.ClientEmail, ParticipantLinkBaseUrl, EmailBrandOf(ev)), ct);
         return Ok(result);
     }
+
+    // The event's transactional-email branding (accent colour + logo + name) for outgoing mail.
+    private static EmailBrand EmailBrandOf(EventDto ev)
+        => new(ev.EmailBranding.AccentColor, ev.EmailBranding.LogoUrl, ev.Name);
 
     private string ParticipantLinkBaseUrl =>
         _configuration["App:ParticipantLinkBaseUrl"] ?? "http://localhost:5173/p";

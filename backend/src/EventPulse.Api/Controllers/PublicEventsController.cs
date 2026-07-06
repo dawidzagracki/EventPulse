@@ -5,6 +5,7 @@ using EventPulse.Modules.Events.Domain;
 using EventPulse.Modules.Gallery;
 using EventPulse.Modules.Participants.Application.Auth;
 using EventPulse.Shared.Application;
+using EventPulse.Shared.Notifications;
 using EventPulse.Shared.Persistence;
 using EventPulse.Shared.Storage;
 using MediatR;
@@ -55,7 +56,8 @@ public sealed class PublicEventsController : ControllerBase
                 await _mediator.Send(new RequestLoginLinkCommand(
                     eventId, body.Email, ParticipantLinkBaseUrl,
                     body.FirstName, body.LastName,
-                    ctx.AllowSelfRegistration, ctx.TenantId, ctx.DefaultLanguage), ct);
+                    ctx.AllowSelfRegistration, ctx.TenantId, ctx.DefaultLanguage,
+                    new EmailBrand(ctx.EmailAccentColor, ctx.EmailLogoUrl, ctx.EventName)), ct);
             }
         }
 
@@ -166,7 +168,9 @@ public sealed record PublicEventDto(
     bool AllowSelfRegistration);
 
 /// <summary>Event context needed by the anonymous request-link flow (Participants module has no Events reference).</summary>
-public sealed record SelfRegistrationContext(bool AllowSelfRegistration, Guid TenantId, string DefaultLanguage);
+public sealed record SelfRegistrationContext(
+    bool AllowSelfRegistration, Guid TenantId, string DefaultLanguage,
+    string EventName, string? EmailAccentColor, string? EmailLogoUrl);
 
 public sealed record SelfRegistrationContextQuery(Guid EventId) : IRequest<SelfRegistrationContext?>;
 
@@ -176,7 +180,9 @@ public sealed class SelfRegistrationContextHandler(IAppDbContext db)
     public async Task<SelfRegistrationContext?> Handle(SelfRegistrationContextQuery request, CancellationToken ct)
         => await db.Set<Event>().AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.Id == request.EventId && e.Status != EventStatus.Archived)
-            .Select(e => new SelfRegistrationContext(e.AllowSelfRegistration, e.TenantId, e.DefaultLanguage))
+            .Select(e => new SelfRegistrationContext(
+                e.AllowSelfRegistration, e.TenantId, e.DefaultLanguage,
+                e.Name, e.EmailAccentColor, e.EmailLogoUrl))
             .FirstOrDefaultAsync(ct);
 }
 

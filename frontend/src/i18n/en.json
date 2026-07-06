@@ -3,6 +3,19 @@
     "name": "EventPulse",
     "menu": "Menu"
   },
+  "emailBranding": {
+    "tab": "E-mail",
+    "title": "E-mail appearance",
+    "intro": "Customize the header of e-mails sent to guests (invitations, login links). Changes apply to this event only.",
+    "accent": "Accent colour",
+    "accentSet": "Set a custom colour",
+    "accentDefault": "Default",
+    "accentHint": "Left off: the default EventPulse purple gradient.",
+    "logo": "Logo (URL)",
+    "logoHint": "Full image URL (https). Shown in the e-mail header next to the event name.",
+    "save": "Save e-mail appearance",
+    "preview": "Message preview"
+  },
   "plogin": {
     "title": "Sign in to the event",
     "prompt": "Enter your e-mail — we'll send you a personal link to get in.",

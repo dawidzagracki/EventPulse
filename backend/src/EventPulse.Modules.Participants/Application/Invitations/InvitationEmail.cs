@@ -7,7 +7,7 @@ namespace EventPulse.Modules.Participants.Application.Invitations;
 /// <summary>Builds the bilingual invitation email containing the participant's personal access link.</summary>
 public static class InvitationEmail
 {
-    public static EmailMessage Build(Participant participant, string eventName, DateTimeOffset startsAt, string link)
+    public static EmailMessage Build(Participant participant, string eventName, DateTimeOffset startsAt, string link, EmailBrand? brand = null)
     {
         var isEn = participant.Language.Equals("en", StringComparison.OrdinalIgnoreCase);
         var culture = isEn ? "en-GB" : "pl-PL";
@@ -49,7 +49,7 @@ public static class InvitationEmail
                 FooterNote = "Otrzymujesz tę wiadomość, ponieważ zaproszono Cię na wydarzenie obsługiwane w EventPulse.",
             };
 
-        var html = EmailLayout.Render(content);
+        var html = EmailLayout.Render(content, brand);
 
         var text = $"{(isEn ? "Hello" : "Cześć")} {participant.FirstName},\n{eventName} — {dateText}\n{(isEn ? "Your event link" : "Twój link do wydarzenia")}: {link}";
 

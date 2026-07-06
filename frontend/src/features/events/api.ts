@@ -77,6 +77,38 @@ export function useUpdateEventSettings(eventId: string) {
   })
 }
 
+// ---- Transactional e-mail branding ----
+export interface UpdateEmailBrandingRequest {
+  accentColor: string | null
+  logoUrl: string | null
+}
+
+export function useUpdateEmailBranding(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: UpdateEmailBrandingRequest) =>
+      (await api.put<EventDto>(`/api/events/${eventId}/email-branding`, body)).data,
+    onSuccess: (data) => {
+      qc.setQueryData(['events', eventId], data)
+      qc.invalidateQueries({ queryKey: KEY })
+    },
+  })
+}
+
+/** Fetches the live e-mail HTML preview (auth-scoped) for the given draft branding. */
+export async function fetchEmailPreview(
+  eventId: string,
+  accent: string | null,
+  logo: string | null,
+): Promise<string> {
+  const { data } = await api.get<string>(`/api/events/${eventId}/email/preview`, {
+    params: { accent: accent ?? undefined, logo: logo || undefined },
+    responseType: 'text',
+    transformResponse: (v) => v,
+  })
+  return data
+}
+
 // ---- Custom fields (admin) ----
 export function useCustomFields(eventId: string) {
   return useQuery({

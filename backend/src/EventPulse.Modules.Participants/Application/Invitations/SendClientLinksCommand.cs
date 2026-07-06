@@ -13,7 +13,7 @@ namespace EventPulse.Modules.Participants.Application.Invitations;
 /// Sends ONE email to the event's client listing every participant and their personal
 /// login link, so the client can distribute the links themselves.
 /// </summary>
-public sealed record SendClientLinksCommand(Guid EventId, string EventName, string ClientEmail, string LinkBaseUrl)
+public sealed record SendClientLinksCommand(Guid EventId, string EventName, string ClientEmail, string LinkBaseUrl, EmailBrand? Brand = null)
     : IRequest<SendClientLinksResult>;
 
 public sealed record SendClientLinksResult(int LinkCount);
@@ -44,7 +44,7 @@ public sealed class SendClientLinksHandler(IAppDbContext db, IEmailSender email)
                 $"{baseUrl}/{p.AccessToken}"))
             .ToList();
 
-        await email.SendAsync(ClientLinksEmail.Build(request.ClientEmail, request.EventName, rows), ct);
+        await email.SendAsync(ClientLinksEmail.Build(request.ClientEmail, request.EventName, rows, request.Brand), ct);
         return new SendClientLinksResult(rows.Count);
     }
 }
@@ -52,10 +52,8 @@ public sealed class SendClientLinksHandler(IAppDbContext db, IEmailSender email)
 /// <summary>Builds the client-facing digest email with a table of participant → login link.</summary>
 public static class ClientLinksEmail
 {
-    public static EmailMessage Build(string clientEmail, string eventName, IReadOnlyList<ClientLinkRow> rows)
+    public static EmailMessage Build(string clientEmail, string eventName, IReadOnlyList<ClientLinkRow> rows, EmailBrand? brand = null)
     {
-        var ev = WebUtility.HtmlEncode(eventName);
-
         var body = new StringBuilder();
         body.Append(
             "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" " +
@@ -80,14 +78,19 @@ public static class ClientLinksEmail
         }
         body.Append("</table>");
 
-        var html =
-            "<div style=\"font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:720px;margin:0 auto;padding:24px\">" +
-            $"<h2 style=\"margin:0 0 6px\">Linki logowania — {ev}</h2>" +
-            $"<p style=\"margin:0 0 16px;color:#475569\">Poniżej znajduje się lista {rows.Count} uczestników wraz z ich osobistymi linkami logowania. " +
-            "Każdy link jest przypisany do konkretnego adresu e-mail — możesz je rozesłać samodzielnie.</p>" +
-            body +
-            "<p style=\"margin:16px 0 0;color:#94a3b8;font-size:12px\">Wiadomość wygenerowana w EventPulse.</p>" +
-            "</div>";
+        var content = new EmailContent
+        {
+            Preheader = $"Linki logowania — {eventName}",
+            Heading = $"Linki logowania — {eventName}",
+            Paragraphs =
+            [
+                $"Poniżej znajduje się lista {rows.Count} uczestników wraz z ich osobistymi linkami logowania. "
+                    + "Każdy link jest przypisany do konkretnego adresu e-mail — możesz je rozesłać samodzielnie.",
+            ],
+            RawHtml = body.ToString(),
+            FooterNote = "Wiadomość wygenerowana w EventPulse.",
+        };
+        var html = EmailLayout.Render(content, brand);
 
         var text = new StringBuilder($"Linki logowania — {eventName}\n\n");
         foreach (var r in rows)

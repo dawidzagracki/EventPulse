@@ -20,6 +20,8 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.Property(e => e.CustomPhotosUrl).HasMaxLength(2048);
         builder.Property(e => e.CustomPhotosText).HasMaxLength(4000);
+        builder.Property(e => e.EmailAccentColor).HasMaxLength(9);
+        builder.Property(e => e.EmailLogoUrl).HasMaxLength(2048);
 
         // Participant-app tabs default to visible so existing events are unaffected.
         builder.Property(e => e.ShowAgendaTab).HasDefaultValue(true);

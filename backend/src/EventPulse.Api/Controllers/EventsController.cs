@@ -6,6 +6,7 @@ using EventPulse.Modules.Events.Application.Update;
 using EventPulse.Modules.Events.Domain;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Identity.Domain;
+using EventPulse.Shared.Notifications;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -104,6 +105,49 @@ public sealed class EventsController : ControllerBase
     [HttpPut("{id:guid}/slug")]
     public async Task<ActionResult<EventDto>> UpdateSlug(Guid id, UpdateSlugBody body, CancellationToken ct)
         => Ok(await _mediator.Send(new UpdateEventSlugCommand(id, body.Slug), ct));
+
+    /// <summary>Per-event transactional-email branding (header accent colour + logo URL).</summary>
+    [HttpPut("{id:guid}/email-branding")]
+    public async Task<ActionResult<EventDto>> UpdateEmailBranding(Guid id, EmailBrandingBody body, CancellationToken ct)
+        => Ok(await _mediator.Send(new UpdateEmailBrandingCommand(id, body.AccentColor, body.LogoUrl), ct));
+
+    /// <summary>
+    /// Live HTML preview of a sample e-mail with the given (unsaved) branding — used by the editor.
+    /// Accent/logo come as query params so the preview updates before saving; falls back to the
+    /// event's saved values when omitted.
+    /// </summary>
+    [HttpGet("{id:guid}/email/preview")]
+    public async Task<IActionResult> EmailPreview(
+        Guid id,
+        [FromQuery] string? accent,
+        [FromQuery] string? logo,
+        CancellationToken ct)
+    {
+        var ev = await _mediator.Send(new GetEventByIdQuery(id), ct);
+        var brand = new EmailBrand(
+            accent ?? ev.EmailBranding.AccentColor,
+            string.IsNullOrWhiteSpace(logo) ? ev.EmailBranding.LogoUrl : logo,
+            ev.Name);
+
+        var content = new EmailContent
+        {
+            Preheader = ev.Name,
+            Heading = "Cześć Patrycja,",
+            Paragraphs =
+            [
+                $"Zostałeś(-aś) zaproszony(-a) na wydarzenie <strong>{System.Net.WebUtility.HtmlEncode(ev.Name)}</strong>.",
+                "Otwórz swoją osobistą stronę wydarzenia poniżej — znajdziesz tam agendę, swój kod QR i wszystkie szczegóły w jednym miejscu.",
+            ],
+            InfoRows = [new EmailInfoRow("Kiedy", ev.StartsAt.ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("pl-PL")))],
+            CtaLabel = "Otwórz stronę wydarzenia",
+            CtaUrl = "https://eventpulse.pl",
+            FallbackNote = "Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:",
+            FooterNote = "Podgląd wiadomości — tak zobaczą ją zaproszeni goście.",
+        };
+        return Content(EmailLayout.Render(content, brand), "text/html; charset=utf-8");
+    }
+
+    public sealed record EmailBrandingBody(string? AccentColor, string? LogoUrl);
 
     /// <summary>Client accounts granted access to this event (ids only). Agency-only.</summary>
     [HttpGet("{id:guid}/clients")]

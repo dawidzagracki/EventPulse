@@ -19,8 +19,11 @@ type IconName =
   | 'check'
   | 'cog'
   | 'station'
+  | 'mail'
 
 const paths: Record<IconName, string> = {
+  mail:
+    'M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1 2.4V18h16V7.4l-8 5-8-5zm.6-.4L12 11l7.4-4H4.6z',
   dashboard:
     'M3 3h7v9H3V3zm11 0h7v5h-7V3zM3 14h7v7H3v-7zm11-3h7v10h-7V11z',
   users:

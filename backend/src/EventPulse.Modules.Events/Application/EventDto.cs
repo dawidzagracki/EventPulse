@@ -15,12 +15,19 @@ public sealed record EventDto(
     string? ClientEmail,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    EventSettingsDto Settings)
+    EventSettingsDto Settings,
+    EmailBrandingDto EmailBranding)
 {
     public static EventDto From(Event e) => new(
         e.Id, e.Name, e.Slug, e.Status, e.StartsAt, e.EndsAt,
         e.Location, e.Description, e.DefaultLanguage, e.ClientEmail, e.CreatedAt, e.UpdatedAt,
-        EventSettingsDto.From(e));
+        EventSettingsDto.From(e), EmailBrandingDto.From(e));
+}
+
+/// <summary>Per-event transactional e-mail branding (header colour + logo).</summary>
+public sealed record EmailBrandingDto(string? AccentColor, string? LogoUrl)
+{
+    public static EmailBrandingDto From(Event e) => new(e.EmailAccentColor, e.EmailLogoUrl);
 }
 
 /// <summary>Per-event configurable settings (privacy, phone, companions, anonymization, photos).</summary>

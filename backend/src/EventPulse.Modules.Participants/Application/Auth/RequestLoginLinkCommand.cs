@@ -24,7 +24,8 @@ public sealed record RequestLoginLinkCommand(
     string? LastName = null,
     bool AllowSelfRegistration = false,
     Guid TenantId = default,
-    string DefaultLanguage = "pl") : IRequest<Unit>;
+    string DefaultLanguage = "pl",
+    EmailBrand? Brand = null) : IRequest<Unit>;
 
 public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email)
     : IRequestHandler<RequestLoginLinkCommand, Unit>
@@ -66,7 +67,7 @@ public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email
         if (participant is not null)
         {
             var link = $"{request.LinkBaseUrl.TrimEnd('/')}/{participant.AccessToken}";
-            await email.SendAsync(LoginLinkEmail.Build(participant, link), ct);
+            await email.SendAsync(LoginLinkEmail.Build(participant, link, request.Brand), ct);
         }
 
         return Unit.Value; // generic success regardless — no account enumeration
@@ -76,7 +77,7 @@ public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email
 /// <summary>Bilingual "here is your login link" email (self-service second login path).</summary>
 public static class LoginLinkEmail
 {
-    public static EmailMessage Build(Participant participant, string link)
+    public static EmailMessage Build(Participant participant, string link, EmailBrand? brand = null)
     {
         var isEn = participant.Language.Equals("en", StringComparison.OrdinalIgnoreCase);
         var name = WebUtility.HtmlEncode(participant.FirstName);
@@ -105,6 +106,6 @@ public static class LoginLinkEmail
 
         var subject = isEn ? "Your login link" : "Twój link do logowania";
         var text = $"{(isEn ? "Your event link" : "Twój link do wydarzenia")}: {link}";
-        return new EmailMessage(participant.Email!, $"{participant.FirstName} {participant.LastName}", subject, EmailLayout.Render(content), text);
+        return new EmailMessage(participant.Email!, $"{participant.FirstName} {participant.LastName}", subject, EmailLayout.Render(content, brand), text);
     }
 }

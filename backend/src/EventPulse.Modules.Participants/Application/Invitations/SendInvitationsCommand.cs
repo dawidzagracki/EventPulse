@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace EventPulse.Modules.Participants.Application.Invitations;
 
 public sealed record SendInvitationsCommand(
-    Guid EventId, string EventName, DateTimeOffset EventStartsAt, string LinkBaseUrl, bool OnlyNotInvited)
+    Guid EventId, string EventName, DateTimeOffset EventStartsAt, string LinkBaseUrl, bool OnlyNotInvited,
+    EmailBrand? Brand = null)
     : IRequest<SendInvitationsResult>;
 
 public sealed record SendInvitationsResult(int SentCount, int FailedCount);
@@ -40,7 +41,7 @@ public sealed class SendInvitationsHandler : IRequestHandler<SendInvitationsComm
         foreach (var participant in participants)
         {
             var link = $"{request.LinkBaseUrl.TrimEnd('/')}/{participant.AccessToken}";
-            var message = InvitationEmail.Build(participant, request.EventName, request.EventStartsAt, link);
+            var message = InvitationEmail.Build(participant, request.EventName, request.EventStartsAt, link, request.Brand);
 
             try
             {

@@ -151,6 +151,12 @@ export interface EventDto {
   createdAt: string
   updatedAt: string | null
   settings: EventSettingsDto
+  emailBranding: EmailBrandingDto
+}
+
+export interface EmailBrandingDto {
+  accentColor: string | null
+  logoUrl: string | null
 }
 
 export interface CreateEventRequest {

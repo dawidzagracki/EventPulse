@@ -12,6 +12,7 @@ import { EngagementTab } from '../engagement/EngagementTab'
 import { GalleryTab } from '../gallery/GalleryTab'
 import { AuditTab } from '../audit/AuditTab'
 import { SettingsTab } from './SettingsTab'
+import { EmailBrandingTab } from './EmailBrandingTab'
 import { EventFormTab } from './EventFormTab'
 import { StationsTab } from '../stations/StationsTab'
 import { AppShell, type NavItem } from '../../components/AppShell'
@@ -22,7 +23,7 @@ import { EventStatus, EventStatusName } from '../../types/api'
 
 // Clients get a focused subset — the tabs they actually care about when
 // reviewing their event. Agency staff see everything.
-const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'agenda', 'page', 'participants', 'gallery', 'form', 'settings']
+const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'agenda', 'page', 'participants', 'gallery', 'form', 'settings', 'email']
 
 type Tab =
   | 'dashboard'
@@ -37,6 +38,7 @@ type Tab =
   | 'form'
   | 'audit'
   | 'settings'
+  | 'email'
 
 function statusTone(status: number) {
   switch (status) {
@@ -84,6 +86,7 @@ export function EventDetailPage() {
     { id: 'stations', label: t('stations.title'), icon: 'station' },
     { id: 'form', label: t('eventForm.title'), icon: 'document' },
     { id: 'settings', label: t('settings.title'), icon: 'cog' },
+    { id: 'email', label: t('emailBranding.tab'), icon: 'mail' },
     { id: 'audit', label: t('audit.title'), icon: 'shield' },
   ] as { id: Tab; label: string; icon: NavItem['icon'] }[]
 
@@ -177,6 +180,7 @@ export function EventDetailPage() {
           {activeTab === 'stations' && <StationsTab eventId={eventId} />}
           {activeTab === 'form' && <EventFormTab eventId={eventId} />}
           {activeTab === 'settings' && <SettingsTab eventId={eventId} />}
+          {activeTab === 'email' && <EmailBrandingTab eventId={eventId} />}
           {activeTab === 'audit' && <AuditTab />}
         </>
       )}

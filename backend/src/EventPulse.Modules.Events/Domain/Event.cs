@@ -27,6 +27,14 @@ public sealed class Event : AggregateRoot
     /// <summary>Email of the end client (mini-admin) who edits this event.</summary>
     public string? ClientEmail { get; set; }
 
+    // --- Transactional e-mail branding (invitation / login-link / client-links) ---
+
+    /// <summary>Accent colour (hex) for the e-mail header + button. Null = default EventPulse look.</summary>
+    public string? EmailAccentColor { get; set; }
+
+    /// <summary>Absolute URL of a logo shown in the e-mail header. Null = none.</summary>
+    public string? EmailLogoUrl { get; set; }
+
     // ---------------------------------------------------------------------
     // Per-event settings (configured from the dashboard "Ustawienia" tab).
     // ---------------------------------------------------------------------

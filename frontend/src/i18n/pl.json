@@ -3,6 +3,19 @@
     "name": "EventPulse",
     "menu": "Menu"
   },
+  "emailBranding": {
+    "tab": "E-mail",
+    "title": "Wygląd e-maili",
+    "intro": "Dostosuj nagłówek wiadomości wysyłanych do gości (zaproszenia, linki logowania). Zmiany dotyczą tylko tego wydarzenia.",
+    "accent": "Kolor akcentu",
+    "accentSet": "Ustaw własny kolor",
+    "accentDefault": "Domyślny",
+    "accentHint": "Bez zmian: domyślny fioletowy gradient EventPulse.",
+    "logo": "Logo (URL)",
+    "logoHint": "Pełny adres obrazka (https). Pokaże się w nagłówku maila obok nazwy wydarzenia.",
+    "save": "Zapisz wygląd e-maili",
+    "preview": "Podgląd wiadomości"
+  },
   "plogin": {
     "title": "Zaloguj się do wydarzenia",
     "prompt": "Podaj swój adres e-mail — wyślemy Ci osobisty link do wejścia.",
