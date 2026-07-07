@@ -34,7 +34,7 @@ public sealed class GetDraftHandler(IAppDbContext db) : IRequestHandler<GetDraft
 }
 
 /// <summary>Minimal branding (logo + colours) for the participant app header. Read-only — never creates a page.</summary>
-public sealed record ParticipantBrandingDto(string? LogoUrl, string? PrimaryColor, string? AccentColor);
+public sealed record ParticipantBrandingDto(string? LogoUrl, string? PrimaryColor, string? AccentColor, bool HasPublishedPage);
 
 public sealed record GetParticipantBrandingQuery(Guid EventId) : IRequest<ParticipantBrandingDto>;
 
@@ -45,7 +45,9 @@ public sealed class GetParticipantBrandingHandler(IAppDbContext db)
     {
         var page = await db.Set<EventPage>().AsNoTracking()
             .FirstOrDefaultAsync(p => p.EventId == request.EventId, ct);
-        return new ParticipantBrandingDto(page?.LogoUrl, page?.PrimaryColor, page?.AccentColor);
+        // HasPublishedPage lets the participant app link to the public page exactly when
+        // it is live (page published) — consistent with the public slug route.
+        return new ParticipantBrandingDto(page?.LogoUrl, page?.PrimaryColor, page?.AccentColor, page?.PublishedContent is not null);
     }
 }
 
@@ -121,6 +123,21 @@ public sealed class UploadLogoHandler(IAppDbContext db, IFileStorage storage) : 
         page.LogoUrl = $"/api/public/events/{request.EventId}/logo?v={Guid.NewGuid():N}";
         await db.SaveChangesAsync(ct);
         return PageDto.From(page);
+    }
+}
+
+/// <summary>Stores a generic image asset for the event and returns its public URL (for block content).</summary>
+public sealed record UploadPageAssetCommand(Guid EventId, string ContentType, byte[] Content) : IRequest<string>;
+
+public sealed class UploadPageAssetHandler(IFileStorage storage) : IRequestHandler<UploadPageAssetCommand, string>
+{
+    public async Task<string> Handle(UploadPageAssetCommand request, CancellationToken ct)
+    {
+        var assetId = Guid.NewGuid();
+        using var ms = new MemoryStream(request.Content);
+        await storage.UploadAsync($"events/{request.EventId}/assets/{assetId:N}", ms, request.ContentType, ct);
+        // App-relative URL — the front-end resolves it against the API base (same-origin in prod).
+        return $"/api/public/events/{request.EventId}/assets/{assetId:N}";
     }
 }
 

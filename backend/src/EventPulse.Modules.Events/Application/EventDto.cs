@@ -46,10 +46,14 @@ public sealed record EventSettingsDto(
     bool ShowGalleryTab,
     bool ShowPreferencesTile,
     bool ShowShirtSize,
-    bool AllowSelfRegistration)
+    bool AllowSelfRegistration,
+    string? CompanyName,
+    bool ShowPhotoConsent,
+    bool AppUseBrandColors)
 {
     public static EventSettingsDto From(Event e) => new(
         e.UsesLocationData, e.PhoneRequired, e.AllowCompanions, e.MaxCompanions,
         e.AnonymizeEnabled, e.AnonymizeAfterDays, e.AnonymizedAt, e.CustomPhotosUrl, e.CustomPhotosText,
-        e.ShowAgendaTab, e.ShowActivitiesTab, e.ShowGalleryTab, e.ShowPreferencesTile, e.ShowShirtSize, e.AllowSelfRegistration);
+        e.ShowAgendaTab, e.ShowActivitiesTab, e.ShowGalleryTab, e.ShowPreferencesTile, e.ShowShirtSize, e.AllowSelfRegistration,
+        e.CompanyName, e.ShowPhotoConsent, e.AppUseBrandColors);
 }

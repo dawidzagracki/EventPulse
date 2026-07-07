@@ -135,6 +135,9 @@ export interface EventSettingsDto {
   showPreferencesTile: boolean
   showShirtSize: boolean
   allowSelfRegistration: boolean
+  companyName: string | null
+  showPhotoConsent: boolean
+  appUseBrandColors: boolean
 }
 
 export interface EventDto {

@@ -199,6 +199,40 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
             </div>
           )}
         </div>
+
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Zgody
+        </p>
+        <div className="mt-3 space-y-4">
+          <Toggle
+            checked={form.showPhotoConsent}
+            onChange={(v) => set('showPhotoConsent', v)}
+            label="Zgoda na wykorzystanie wizerunku"
+            description="Checkbox zgody na zdjęcia/wizerunek w kroku zgód gościa. Wyłącz, jeśli nie zbierasz tej zgody na tym wydarzeniu."
+          />
+        </div>
+
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Marka w aplikacji gościa
+        </p>
+        <div className="mt-3 space-y-4">
+          <Field label="Nazwa firmy klienta">
+            <Input
+              value={form.companyName ?? ''}
+              onChange={(e) => set('companyName', e.target.value || null)}
+              placeholder="np. FALP Sp. z o.o."
+            />
+          </Field>
+          <p className="-mt-2 text-xs text-slate-500">
+            Pokazywana gościom obok nazwy wydarzenia — w nagłówku aplikacji i nad formularzem powitalnym.
+          </p>
+          <Toggle
+            checked={form.appUseBrandColors}
+            onChange={(v) => set('appUseBrandColors', v)}
+            label="Kolory marki w aplikacji gościa"
+            description="Aplikacja uczestnika użyje koloru głównego ze strony wydarzenia (przyciski, akcenty) zamiast domyślnego wyglądu."
+          />
+        </div>
       </Card>
 
       {/* Rejestracja przez stronę */}
@@ -284,5 +318,8 @@ function serverForm(s: import('../../types/api').EventSettingsDto): UpdateEventS
     showPreferencesTile: s.showPreferencesTile,
     showShirtSize: s.showShirtSize,
     allowSelfRegistration: s.allowSelfRegistration,
+    companyName: s.companyName,
+    showPhotoConsent: s.showPhotoConsent,
+    appUseBrandColors: s.appUseBrandColors,
   }
 }

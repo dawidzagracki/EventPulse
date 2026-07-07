@@ -97,6 +97,31 @@ public sealed class PublicEventsController : ControllerBase
         var stored = await _mediator.Send(new PublicLogoQuery(eventId), ct);
         return File(stored.Content, stored.ContentType);
     }
+
+    /// <summary>Serves an uploaded page asset (e.g. a team-member photo referenced by block content). Anonymous.</summary>
+    [HttpGet("assets/{assetId:guid}")]
+    public async Task<IActionResult> Asset(Guid eventId, Guid assetId, CancellationToken ct)
+    {
+        var stored = await _mediator.Send(new PublicAssetQuery(eventId, assetId), ct);
+        return File(stored.Content, stored.ContentType);
+    }
+}
+
+public sealed record PublicAssetQuery(Guid EventId, Guid AssetId) : IRequest<StoredFile>;
+
+public sealed class PublicAssetHandler(IFileStorage storage) : IRequestHandler<PublicAssetQuery, StoredFile>
+{
+    public async Task<StoredFile> Handle(PublicAssetQuery request, CancellationToken ct)
+    {
+        try
+        {
+            return await storage.DownloadAsync($"events/{request.EventId}/assets/{request.AssetId:N}", ct);
+        }
+        catch
+        {
+            throw new NotFoundException("Asset not found.");
+        }
+    }
 }
 
 public sealed record PublicLogoQuery(Guid EventId) : IRequest<StoredFile>;

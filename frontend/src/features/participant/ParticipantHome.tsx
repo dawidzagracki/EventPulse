@@ -34,6 +34,7 @@ import {
 } from '../../types/api'
 import { getQuizTake, submitQuiz, useAddContact, useMyContacts, useMyQuizzes } from '../engagement/api'
 import { recordStationScan } from './api'
+import { useBrandTheme } from './theme'
 import { startQrScanner, type QrScanHandle } from '../../lib/qrScanner'
 import { createQuizConnection } from '../../lib/signalr'
 import { useMyGallery } from '../gallery/api'
@@ -142,19 +143,36 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
 
   // Never leave a hidden tab active (e.g. agenda hidden while it's the default).
   const activeTab: Tab = tabs.some((tb) => tb.id === tab) ? tab : (tabs[0]?.id ?? 'qr')
-  // The public event page is only live once published (status ≥ 1).
-  const publicUrl = ev?.slug && ev.status >= 1 ? `/public/${ev.slug}` : null
+  // The public page is live exactly when the PAGE is published (matches the public slug route) —
+  // the event status alone is irrelevant here.
+  const publicUrl = ev?.slug && branding?.hasPublishedPage ? `/public/${ev.slug}` : null
+  // Optional per-event theming: the organiser can repaint the WHOLE app with the brand colours.
+  const theme = useBrandTheme()
+  const accent = theme?.accent
 
   return (
-    <div className="min-h-screen pb-24">
-      {/* Slim header */}
-      <header className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          {branding?.logoUrl ? (
-            <img src={assetUrl(branding.logoUrl) ?? undefined} alt={ev?.name ?? ''} className="h-7 max-w-[160px] object-contain" />
-          ) : (
-            <Logo size={26} />
-          )}
+    <div className="min-h-screen pb-24" style={theme ? { background: theme.appBg } : undefined}>
+      {/* Slim header — event logo (on a light plate so dark logos stay visible) + names */}
+      <header
+        className="sticky top-0 z-10 border-b border-slate-800/70 bg-slate-950/70 backdrop-blur"
+        style={theme ? { borderBottomColor: theme.accent, background: theme.barBg } : undefined}
+      >
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {branding?.logoUrl ? (
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1 shadow-sm ring-1 ring-inset ring-slate-300/30">
+                <img src={assetUrl(branding.logoUrl) ?? undefined} alt="" className="max-h-full max-w-full object-contain" />
+              </span>
+            ) : (
+              <Logo size={26} />
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold leading-tight text-white">{ev?.name ?? ''}</span>
+              {ev?.companyName && (
+                <span className="block truncate text-[11px] leading-tight text-slate-400">{ev.companyName}</span>
+              )}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             {publicUrl && (
               <a
@@ -198,6 +216,26 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
           <div className="space-y-5">
             <GreetingHero profile={profile} />
             <EventSummaryCard />
+            {/* Visible tile leading to the public event page (not just the small 🌐 icon). */}
+            {publicUrl && (
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-slate-800/80 bg-gradient-to-r from-sky-500/15 to-indigo-500/10 p-4 transition hover:border-sky-400/40"
+                style={theme ? { background: theme.heroBg, borderColor: theme.border } : undefined}
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/20 text-lg"
+                  style={theme ? { background: theme.accentSoft } : undefined}
+                >🌐</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-white">{t('participant.pageTileTitle')}</span>
+                  <span className="block truncate text-xs text-slate-400">{t('participant.pageTileHint')}</span>
+                </span>
+                <span className="shrink-0 text-slate-400">→</span>
+              </a>
+            )}
             <AgendaSection />
           </div>
         )}
@@ -229,8 +267,11 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         )}
       </main>
 
-      {/* Bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800/70 bg-slate-950/85 backdrop-blur-xl">
+      {/* Bottom nav — tinted with the brand colour when the theme is on */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800/70 bg-slate-950/85 backdrop-blur-xl"
+        style={theme ? { background: theme.barBg, borderTopColor: theme.border } : undefined}
+      >
         <div className="mx-auto flex max-w-2xl items-stretch">
           {tabs.map((tb) => {
             const active = activeTab === tb.id
@@ -248,13 +289,17 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
                         ? 'bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-violet-500/40 ring-4 ring-slate-950'
                         : 'bg-slate-800 text-slate-300 ring-4 ring-slate-950'
                     }`}
+                    style={active && accent ? { background: accent } : undefined}
                   >
                     {tb.emoji}
                   </span>
                 ) : (
                   <span className={`text-lg transition ${active ? 'scale-110' : 'opacity-60'}`}>{tb.emoji}</span>
                 )}
-                <span className={`text-[10px] font-medium ${active ? 'text-indigo-300' : 'text-slate-500'}`}>
+                <span
+                  className={`text-[10px] font-medium ${active ? 'text-indigo-300' : 'text-slate-500'}`}
+                  style={active && accent ? { color: accent } : undefined}
+                >
                   {tb.label}
                 </span>
               </button>
@@ -270,6 +315,8 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
 function GreetingHero({ profile }: { profile: MyProfileDto }) {
   const { t, i18n } = useTranslation()
   const { data: items } = useMyAgenda()
+  const { data: ev } = useMyEvent()
+  const theme = useBrandTheme()
   const isEn = (i18n.resolvedLanguage ?? 'pl') === 'en'
 
   const now = nowMs()
@@ -280,8 +327,15 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
   const seat = profile.tableName || profile.roomNumber
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-gradient-to-br from-violet-500/20 via-indigo-500/10 to-transparent p-5">
-      <p className="text-xs uppercase tracking-[0.2em] text-violet-300/80">{t('dashboard.live')}</p>
+    <div
+      className="overflow-hidden rounded-2xl border border-slate-800/80 bg-gradient-to-br from-violet-500/20 via-indigo-500/10 to-transparent p-5"
+      style={theme ? { background: theme.heroBg, borderColor: theme.border } : undefined}
+    >
+      {/* Which event this app is about — always visible up top. */}
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/80" style={theme ? { color: theme.accent } : undefined}>
+        {ev?.name ?? t('dashboard.live')}
+        {ev?.companyName ? ` · ${ev.companyName}` : ''}
+      </p>
       <h1 className="mt-1 text-2xl font-bold text-white">{t('participant.hello', { name: profile.firstName })}</h1>
 
       <RsvpRow profile={profile} />
@@ -324,11 +378,10 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
 }
 
 // ===================== Mini event summary (in-app) =====================
-const EVENT_STATUS_KEY = ['evStDraft', 'evStPublished', 'evStLive', 'evStCompleted', 'evStArchived'] as const
-
 function EventSummaryCard() {
   const { t, i18n } = useTranslation()
   const { data: ev } = useMyEvent()
+  const theme = useBrandTheme()
   if (!ev) return null
 
   const start = new Date(ev.startsAt)
@@ -350,11 +403,9 @@ function EventSummaryCard() {
     ? `${start.toLocaleDateString(i18n.language, { day: 'numeric', month: 'long', year: 'numeric' })} · ${start.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}`
     : `${start.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })}`
 
-  const statusLabel = t(`participant.${EVENT_STATUS_KEY[ev.status] ?? 'evStDraft'}`)
-
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/50">
-      <div className="relative bg-gradient-to-br from-indigo-500/25 via-violet-500/15 to-fuchsia-500/10 p-5">
+    <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/50" style={theme ? { borderColor: theme.border } : undefined}>
+      <div className="relative bg-gradient-to-br from-indigo-500/25 via-violet-500/15 to-fuchsia-500/10 p-5" style={theme ? { background: theme.heroBg } : undefined}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300/80">{t('participant.evYourEvent')}</p>
@@ -366,10 +417,10 @@ function EventSummaryCard() {
           </span>
         </div>
       </div>
-      <div className="grid gap-px bg-slate-800/60 sm:grid-cols-3">
+      {/* Internal event status is deliberately NOT shown to guests. */}
+      <div className="grid gap-px bg-slate-800/60 sm:grid-cols-2">
         <InfoCell label={t('participant.evWhen')} value={dateStr} />
         <InfoCell label={t('participant.evWhere')} value={ev.location || '—'} />
-        <InfoCell label={t('participant.evStatus')} value={statusLabel || EVENT_STATUS_KEY[ev.status] || '—'} />
       </div>
       {ev.description && (
         <p className="border-t border-slate-800/60 bg-slate-950/30 px-5 py-3 text-sm text-slate-300">{ev.description}</p>
@@ -607,10 +658,43 @@ function MyQrScreen({ profile }: { profile: MyProfileDto }) {
 }
 
 // ===================== RODO gate (full screen, friendly) =====================
+/**
+ * Brand strip above the welcome gates (consents/onboarding): client logo on a light
+ * plate (contrast-safe for dark logos) + event name + client company name.
+ */
+function GateBrandHeader({ onLogout }: { onLogout: () => void }) {
+  const { t } = useTranslation()
+  const { data: ev } = useMyEvent()
+  const { data: branding } = useMyBranding()
+  return (
+    <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2.5">
+        {branding?.logoUrl ? (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-sm ring-1 ring-inset ring-slate-300/30">
+            <img src={assetUrl(branding.logoUrl) ?? undefined} alt="" className="max-h-full max-w-full object-contain" />
+          </span>
+        ) : (
+          <Logo size={32} />
+        )}
+        <span className="min-w-0">
+          {ev?.name && <span className="block truncate text-sm font-bold leading-tight text-white">{ev.name}</span>}
+          {ev?.companyName && (
+            <span className="block truncate text-[11px] leading-tight text-slate-400">{ev.companyName}</span>
+          )}
+        </span>
+      </div>
+      <Button variant="ghost" onClick={onLogout}>
+        {t('common.logout')}
+      </Button>
+    </div>
+  )
+}
+
 function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () => void }) {
   const { t } = useTranslation()
   const update = useUpdateConsents()
   const { data: ev } = useMyEvent()
+  const theme = useBrandTheme()
   const [rodo, setRodo] = useState(profile.hasAcceptedRodo)
   const [photo, setPhoto] = useState(profile.photoConsent)
   const [networking, setNetworking] = useState(profile.networkingConsent)
@@ -619,36 +703,37 @@ function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () =
   const phoneRequired = ev?.phoneRequired ?? false
   const usesLocationData = ev?.usesLocationData ?? false
   const phoneMissing = phoneRequired && phone.trim().length === 0
+  // The organiser can disable collecting the image consent for this event.
+  const showPhotoConsent = ev?.showPhotoConsent !== false
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!rodo || phoneMissing) return
     await update.mutateAsync({
       rodoAccepted: rodo,
-      photoConsent: photo,
+      // When the checkbox is hidden we don't collect this consent — keep the stored value.
+      photoConsent: showPhotoConsent ? photo : profile.photoConsent,
       networkingConsent: networking,
       phone: phone.trim() || null,
     })
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4" style={theme ? { background: theme.appBg } : undefined}>
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-600/25 blur-3xl animate-pulse-slow" />
-        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl animate-pulse-slow [animation-delay:1.5s]" />
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-600/25 blur-3xl animate-pulse-slow" style={theme ? { background: theme.accentSoft } : undefined} />
+        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl animate-pulse-slow [animation-delay:1.5s]" style={theme ? { background: theme.accentSoft } : undefined} />
       </div>
 
       <div className="w-full max-w-md">
-        <div className="mb-5 flex items-center justify-between">
-          <Logo size={32} />
-          <Button variant="ghost" onClick={onLogout}>
-            {t('common.logout')}
-          </Button>
-        </div>
+        <GateBrandHeader onLogout={onLogout} />
 
         <Card glow>
           <div className="mb-4 flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-xl text-white shadow-lg shadow-violet-500/30">
+            <span
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-xl text-white shadow-lg shadow-violet-500/30"
+              style={theme ? { background: theme.btnBg } : undefined}
+            >
               👋
             </span>
             <div>
@@ -659,7 +744,7 @@ function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () =
 
           <form onSubmit={save} className="space-y-2.5">
             <ConsentRow checked={rodo} onChange={setRodo} required label={t('participant.rodo')} />
-            <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />
+            {showPhotoConsent && <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />}
             <ConsentRow checked={networking} onChange={setNetworking} label={t('participant.networking')} />
 
             <div className="pt-1">
@@ -684,7 +769,12 @@ function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () =
             )}
 
             {!rodo && <p className="px-1 text-[11px] text-amber-300">{t('participant.rodoRequired')}</p>}
-            <Button type="submit" className="mt-2 w-full justify-center" disabled={!rodo || phoneMissing || update.isPending}>
+            <Button
+              type="submit"
+              className="mt-2 w-full justify-center"
+              disabled={!rodo || phoneMissing || update.isPending}
+              style={theme ? { background: theme.btnBg } : undefined}
+            >
               {t('participant.unlock')}
             </Button>
           </form>
@@ -743,6 +833,7 @@ function OnboardingGate({
   onLogout: () => void
 }) {
   const { t, i18n } = useTranslation()
+  const theme = useBrandTheme()
   const en = i18n.resolvedLanguage === 'en'
   const [idx, setIdx] = useState(0)
   const [confirmed, setConfirmed] = useState(false)
@@ -779,19 +870,14 @@ function OnboardingGate({
   const body = onFormScreen ? null : (en ? step!.bodyEn : step!.bodyPl) ?? step!.bodyPl
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4" style={theme ? { background: theme.appBg } : undefined}>
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-600/25 blur-3xl animate-pulse-slow" />
-        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl animate-pulse-slow [animation-delay:1.5s]" />
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-indigo-600/25 blur-3xl animate-pulse-slow" style={theme ? { background: theme.accentSoft } : undefined} />
+        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl animate-pulse-slow [animation-delay:1.5s]" style={theme ? { background: theme.accentSoft } : undefined} />
       </div>
 
       <div className="w-full max-w-md">
-        <div className="mb-5 flex items-center justify-between">
-          <Logo size={32} />
-          <Button variant="ghost" onClick={onLogout}>
-            {t('common.logout')}
-          </Button>
-        </div>
+        <GateBrandHeader onLogout={onLogout} />
 
         <Card glow>
           {/* progress dots */}
@@ -800,6 +886,7 @@ function OnboardingGate({
               <span
                 key={i}
                 className={`h-1.5 flex-1 rounded-full transition ${i <= idx ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-slate-700'}`}
+                style={theme && i <= idx ? { background: theme.btnBg } : undefined}
               />
             ))}
           </div>
@@ -855,7 +942,12 @@ function OnboardingGate({
                 {t('participant.onboardingBack')}
               </Button>
             )}
-            <Button className="flex-1 justify-center" onClick={next} disabled={blocked}>
+            <Button
+              className="flex-1 justify-center"
+              onClick={next}
+              disabled={blocked}
+              style={theme ? { background: theme.btnBg } : undefined}
+            >
               {isLast ? t('participant.onboardingFinish') : t('participant.onboardingNext')}
             </Button>
           </div>
@@ -1039,20 +1131,43 @@ function CustomFieldControl({
   }
   if (field.type === CustomFieldType.MultiSelect) {
     const selected = parseStringArray(value)
-    const toggle = (o: string) => {
+    // Options prefixed with "!" are EXCLUSIVE (e.g. "!Nie potrzebuję transportu"):
+    // picking one clears everything else, and picking anything else clears it.
+    const opts = field.options.map((raw) => ({
+      raw,
+      label: raw.startsWith('!') ? raw.slice(1).trim() : raw,
+      exclusive: raw.startsWith('!'),
+    }))
+    const exclusiveLabels = new Set(opts.filter((o) => o.exclusive).map((o) => o.label))
+    const toggle = (opt: { label: string; exclusive: boolean }) => {
       const set = new Set(selected)
-      if (set.has(o)) set.delete(o)
-      else set.add(o)
+      if (set.has(opt.label)) {
+        set.delete(opt.label)
+      } else if (opt.exclusive) {
+        set.clear()
+        set.add(opt.label)
+      } else {
+        for (const ex of exclusiveLabels) set.delete(ex)
+        set.add(opt.label)
+      }
       onChange(JSON.stringify([...set]))
     }
+    const exclusiveActive = selected.some((s) => exclusiveLabels.has(s))
     return (
       <div className="space-y-1.5">
-        {field.options.map((o) => (
-          <label key={o} className="flex items-center gap-2 text-sm text-slate-200">
-            <input type="checkbox" checked={selected.includes(o)} onChange={() => toggle(o)} />
-            {o}
-          </label>
-        ))}
+        {opts.map((o) => {
+          const checked = selected.includes(o.label)
+          const dimmed = exclusiveActive && !checked
+          return (
+            <label
+              key={o.raw}
+              className={`flex items-center gap-2 text-sm text-slate-200 ${dimmed ? 'opacity-50' : ''}`}
+            >
+              <input type="checkbox" checked={checked} onChange={() => toggle(o)} />
+              {o.label}
+            </label>
+          )
+        })}
       </div>
     )
   }
@@ -1112,13 +1227,14 @@ function ConsentsSection({ profile }: { profile: MyProfileDto }) {
 
   const phoneRequired = ev?.phoneRequired ?? false
   const phoneMissing = phoneRequired && phone.trim().length === 0
+  const showPhotoConsent = ev?.showPhotoConsent !== false
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (phoneMissing) return
     await update.mutateAsync({
       rodoAccepted: rodo,
-      photoConsent: photo,
+      photoConsent: showPhotoConsent ? photo : profile.photoConsent,
       networkingConsent: networking,
       phone: phone.trim() || null,
     })
@@ -1129,7 +1245,7 @@ function ConsentsSection({ profile }: { profile: MyProfileDto }) {
       <h2 className="mb-3 font-semibold text-white">{t('participant.consents')}</h2>
       <form onSubmit={save} className="space-y-2.5">
         <ConsentRow checked={rodo} onChange={setRodo} required label={t('participant.rodo')} />
-        <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />
+        {showPhotoConsent && <ConsentRow checked={photo} onChange={setPhoto} label={t('participant.photo')} />}
         <ConsentRow checked={networking} onChange={setNetworking} label={t('participant.networking')} />
         <Field label={phoneRequired ? `${t('participant.phone')} *` : t('participant.phoneOptional')}>
           <Input

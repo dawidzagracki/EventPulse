@@ -33,6 +33,10 @@ export function OverviewTab({ eventId }: { eventId: string }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
 
+  // Inline location-edit state (same pattern as rename).
+  const [editingLocation, setEditingLocation] = useState(false)
+  const [locationDraft, setLocationDraft] = useState('')
+
   if (!event) {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
@@ -62,13 +66,33 @@ export function OverviewTab({ eventId }: { eventId: string }) {
       setEditing(false)
       return
     }
+    // The backend PUT replaces every field, so always send the full set —
+    // otherwise a rename would silently wipe description/client e-mail.
     await updateEvent.mutateAsync({
       name: trimmed,
       startsAt: event.startsAt,
       endsAt: event.endsAt,
       location: event.location,
+      description: event.description,
+      defaultLanguage: event.defaultLanguage,
+      clientEmail: event.clientEmail,
     })
     setEditing(false)
+  }
+
+  async function commitLocation() {
+    if (!event) return
+    const trimmed = locationDraft.trim()
+    await updateEvent.mutateAsync({
+      name: event.name,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      location: trimmed || null,
+      description: event.description,
+      defaultLanguage: event.defaultLanguage,
+      clientEmail: event.clientEmail,
+    })
+    setEditingLocation(false)
   }
 
   const dateLabel = new Date(event.startsAt).toLocaleDateString(i18n.language, {
@@ -210,10 +234,47 @@ export function OverviewTab({ eventId }: { eventId: string }) {
             </div>
           </Card>
 
-          {/* Location */}
+          {/* Location — editable inline (same pattern as rename) */}
           <Card>
-            <SectionHeader icon="mapPin" title={t('events.location')} />
-            {event.location ? (
+            <div className="flex items-start justify-between gap-2">
+              <SectionHeader icon="mapPin" title={t('events.location')} />
+              {!editingLocation && (
+                <button
+                  onClick={() => {
+                    setLocationDraft(event.location ?? '')
+                    setEditingLocation(true)
+                  }}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-[11px] font-medium text-slate-300 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white"
+                >
+                  ✏ {t('eventDetail.editLocation')}
+                </button>
+              )}
+            </div>
+            {editingLocation ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={locationDraft}
+                  onChange={(e) => setLocationDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void commitLocation()
+                    if (e.key === 'Escape') setEditingLocation(false)
+                  }}
+                  placeholder={t('events.locationPlaceholder')}
+                  className="flex-1 rounded-lg border border-indigo-400/60 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-2 ring-indigo-500/20"
+                />
+                <button
+                  onClick={() => void commitLocation()}
+                  disabled={updateEvent.isPending}
+                  className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-2 text-sm font-semibold text-white shadow-lg hover:opacity-90 disabled:opacity-50"
+                >
+                  ✓
+                </button>
+                <button onClick={() => setEditingLocation(false)} className="rounded-lg px-2 py-2 text-slate-400 hover:text-white">
+                  ✕
+                </button>
+              </div>
+            ) : event.location ? (
               <div className="space-y-3">
                 <p className="text-base text-white">{event.location}</p>
                 <iframe

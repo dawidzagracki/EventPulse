@@ -116,6 +116,9 @@
     <div class="brand"><div class="logo">EP</div><div><div class="name">EventPulse</div><div class="sub">Podręcznik Super Admina</div></div></div>
     <div class="search"><input id="q" type="search" placeholder="🔍 Szukaj funkcji / ekranu…" autocomplete="off"></div>
     <nav class="nav" id="nav">
+      <div class="nav-group"><div class="gt">Nowości</div>
+        <a href="#nowosci"><span class="em">✨</span>Co nowego (lipiec 2026)</a>
+      </div>
       <div class="nav-group"><div class="gt">Podstawy</div>
         <a href="#wprowadzenie"><span class="em">📘</span>Wprowadzenie</a>
         <a href="#mapa"><span class="em">🗺️</span>Mapa aplikacji</a>
@@ -182,6 +185,70 @@
     </div>
 
     <div class="callout note"><span class="ic">🧭</span><p><b>Jak czytać.</b> Każdy rozdział ma sekcje: <b>Po co to</b> → <b>Anatomia ekranu</b> (co jest na ekranie) → <b>Pola/opcje</b> → <b>Procedury</b> (kroki) → <b>Jak działa / uwagi</b>. Po lewej spis treści i wyszukiwarka. Oznaczenia: <span class="kbd">Przycisk</span> = przycisk w aplikacji, <span class="crumb">ścieżka</span> = gdzie kliknąć, <span class="tag new">NOWE</span> = świeżo dodana funkcja.</p></div>
+
+    <!-- ===================== NOWOŚCI ===================== -->
+    <section class="grp-head"><p class="grp-title">Nowości — aktualizacja lipiec 2026</p></section>
+
+    <section id="nowosci">
+      <h2><span class="num">★</span>Co nowego <span class="tag new">AKTUALIZACJA</span></h2>
+      <p class="lead">Zestawienie funkcji i poprawek dodanych w tej aktualizacji. Szczegóły powtórzone są też w odpowiednich rozdziałach niżej.</p>
+
+      <div class="callout tip"><span class="ic">✅</span><p><b>Skrót:</b> wymagany klient przy tworzeniu eventu · druga ścieżka logowania (uniwersalny link) · jeden mail z linkami do klienta · formularz obowiązkowy przy 1. logowaniu + pole „wielokrotny wybór" · logo i ukrywanie kafelków w aplikacji gościa · edycja agendy + ikony typów · wybór czcionki, lepszy auto‑branding (2 kolory + logo) i kontrast tekstu · zwijany panel kreatora · potwierdzenia akcji · pełna zgodność z Safari/iPhone.</p></div>
+
+      <h3>1. Klient wymagany przy tworzeniu wydarzenia <span class="tag new">ZMIANA</span></h3>
+      <p>Nie utworzysz już wydarzenia bez podania <b>e‑maila klienta</b> — każde wydarzenie musi być przypisane do co najmniej jednego klienta. Pole „E‑mail klienta" w kreatorze tworzenia jest teraz obowiązkowe.</p>
+
+      <h3>2. Uniwersalny link logowania — druga ścieżka <span class="tag new">NOWE</span></h3>
+      <p>Oprócz linku wysyłanego mailem, każde wydarzenie ma <b>uniwersalny link logowania</b>. Gość otwiera go, wpisuje swój e‑mail i — jeśli jest na liście — dostaje na maila swój osobisty link z kodem. Link możesz podpiąć np. do przycisku na stronie wydarzenia.</p>
+      <div class="flow" id="f37"><div class="flow-h"><span class="fno">F37</span><h3>Udostępnij uniwersalny link logowania</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span><span class="arrow">→</span><span class="crumb">Uniwersalny link logowania</span></div>
+        <ol class="steps"><li>Skopiuj link (format <code>/e/&lt;id‑wydarzenia&gt;/login</code>).</li><li>Podepnij go do przycisku na stronie (blok Hero/CTA ma edytowalny adres) albo wyślij gościom.</li><li>Gość wpisuje e‑mail → dostaje mailem link z kodem.</li></ol>
+        <div class="result"><b>Wynik:</b> Gość sam odzyskuje wejście, bez czekania na zaproszenie. Ze względów bezpieczeństwa komunikat jest zawsze taki sam (nie zdradza, czy dany e‑mail jest na liście).</div>
+      </div>
+
+      <h3>3. Jeden mail z linkami logowania do klienta <span class="tag new">NOWE</span></h3>
+      <div class="flow" id="f38"><div class="flow-h"><span class="fno">F38</span><h3>Wyślij klientowi wszystkie linki</h3></div>
+        <div class="where"><b>Gdzie</b><span class="crumb">Uczestnicy</span><span class="arrow">→</span><span class="kbd">📧 Linki do klienta</span></div>
+        <ol class="steps"><li>Kliknij <span class="kbd">Linki do klienta</span> (tylko Super Admin) i potwierdź.</li><li>Klient dostaje <b>jeden</b> mail z tabelą: uczestnik · e‑mail · osobisty link logowania.</li></ol>
+        <div class="result"><b>Wynik:</b> Klient może sam rozesłać linki swoim gościom. W szczegółach każdego uczestnika jest też <b>kopiowalny link logowania</b>.</div>
+      </div>
+
+      <h3>4. Formularz obowiązkowy + „wielokrotny wybór" <span class="tag new">NOWE</span></h3>
+      <p>Formularz z polami własnymi pojawia się teraz jako <b>obowiązkowy ekran zaraz po zalogowaniu</b> (po zgodach RODO i onboardingu) — pola wymagane blokują wejście do aplikacji, więc dane nie zostaną pominięte. Doszedł też nowy typ pola <b>Wielokrotny wybór</b> (gość zaznacza kilka opcji naraz).</p>
+      <div class="callout note"><span class="ic">ℹ️</span><p>To, które pola są obowiązkowe, ustalasz przełącznikiem „Wymagane" w zakładce <span class="crumb">Formularz</span>.</p></div>
+
+      <h3>5. Aplikacja gościa: logo, ukrywanie kafelków, link do strony <span class="tag new">NOWE</span></h3>
+      <ul class="clean">
+        <li><b>Logo wydarzenia</b> w nagłówku aplikacji gościa (pobierane z brandingu strony).</li>
+        <li><b>Ukrywanie zakładek</b> — w <span class="crumb">Ustawieniach</span> włączasz/wyłączasz: Agenda, Aktywności, Galeria (Mój QR i Profil są zawsze widoczne).</li>
+        <li><b>Link do strony wydarzenia</b> (🌐) w nagłówku aplikacji — gość łatwo trafi na landing.</li>
+      </ul>
+
+      <h3>6. Agenda: edycja punktów i ikony typów <span class="tag new">NOWE</span></h3>
+      <ul class="clean">
+        <li><b>Edytuj istniejący punkt</b> agendy (dotąd tylko dodawanie/usuwanie) — przycisk <span class="kbd">Edytuj</span> w szczegółach punktu.</li>
+        <li><b>Ikona typu</b> wybierana wygodnym <b>pickerem emoji</b> (zamiast ręcznego wpisywania).</li>
+        <li>Agenda pokazuje się w podglądzie kreatora strony (realne punkty, nie placeholder).</li>
+      </ul>
+
+      <h3>7. Kreator strony i branding <span class="tag new">NOWE</span></h3>
+      <ul class="clean">
+        <li><b>Wybór czcionki</b> strony (kilka gotowych krojów).</li>
+        <li><b>Auto‑branding</b> pobiera teraz <b>dwa główne kolory</b> oraz logo (logo pokazuje się na sekcji Hero); wyświetla też status „kolory/logo ✓/✗".</li>
+        <li><b>Kontrast tekstu</b> — kolor napisów na Hero/CTA dopasowuje się do jasności koloru marki, więc tekst jest czytelny również na jasnym tle.</li>
+        <li><b>Przycisk z linkiem</b> — Hero/CTA mają edytowalny adres (np. do uniwersalnego logowania lub własnego formularza).</li>
+        <li><b>Wybór koloru</b> z paletą kafelków (nie tylko wpisywanie hex) — działa na każdej przeglądarce.</li>
+        <li><b>Zwijany lewy panel</b> na małych ekranach (przycisk <span class="kbd">⟨⟩ Panele</span>) — koniec z poziomym przewijaniem.</li>
+      </ul>
+
+      <h3>8. Drobne poprawki i zgodność z przeglądarkami</h3>
+      <ul class="clean">
+        <li><b>Adres skrócony (slug)</b> działa spójnie z adresem pełnym — strona jest publiczna po opublikowaniu.</li>
+        <li><b>Dashboard „Szybkie akcje"</b> — kafelki przełączają teraz właściwe zakładki.</li>
+        <li><b>Potwierdzenia</b> „czy na pewno?" przed: wysyłką zaproszeń, wysyłką linków do klienta, publikacją strony, przywróceniem wersji i usuwaniem.</li>
+        <li><b>Safari / iPhone</b> — skaner QR działa też na iPhone (fallback), a pola dat i wyboru koloru działają na każdej przeglądarce.</li>
+      </ul>
+    </section>
 
     <!-- ===================== PODSTAWY ===================== -->
     <section class="grp-head"><p class="grp-title">Podstawy</p></section>
@@ -345,12 +412,12 @@
         <tr><td>Start</td><td>Data i godzina rozpoczęcia (kalendarz).</td><td>Tak</td></tr>
         <tr><td>Koniec</td><td>Data i godzina końca; podpowiadana automatycznie, pokazuje czas trwania. Musi być po starcie.</td><td>Tak</td></tr>
         <tr><td colspan="3"><b>Sekcja „Klient"</b></td></tr>
-        <tr><td>E‑mail klienta</td><td>Adres klienta (mini‑admina), który ma widzieć ten event. Walidacja formatu e‑mail.</td><td>Nie</td></tr>
+        <tr><td>E‑mail klienta <span class="tag new">WYMAGANE</span></td><td>Adres klienta (mini‑admina), który ma widzieć ten event. Walidacja formatu e‑mail. Od tej aktualizacji <b>obowiązkowy</b> — każde wydarzenie musi mieć klienta.</td><td>Tak</td></tr>
       </table>
       <div class="flow" id="f4"><div class="flow-h"><span class="fno">F4</span><h3>Utwórz wydarzenie</h3></div>
         <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenia</span><span class="arrow">→</span><span class="kbd">Nowe wydarzenie</span></div>
-        <ol class="steps"><li>Uzupełnij Nazwę i Lokalizację.</li><li>Ustaw Start/Koniec (możesz użyć presetu).</li><li>(Opc.) podaj e‑mail klienta.</li><li>Zapisz.</li></ol>
-        <div class="result"><b>Wynik:</b> Event w statusie <b>Szkic</b> na liście. E‑mail klienta możesz dodać też później w Przeglądzie.</div>
+        <ol class="steps"><li>Uzupełnij Nazwę i Lokalizację.</li><li>Ustaw Start/Koniec (możesz użyć presetu).</li><li>Podaj e‑mail klienta (wymagane).</li><li>Zapisz.</li></ol>
+        <div class="result"><b>Wynik:</b> Event w statusie <b>Szkic</b> na liście. Klienta możesz później zmienić w Przeglądzie.</div>
       </div>
       <div class="callout warn"><span class="ic">⚠️</span><p>„Koniec" musi być po „Starcie" — inaczej zobaczysz czerwony komunikat i nie zapiszesz.</p></div>
     </section>
@@ -416,6 +483,7 @@
         <tr><td>Numer telefonu wymagany</td><td>ON → gość musi podać telefon w kroku zgód.</td></tr>
         <tr><td>Zezwól na osoby towarzyszące</td><td>ON → gość może dodać plus‑one z własnym QR. Pole „maks. liczba na uczestnika" (0 = bez limitu).</td></tr>
         <tr><td>Zdjęcia: link / tekst</td><td>Link do zewnętrznej galerii i/lub tekst — pokażą się w aplikacji gościa zamiast wbudowanej galerii.</td></tr>
+        <tr><td>Panele aplikacji gościa <span class="tag new">NOWE</span></td><td>Przełączniki widoczności zakładek w aplikacji uczestnika: <b>Agenda</b>, <b>Aktywności</b>, <b>Galeria</b>. „Mój QR" i „Profil" są zawsze widoczne. Ukryj to, czego nie używasz na danym evencie.</td></tr>
       </table>
       <div class="flow" id="f8"><div class="flow-h"><span class="fno">F8</span><h3>Skonfiguruj ustawienia</h3></div>
         <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Ustawienia</span></div>
@@ -544,7 +612,8 @@
         <tr><td>Tekst</td><td>Krótka odpowiedź.</td></tr>
         <tr><td>Długi tekst</td><td>Dłuższa wypowiedź.</td></tr>
         <tr><td>Tak / Nie</td><td>Checkbox.</td></tr>
-        <tr><td>Lista wyboru</td><td>Opcje do wyboru (podajesz je po przecinku).</td></tr>
+        <tr><td>Lista wyboru</td><td>Jedna opcja z listy (opcje podajesz po przecinku).</td></tr>
+        <tr><td>Wielokrotny wybór <span class="tag new">NOWE</span></td><td>Gość zaznacza <b>kilka</b> opcji naraz (opcje po przecinku).</td></tr>
       </table>
       <div class="flow" id="f17"><div class="flow-h"><span class="fno">F17</span><h3>Dodaj / edytuj / usuń pole</h3></div>
         <div class="where"><b>Gdzie</b><span class="crumb">Wydarzenie</span><span class="arrow">→</span><span class="crumb">Formularz</span></div>

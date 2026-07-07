@@ -26,7 +26,10 @@ public sealed record UpdateEventSettingsCommand(
     bool ShowGalleryTab,
     bool ShowPreferencesTile,
     bool ShowShirtSize,
-    bool AllowSelfRegistration) : IRequest<EventDto>;
+    bool AllowSelfRegistration,
+    string? CompanyName,
+    bool ShowPhotoConsent,
+    bool AppUseBrandColors) : IRequest<EventDto>;
 
 public sealed class UpdateEventSettingsValidator : AbstractValidator<UpdateEventSettingsCommand>
 {
@@ -41,6 +44,7 @@ public sealed class UpdateEventSettingsValidator : AbstractValidator<UpdateEvent
             .Must(BeAValidHttpUrl)
             .When(x => !string.IsNullOrWhiteSpace(x.CustomPhotosUrl))
             .WithMessage("CustomPhotosUrl must be a valid http(s) URL.");
+        RuleFor(x => x.CompanyName).MaximumLength(200);
     }
 
     private static bool BeAValidHttpUrl(string? url) =>
@@ -90,6 +94,9 @@ public sealed class UpdateEventSettingsHandler : IRequestHandler<UpdateEventSett
         ev.ShowPreferencesTile = request.ShowPreferencesTile;
         ev.ShowShirtSize = request.ShowShirtSize;
         ev.AllowSelfRegistration = request.AllowSelfRegistration;
+        ev.CompanyName = string.IsNullOrWhiteSpace(request.CompanyName) ? null : request.CompanyName.Trim();
+        ev.ShowPhotoConsent = request.ShowPhotoConsent;
+        ev.AppUseBrandColors = request.AppUseBrandColors;
 
         await _db.SaveChangesAsync(cancellationToken);
         return EventDto.From(ev);

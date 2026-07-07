@@ -160,7 +160,8 @@
     "noPagePublished": "Strona nieopublikowana",
     "noPagePublishedHint": "Opublikuj stronę w zakładce „Strona”, żeby uczestnicy mogli ją zobaczyć",
     "pageVersion": "Wersja {{version}}",
-    "edit": "Edytuj"
+    "edit": "Edytuj",
+    "editLocation": "Zmień"
   },
   "participants": {
     "title": "Uczestnicy",
@@ -344,7 +345,9 @@
     "evStCompleted": "Zakończone",
     "evStArchived": "Zarchiwizowane",
     "liveQuizBannerLabel": "Quiz na żywo właśnie się zaczął",
-    "liveQuizJoin": "Dołącz"
+    "liveQuizJoin": "Dołącz",
+    "pageTileTitle": "Strona wydarzenia",
+    "pageTileHint": "Zobacz publiczną stronę — agenda, informacje, mapa."
   },
   "page": {
     "title": "Strona",
@@ -512,7 +515,6 @@
     "target": "cel: {{value}}%",
     "stations": "Aktywność na stanowiskach",
     "noStations": "Brak skanów stanowisk",
-    "scans": "skanów",
     "scans": "skanów",
     "funnel": "Lejek frekwencji",
     "funnelInvited": "Zaproszeni",

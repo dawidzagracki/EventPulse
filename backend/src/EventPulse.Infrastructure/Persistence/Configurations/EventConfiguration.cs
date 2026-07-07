@@ -34,6 +34,12 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         // Open self-registration is opt-in — existing events keep a closed guest list.
         builder.Property(e => e.AllowSelfRegistration).HasDefaultValue(false);
 
+        // Guest-app branding + consent visibility. Photo consent stays ON for existing
+        // events (it was always shown before); brand-coloured app is opt-in.
+        builder.Property(e => e.CompanyName).HasMaxLength(200);
+        builder.Property(e => e.ShowPhotoConsent).HasDefaultValue(true);
+        builder.Property(e => e.AppUseBrandColors).HasDefaultValue(false);
+
         builder.HasIndex(e => e.Slug).IsUnique();
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.TenantId, e.Status });

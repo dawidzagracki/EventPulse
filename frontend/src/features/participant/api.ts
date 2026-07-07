@@ -42,6 +42,9 @@ export interface MyEventDto {
   showGalleryTab: boolean
   showPreferencesTile: boolean
   showShirtSize: boolean
+  companyName: string | null
+  showPhotoConsent: boolean
+  appUseBrandColors: boolean
 }
 
 export function useMyEvent() {
@@ -55,6 +58,7 @@ export interface MyBrandingDto {
   logoUrl: string | null
   primaryColor: string | null
   accentColor: string | null
+  hasPublishedPage: boolean
 }
 
 export function useMyBranding() {

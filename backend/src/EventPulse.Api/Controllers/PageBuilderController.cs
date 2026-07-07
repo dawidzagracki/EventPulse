@@ -73,6 +73,32 @@ public sealed class PageBuilderController : ControllerBase
         return Ok(await _mediator.Send(new UploadLogoCommand(eventId, file.ContentType, ms.ToArray()), ct));
     }
 
+    /// <summary>
+    /// Uploads an image asset (e.g. a team-member photo) and returns its public URL,
+    /// to be stored inside block content. Unlike <see cref="UploadLogo"/>, this does not
+    /// touch branding — it's a generic per-event image store.
+    /// </summary>
+    [HttpPost("assets")]
+    [RequestSizeLimit(8_000_000)]
+    public async Task<IActionResult> UploadAsset(Guid eventId, IFormFile file, CancellationToken ct)
+    {
+        await EnsureEventAsync(eventId, ct);
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { error = "Empty file." });
+        }
+
+        if (file.ContentType is not ("image/jpeg" or "image/png" or "image/webp"))
+        {
+            return BadRequest(new { error = "Only JPG, PNG or WEBP images are allowed." });
+        }
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms, ct);
+        var url = await _mediator.Send(new UploadPageAssetCommand(eventId, file.ContentType, ms.ToArray()), ct);
+        return Ok(new { url });
+    }
+
     [HttpPost("publish")]
     public async Task<ActionResult<PageDto>> Publish(Guid eventId, CancellationToken ct)
     {

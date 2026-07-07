@@ -10,6 +10,7 @@ import {
   useSaveDraft,
   useUpdateBranding,
   useUploadLogo,
+  useUploadPageAsset,
   useVersions,
 } from './api'
 import { useEvent } from '../events/api'
@@ -20,7 +21,9 @@ import { useDragAutoScroll } from './useDragAutoScroll'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, blockSchema, type BlockCategory } from './blockSchema'
 import { Button, Card, Field, Input, Select } from '../../components/ui'
 import { ColorPicker } from '../../components/ColorPicker'
+import { EmojiPicker } from '../../components/EmojiPicker'
 import { Icon } from '../../components/Icon'
+import { assetUrl } from '../../lib/api'
 import { FONT_OPTIONS, fontOptionByStack, fontStackById, ensureGoogleFonts, blockFontStacks } from './fonts'
 import type { BrandingDto, PageBlock, PageDto } from '../../types/api'
 
@@ -683,6 +686,7 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
         <div className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           {selected && schema ? (
             <PropertyPanel
+              eventId={eventId}
               block={selected}
               schema={schema}
               lang={lang}
@@ -1297,6 +1301,7 @@ function PalettePanel({ lang, onAdd }: { lang: 'pl' | 'en'; onAdd: (type: string
 import type { BlockSchema, RepeaterDef } from './blockSchema'
 
 function PropertyPanel({
+  eventId,
   block,
   schema,
   lang,
@@ -1310,6 +1315,7 @@ function PropertyPanel({
   onDelete,
   onToggleVisible,
 }: {
+  eventId: string
   block: PageBlock
   schema: BlockSchema
   lang: 'pl' | 'en'
@@ -1378,7 +1384,7 @@ function PropertyPanel({
       {/* Tab content */}
       <div className="space-y-3 p-3">
         {tab === 'content' && (
-          <ContentTab block={block} schema={schema} onText={onTextChange} onSetting={onSettingChange} />
+          <ContentTab eventId={eventId} block={block} schema={schema} onText={onTextChange} onSetting={onSettingChange} />
         )}
         {tab === 'style' && (
           <StyleTab block={block} schema={schema} styles={styles} branding={branding} onStyle={onStyleChange} />
@@ -1398,11 +1404,13 @@ function PropertyPanel({
 }
 
 function ContentTab({
+  eventId,
   block,
   schema,
   onText,
   onSetting,
 }: {
+  eventId: string
   block: PageBlock
   schema: BlockSchema
   onText: (id: string, k: string, v: string, textLang?: 'pl' | 'en') => void
@@ -1468,6 +1476,7 @@ function ContentTab({
       {(schema.settingsRepeaters ?? []).map((rep) => (
         <RepeaterEditor
           key={rep.key}
+          eventId={eventId}
           block={block}
           def={rep}
           onChange={(items) => onSetting(block.id, rep.key, items)}
@@ -1479,14 +1488,17 @@ function ContentTab({
 
 // ===================== RepeaterEditor =====================
 function RepeaterEditor({
+  eventId,
   block,
   def,
   onChange,
 }: {
+  eventId: string
   block: PageBlock
   def: RepeaterDef
   onChange: (items: Record<string, string>[]) => void
 }) {
+  const uploadAsset = useUploadPageAsset(eventId)
   const items = useMemo(() => {
     const raw = ((block.settings ?? {}) as Record<string, unknown>)[def.key]
     return Array.isArray(raw) ? (raw as Record<string, string>[]) : []
@@ -1577,6 +1589,45 @@ function RepeaterEditor({
                             rows={3}
                             className="w-full rounded-md border border-slate-700/60 bg-slate-950/60 px-2.5 py-1.5 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
                           />
+                        ) : f.kind === 'emoji' ? (
+                          <EmojiPicker value={item[f.key] ?? ''} onChange={(v) => update(idx, f.key, v)} />
+                        ) : f.kind === 'image' ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={item[f.key] ?? ''}
+                                placeholder="https://… lub wgraj plik"
+                                onChange={(e) => update(idx, f.key, e.target.value)}
+                              />
+                              {/* Upload from disk — stores the file and writes back its URL. */}
+                              <label
+                                className={`shrink-0 cursor-pointer rounded-md border border-slate-700/60 bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-200 transition hover:bg-slate-800 ${
+                                  uploadAsset.isPending ? 'pointer-events-none opacity-60' : ''
+                                }`}
+                              >
+                                {uploadAsset.isPending ? '…' : '⬆'}
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/webp"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0]
+                                    e.target.value = ''
+                                    if (!file) return
+                                    const url = await uploadAsset.mutateAsync(file)
+                                    update(idx, f.key, url)
+                                  }}
+                                />
+                              </label>
+                            </div>
+                            {item[f.key] && (
+                              <img
+                                src={assetUrl(item[f.key]) ?? undefined}
+                                alt=""
+                                className="h-12 w-12 rounded-md object-cover ring-1 ring-inset ring-slate-700/60"
+                              />
+                            )}
+                          </div>
                         ) : (
                           <Input value={item[f.key] ?? ''} onChange={(e) => update(idx, f.key, e.target.value)} />
                         )}

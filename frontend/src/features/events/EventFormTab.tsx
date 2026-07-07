@@ -124,12 +124,21 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
               </div>
             </div>
             {OPTION_TYPES.includes(r.type) && (
-              <Input
-                className="mt-2"
-                placeholder="Opcje oddzielone przecinkami (np. S, M, L, XL)"
-                value={(r.options ?? []).join(', ')}
-                onChange={(e) => update(r._key, { options: e.target.value.split(',').map((o) => o.trim()) })}
-              />
+              <>
+                <Input
+                  className="mt-2"
+                  placeholder="Opcje oddzielone przecinkami (np. S, M, L, XL)"
+                  value={(r.options ?? []).join(', ')}
+                  onChange={(e) => update(r._key, { options: e.target.value.split(',').map((o) => o.trim()) })}
+                />
+                {r.type === CustomFieldType.MultiSelect && (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Wskazówka: opcja zaczynająca się od <code className="text-slate-300">!</code> wyklucza pozostałe — np.{' '}
+                    <code className="text-slate-300">Autokar, Pociąg, !Nie potrzebuję transportu</code>. Zaznaczenie jej
+                    odznacza inne wybory (i odwrotnie).
+                  </p>
+                )}
+              </>
             )}
             <div className="mt-2">
               <Toggle checked={r.required} onChange={(v) => update(r._key, { required: v })} label="Wymagane" />

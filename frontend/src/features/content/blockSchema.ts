@@ -9,7 +9,7 @@
  * `styleOptions` toggles which Style-tab controls show up.
  */
 
-export type FieldKind = 'text' | 'longtext' | 'url' | 'image'
+export type FieldKind = 'text' | 'longtext' | 'url' | 'image' | 'emoji'
 
 export interface ContentField {
   key: string
@@ -309,7 +309,7 @@ export const BLOCK_SCHEMAS: Record<string, BlockSchema> = {
         addLabel: 'Dodaj cechę',
         emptyHint: 'Pokaż 3–6 najważniejszych rzeczy, jakie czekają uczestników.',
         itemFields: [
-          { key: 'emoji', label: 'Ikona (emoji)', kind: 'text' },
+          { key: 'emoji', label: 'Ikona (emoji)', kind: 'emoji' },
           { key: 'title', label: 'Nagłówek', kind: 'text' },
           { key: 'body', label: 'Opis', kind: 'longtext' },
         ],

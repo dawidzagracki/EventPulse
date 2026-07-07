@@ -99,4 +99,16 @@ public sealed class Event : AggregateRoot
     /// most events have a closed, imported guest list.
     /// </summary>
     public bool AllowSelfRegistration { get; set; }
+
+    /// <summary>
+    /// Client company name shown to guests (participant-app header + above the consent/onboarding
+    /// gates), alongside the event name. Independent from the e-mail header label.
+    /// </summary>
+    public string? CompanyName { get; set; }
+
+    /// <summary>Show the photo/image-consent checkbox in the guest consent step. Off = consent not collected.</summary>
+    public bool ShowPhotoConsent { get; set; } = true;
+
+    /// <summary>Theme the participant app with the event page's brand colours (instead of the default look).</summary>
+    public bool AppUseBrandColors { get; set; }
 }

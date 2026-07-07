@@ -42,6 +42,17 @@ export function useUploadLogo(eventId: string) {
   })
 }
 
+/** Uploads a generic image asset (e.g. a team photo) and resolves to its public URL. */
+export function useUploadPageAsset(eventId: string) {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return (await api.post<{ url: string }>(`/api/events/${eventId}/page/assets`, form)).data.url
+    },
+  })
+}
+
 export function useUpdateBranding(eventId: string) {
   const qc = useQueryClient()
   return useMutation({

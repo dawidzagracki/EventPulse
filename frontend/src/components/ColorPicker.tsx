@@ -91,6 +91,23 @@ export function ColorPicker({ value, onChange, compact = false, swatches }: Colo
   const nativeValue = normalizeHex(value) ?? '#000000'
   const all = [...(swatches ?? []), ...PRESETS].filter((c, i, a) => a.indexOf(c) === i)
 
+  // Screen eyedropper (EyeDropper API) — Chrome/Edge desktop; hidden where unsupported (Safari/Firefox).
+  const EyeDropperCtor = (window as unknown as { EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> } })
+    .EyeDropper
+  async function pickFromScreen() {
+    if (!EyeDropperCtor) return
+    try {
+      const result = await new EyeDropperCtor().open()
+      const c = normalizeHex(result.sRGBHex)
+      if (c) {
+        onChange(c)
+        setOpen(false)
+      }
+    } catch {
+      // user cancelled the eyedropper — nothing to do
+    }
+  }
+
   return (
     <div className="flex items-stretch gap-2 rounded-lg border border-slate-700/60 bg-slate-950/40 p-1.5">
       <button
@@ -143,6 +160,20 @@ export function ColorPicker({ value, onChange, compact = false, swatches }: Colo
               ))}
             </div>
             <div className="mt-3 flex items-center gap-2">
+              {EyeDropperCtor && (
+                <button
+                  type="button"
+                  onClick={() => void pickFromScreen()}
+                  title="Pipeta — pobierz kolor z ekranu"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-800/80 text-slate-200 ring-1 ring-inset ring-slate-700/60 transition hover:bg-slate-700 hover:text-white"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                    <path d="m2 22 1-1h3l9-9" />
+                    <path d="M3 21v-3l9-9" />
+                    <path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z" />
+                  </svg>
+                </button>
+              )}
               {/* A real, user-clicked colour input (opacity-0 over the swatch) —
                   this pattern DOES open the native picker on Safari. */}
               <label

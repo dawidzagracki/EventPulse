@@ -160,7 +160,8 @@
     "noPagePublished": "Page not published",
     "noPagePublishedHint": "Publish the page from the \"Page\" tab so participants can see it",
     "pageVersion": "Version {{version}}",
-    "edit": "Edit"
+    "edit": "Edit",
+    "editLocation": "Edit"
   },
   "participants": {
     "title": "Participants",
@@ -344,7 +345,9 @@
     "evStCompleted": "Completed",
     "evStArchived": "Archived",
     "liveQuizBannerLabel": "A live quiz just started",
-    "liveQuizJoin": "Join"
+    "liveQuizJoin": "Join",
+    "pageTileTitle": "Event page",
+    "pageTileHint": "See the public page — agenda, info, map."
   },
   "page": {
     "title": "Page",
@@ -512,7 +515,6 @@
     "target": "target: {{value}}%",
     "stations": "Station activity",
     "noStations": "No station scans yet",
-    "scans": "scans",
     "scans": "scans",
     "funnel": "Attendance funnel",
     "funnelInvited": "Invited",
