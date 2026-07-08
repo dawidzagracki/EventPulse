@@ -55,9 +55,10 @@ function OptionRulesEditor({
 
   const modeOf = (opt: string): RuleMode => {
     const r = rules[opt]
+    // "normal" has NO rule entry, so any present non-exclusive entry is "only" — even before
+    // companions are picked (allowedWith still empty). Otherwise choosing "only" would snap back.
     if (!r) return 'normal'
-    if (r.exclusive) return 'exclusive'
-    return r.allowedWith.length > 0 ? 'only' : 'normal'
+    return r.exclusive ? 'exclusive' : 'only'
   }
   const setMode = (opt: string, mode: RuleMode) => {
     const next = { ...rules }
