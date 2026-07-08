@@ -1131,40 +1131,38 @@ function CustomFieldControl({
   }
   if (field.type === CustomFieldType.MultiSelect) {
     const selected = parseStringArray(value)
-    // Options prefixed with "!" are EXCLUSIVE (e.g. "!Nie potrzebuję transportu"):
-    // picking one clears everything else, and picking anything else clears it.
-    const opts = field.options.map((raw) => ({
-      raw,
-      label: raw.startsWith('!') ? raw.slice(1).trim() : raw,
-      exclusive: raw.startsWith('!'),
-    }))
-    const exclusiveLabels = new Set(opts.filter((o) => o.exclusive).map((o) => o.label))
-    const toggle = (opt: { label: string; exclusive: boolean }) => {
-      const set = new Set(selected)
-      if (set.has(opt.label)) {
-        set.delete(opt.label)
-      } else if (opt.exclusive) {
-        set.clear()
-        set.add(opt.label)
-      } else {
-        for (const ex of exclusiveLabels) set.delete(ex)
-        set.add(opt.label)
-      }
-      onChange(JSON.stringify([...set]))
+    const rules = field.optionRules ?? {}
+    const ruleOf = (label: string) => rules[label] ?? { exclusive: false, allowedWith: [] as string[] }
+    // Two options may be selected together UNLESS one is exclusive, or one restricts its companions
+    // ("allowedWith") and the other isn't on that list. This drives both "pick this = only this" and
+    // "pick A = you may only also pick B" (the selection path).
+    const compatible = (a: string, b: string) => {
+      const ra = ruleOf(a)
+      const rb = ruleOf(b)
+      if (ra.exclusive || rb.exclusive) return false
+      if (ra.allowedWith.length > 0 && !ra.allowedWith.includes(b)) return false
+      if (rb.allowedWith.length > 0 && !rb.allowedWith.includes(a)) return false
+      return true
     }
-    const exclusiveActive = selected.some((s) => exclusiveLabels.has(s))
+    const toggle = (label: string) => {
+      const next = selected.includes(label)
+        ? selected.filter((s) => s !== label)
+        : [...selected.filter((s) => compatible(label, s)), label]
+      onChange(JSON.stringify(next))
+    }
     return (
       <div className="space-y-1.5">
-        {opts.map((o) => {
-          const checked = selected.includes(o.label)
-          const dimmed = exclusiveActive && !checked
+        {field.options.map((label) => {
+          const checked = selected.includes(label)
+          // Dim when picking it would drop part of the current selection (incompatible with a rule).
+          const dimmed = !checked && selected.some((s) => !compatible(label, s))
           return (
             <label
-              key={o.raw}
+              key={label}
               className={`flex items-center gap-2 text-sm text-slate-200 ${dimmed ? 'opacity-50' : ''}`}
             >
-              <input type="checkbox" checked={checked} onChange={() => toggle(o)} />
-              {o.label}
+              <input type="checkbox" checked={checked} onChange={() => toggle(label)} />
+              {label}
             </label>
           )
         })}

@@ -5,6 +5,7 @@ import {
   CustomFieldType,
   type CustomFieldDto,
   type CustomFieldInput,
+  type OptionRuleDto,
   type OnboardingStepDto,
   type OnboardingStepInput,
 } from '../../types/api'
@@ -37,6 +38,94 @@ const selectCls = 'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 
 
 type FieldRow = CustomFieldInput & { _key: string }
 
+type RuleMode = 'normal' | 'exclusive' | 'only'
+
+/** Per-option selection rules for a MultiSelect field (exclusive option or a "only with …" path). */
+function OptionRulesEditor({
+  options,
+  rules,
+  onChange,
+}: {
+  options: string[]
+  rules: Record<string, OptionRuleDto>
+  onChange: (rules: Record<string, OptionRuleDto>) => void
+}) {
+  const uniq = [...new Set(options)]
+  if (uniq.length < 2) return null
+
+  const modeOf = (opt: string): RuleMode => {
+    const r = rules[opt]
+    if (!r) return 'normal'
+    if (r.exclusive) return 'exclusive'
+    return r.allowedWith.length > 0 ? 'only' : 'normal'
+  }
+  const setMode = (opt: string, mode: RuleMode) => {
+    const next = { ...rules }
+    if (mode === 'normal') delete next[opt]
+    else if (mode === 'exclusive') next[opt] = { exclusive: true, allowedWith: [] }
+    else next[opt] = { exclusive: false, allowedWith: rules[opt]?.allowedWith ?? [] }
+    onChange(next)
+  }
+  const toggleAllowed = (opt: string, other: string) => {
+    const set = new Set(rules[opt]?.allowedWith ?? [])
+    if (set.has(other)) set.delete(other)
+    else set.add(other)
+    onChange({ ...rules, [opt]: { exclusive: false, allowedWith: [...set] } })
+  }
+
+  return (
+    <div className="mt-2 rounded-lg border border-slate-800/70 bg-slate-950/40 p-2.5">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Reguły wyboru (opcjonalnie)</p>
+      <div className="space-y-2">
+        {uniq.map((opt) => {
+          const mode = modeOf(opt)
+          return (
+            <div key={opt} className="flex flex-wrap items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{opt}</span>
+              <select
+                className="rounded-md border border-slate-700/70 bg-slate-900/60 px-2 py-1 text-xs text-slate-100"
+                value={mode}
+                onChange={(e) => setMode(opt, e.target.value as RuleMode)}
+              >
+                <option value="normal">Można łączyć</option>
+                <option value="exclusive">Tylko ta (wyklucza inne)</option>
+                <option value="only">Tylko z wybranymi…</option>
+              </select>
+              {mode === 'only' && (
+                <div className="flex w-full flex-wrap gap-1.5 pl-1">
+                  {uniq
+                    .filter((o) => o !== opt)
+                    .map((other) => {
+                      const on = (rules[opt]?.allowedWith ?? []).includes(other)
+                      return (
+                        <button
+                          key={other}
+                          type="button"
+                          onClick={() => toggleAllowed(opt, other)}
+                          className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${
+                            on
+                              ? 'border-indigo-400/50 bg-indigo-500/20 text-indigo-100'
+                              : 'border-slate-700/60 bg-slate-900/50 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {other}
+                        </button>
+                      )
+                    })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">
+        „Tylko ta" = po zaznaczeniu gość nie wybierze nic innego. „Tylko z wybranymi" = po zaznaczeniu tej opcji można
+        dodatkowo wybrać jedynie zaznaczone poniżej (ścieżka wyboru).
+      </p>
+    </div>
+  )
+}
+
 function CustomFieldsEditor({ eventId }: { eventId: string }) {
   const { data, isLoading } = useCustomFields(eventId)
   if (isLoading || !data) return <Card>Ładowanie…</Card>
@@ -53,6 +142,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
       labelEn: f.labelEn,
       type: f.type,
       options: f.options,
+      optionRules: f.optionRules,
       required: f.required,
     })),
   )
@@ -63,7 +153,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
   function add() {
     setRows((rs) => [
       ...rs,
-      { _key: `new-${rs.length}-${performance.now()}`, id: null, labelPl: '', labelEn: null, type: CustomFieldType.Text, options: [], required: false },
+      { _key: `new-${rs.length}-${performance.now()}`, id: null, labelPl: '', labelEn: null, type: CustomFieldType.Text, options: [], optionRules: null, required: false },
     ])
   }
   function remove(key: string) {
@@ -79,6 +169,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
         labelEn: r.labelEn?.trim() || null,
         type: r.type,
         options: OPTION_TYPES.includes(r.type) ? (r.options ?? []).filter((o) => o.trim()) : null,
+        optionRules: r.type === CustomFieldType.MultiSelect ? (r.optionRules ?? null) : null,
         required: r.required,
       }))
     await save.mutateAsync(payload)
@@ -132,11 +223,11 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
                   onChange={(e) => update(r._key, { options: e.target.value.split(',').map((o) => o.trim()) })}
                 />
                 {r.type === CustomFieldType.MultiSelect && (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Wskazówka: opcja zaczynająca się od <code className="text-slate-300">!</code> wyklucza pozostałe — np.{' '}
-                    <code className="text-slate-300">Autokar, Pociąg, !Nie potrzebuję transportu</code>. Zaznaczenie jej
-                    odznacza inne wybory (i odwrotnie).
-                  </p>
+                  <OptionRulesEditor
+                    options={(r.options ?? []).map((o) => o.trim()).filter(Boolean)}
+                    rules={r.optionRules ?? {}}
+                    onChange={(rules) => update(r._key, { optionRules: rules })}
+                  />
                 )}
               </>
             )}

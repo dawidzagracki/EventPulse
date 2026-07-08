@@ -82,12 +82,19 @@ export const CustomFieldType = {
 } as const
 export type CustomFieldType = (typeof CustomFieldType)[keyof typeof CustomFieldType]
 
+/** MultiSelect selection rule for one option: exclusive (can't combine) or restricted to `allowedWith`. */
+export interface OptionRuleDto {
+  exclusive: boolean
+  allowedWith: string[]
+}
+
 export interface CustomFieldDto {
   id: string
   labelPl: string
   labelEn: string | null
   type: number
   options: string[]
+  optionRules: Record<string, OptionRuleDto>
   required: boolean
   order: number
 }
@@ -99,6 +106,7 @@ export interface CustomFieldInput {
   type: number
   options: string[] | null
   required: boolean
+  optionRules?: Record<string, OptionRuleDto> | null
 }
 
 export interface OnboardingStepDto {

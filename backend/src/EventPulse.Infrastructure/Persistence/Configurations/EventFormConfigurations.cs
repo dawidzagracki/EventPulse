@@ -15,6 +15,7 @@ public sealed class EventCustomFieldConfiguration : IEntityTypeConfiguration<Eve
         builder.Property(f => f.LabelEn).HasMaxLength(200);
         builder.Property(f => f.Type).HasConversion<int>();
         builder.Property(f => f.OptionsJson).HasMaxLength(2000);
+        builder.Property(f => f.OptionRulesJson).HasMaxLength(4000);
 
         builder.HasIndex(f => f.TenantId);
         builder.HasIndex(f => new { f.EventId, f.Order });

@@ -31,6 +31,14 @@ public sealed class EventCustomField : TenantEntity
     /// <summary>JSON array of option strings (used when <see cref="Type"/> is <see cref="CustomFieldType.Select"/>).</summary>
     public string? OptionsJson { get; set; }
 
+    /// <summary>
+    /// Optional per-option selection rules for MultiSelect, as a JSON object keyed by option label:
+    /// <c>{ "Label": { "exclusive": true } | { "allowedWith": ["B","C"] } }</c>. An "exclusive" option
+    /// can't be combined with any other; an "allowedWith" option restricts which others may be picked
+    /// alongside it (a "selection path"). Null = no restrictions (legacy "!"-prefix still honoured).
+    /// </summary>
+    public string? OptionRulesJson { get; set; }
+
     public bool Required { get; set; }
 }
 

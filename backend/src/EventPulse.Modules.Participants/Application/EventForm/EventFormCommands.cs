@@ -49,8 +49,18 @@ public sealed class SaveCustomFieldsHandler : IRequestHandler<SaveCustomFieldsCo
             entity.Type = input.Type;
             entity.Required = input.Required;
             entity.Order = order++;
-            entity.OptionsJson = input.Type is CustomFieldType.Select or CustomFieldType.MultiSelect
-                ? JsonSerializer.Serialize(input.Options ?? [])
+            var isOptionType = input.Type is CustomFieldType.Select or CustomFieldType.MultiSelect;
+            entity.OptionsJson = isOptionType ? JsonSerializer.Serialize(input.Options ?? []) : null;
+
+            // Only MultiSelect carries selection rules; keep just the non-trivial ones (exclusive or a
+            // restricted allow-list) so a normal field stores nothing.
+            var rules = input.Type == CustomFieldType.MultiSelect && input.OptionRules is { Count: > 0 }
+                ? input.OptionRules
+                    .Where(kv => kv.Value.Exclusive || (kv.Value.AllowedWith is { Count: > 0 }))
+                    .ToDictionary(kv => kv.Key, kv => new { exclusive = kv.Value.Exclusive, allowedWith = kv.Value.AllowedWith ?? [] })
+                : null;
+            entity.OptionRulesJson = rules is { Count: > 0 }
+                ? JsonSerializer.Serialize(rules, CustomFieldDto.Json)
                 : null;
         }
 
