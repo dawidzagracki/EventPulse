@@ -82,6 +82,8 @@ export interface UpdateEmailBrandingRequest {
   accentColor: string | null
   logoUrl: string | null
   headerName: string | null
+  fromName: string | null
+  subject: string | null
 }
 
 export function useUpdateEmailBranding(eventId: string) {

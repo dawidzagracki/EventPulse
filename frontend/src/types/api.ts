@@ -169,6 +169,8 @@ export interface EmailBrandingDto {
   accentColor: string | null
   logoUrl: string | null
   headerName: string | null
+  fromName: string | null
+  subject: string | null
 }
 
 export interface CreateEventRequest {

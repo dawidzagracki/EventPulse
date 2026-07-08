@@ -16,7 +16,8 @@ public sealed class SmtpEmailSender : IEmailSender
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         var mime = new MimeMessage();
-        mime.From.Add(new MailboxAddress(_options.FromName, _options.From));
+        mime.From.Add(new MailboxAddress(
+            string.IsNullOrWhiteSpace(message.FromName) ? _options.FromName : message.FromName, _options.From));
         mime.To.Add(new MailboxAddress(message.ToName, message.ToEmail));
         mime.Subject = message.Subject;
         mime.Body = new BodyBuilder

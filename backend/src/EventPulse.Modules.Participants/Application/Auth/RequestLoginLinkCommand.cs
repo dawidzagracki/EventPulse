@@ -104,8 +104,9 @@ public static class LoginLinkEmail
                 FooterNote = "Poprosiłeś(-aś) o ten link na stronie logowania wydarzenia.",
             };
 
-        var subject = isEn ? "Your login link" : "Twój link do logowania";
+        var defaultSubject = isEn ? "Your login link" : "Twój link do logowania";
+        var subject = brand?.ResolvedSubject(defaultSubject) ?? defaultSubject;
         var text = $"{(isEn ? "Your event link" : "Twój link do wydarzenia")}: {link}";
-        return new EmailMessage(participant.Email!, $"{participant.FirstName} {participant.LastName}", subject, EmailLayout.Render(content, brand), text);
+        return new EmailMessage(participant.Email!, $"{participant.FirstName} {participant.LastName}", subject, EmailLayout.Render(content, brand), text, brand?.FromName);
     }
 }

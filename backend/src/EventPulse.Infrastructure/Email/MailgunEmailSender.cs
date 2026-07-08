@@ -26,7 +26,7 @@ public sealed class MailgunEmailSender : IEmailSender
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth);
         request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["from"] = $"{_options.FromName} <{_options.From}>",
+            ["from"] = $"{(string.IsNullOrWhiteSpace(message.FromName) ? _options.FromName : message.FromName)} <{_options.From}>",
             ["to"] = $"{message.ToName} <{message.ToEmail}>",
             ["subject"] = message.Subject,
             ["html"] = message.HtmlBody,

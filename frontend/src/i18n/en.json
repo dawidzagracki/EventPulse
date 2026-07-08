@@ -15,6 +15,13 @@
     "headerNameHint": "Text shown above the event name in the e-mail header (e.g. the client's company). Default: \"EventPulse\".",
     "logo": "Logo (URL)",
     "logoHint": "Full image URL (https). Shown in the e-mail header next to the event name.",
+    "fromName": "Sender name",
+    "fromNameHint": "Name shown as the sender (the e-mail address itself stays the same). Default: \"EventPulse\".",
+    "subject": "E-mail subject",
+    "subjectPlaceholder": "e.g. Invitation to {event}",
+    "subjectHint": "The subject line. Type {event} to insert the event name. Empty = default subject.",
+    "previewFrom": "From",
+    "defaultSubject": "Your invitation",
     "save": "Save e-mail appearance",
     "preview": "Message preview"
   },

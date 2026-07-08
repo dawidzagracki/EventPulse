@@ -98,7 +98,8 @@ public static class ClientLinksEmail
             text.Append($"{r.Name} <{r.Email}>: {r.Link}\n");
         }
 
-        var subject = $"Linki logowania uczestników — {eventName}";
-        return new EmailMessage(clientEmail, clientEmail, subject, html, text.ToString());
+        var defaultSubject = $"Linki logowania uczestników — {eventName}";
+        var subject = brand?.ResolvedSubject(defaultSubject) ?? defaultSubject;
+        return new EmailMessage(clientEmail, clientEmail, subject, html, text.ToString(), brand?.FromName);
     }
 }

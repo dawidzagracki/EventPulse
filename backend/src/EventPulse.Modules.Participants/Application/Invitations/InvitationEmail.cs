@@ -15,7 +15,8 @@ public static class InvitationEmail
         var ev = WebUtility.HtmlEncode(eventName);
         var dateText = startsAt.ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo(culture));
 
-        var subject = isEn ? $"Your invitation: {eventName}" : $"Twoje zaproszenie: {eventName}";
+        var defaultSubject = isEn ? $"Your invitation: {eventName}" : $"Twoje zaproszenie: {eventName}";
+        var subject = brand?.ResolvedSubject(defaultSubject) ?? defaultSubject;
 
         var content = isEn
             ? new EmailContent
@@ -53,6 +54,6 @@ public static class InvitationEmail
 
         var text = $"{(isEn ? "Hello" : "Cześć")} {participant.FirstName},\n{eventName} — {dateText}\n{(isEn ? "Your event link" : "Twój link do wydarzenia")}: {link}";
 
-        return new EmailMessage(participant.Email, $"{participant.FirstName} {participant.LastName}", subject, html, text);
+        return new EmailMessage(participant.Email, $"{participant.FirstName} {participant.LastName}", subject, html, text, brand?.FromName);
     }
 }

@@ -15,6 +15,13 @@
     "headerNameHint": "Tekst nad nazwą wydarzenia w nagłówku maila (np. nazwa firmy klienta). Domyślnie: „EventPulse”.",
     "logo": "Logo (URL)",
     "logoHint": "Pełny adres obrazka (https). Pokaże się w nagłówku maila obok nazwy wydarzenia.",
+    "fromName": "Nazwa nadawcy",
+    "fromNameHint": "Nazwa widoczna jako nadawca (sam adres e-mail pozostaje bez zmian). Domyślnie: „EventPulse”.",
+    "subject": "Tytuł maila (temat)",
+    "subjectPlaceholder": "np. Zaproszenie na {event}",
+    "subjectHint": "Temat wiadomości. Wpisz {event}, aby wstawić nazwę wydarzenia. Puste = domyślny temat.",
+    "previewFrom": "Od",
+    "defaultSubject": "Twoje zaproszenie",
     "save": "Zapisz wygląd e-maili",
     "preview": "Podgląd wiadomości"
   },

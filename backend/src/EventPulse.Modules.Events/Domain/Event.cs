@@ -38,6 +38,12 @@ public sealed class Event : AggregateRoot
     /// <summary>Small label above the event name in the e-mail header (e.g. the client's company). Null = "EventPulse".</summary>
     public string? EmailHeaderName { get; set; }
 
+    /// <summary>Sender display name for outgoing e-mails (the from-address stays global). Null = default.</summary>
+    public string? EmailFromName { get; set; }
+
+    /// <summary>Custom subject for guest e-mails ({event} is replaced with the event name). Null = default subject.</summary>
+    public string? EmailSubject { get; set; }
+
     // ---------------------------------------------------------------------
     // Per-event settings (configured from the dashboard "Ustawienia" tab).
     // ---------------------------------------------------------------------
