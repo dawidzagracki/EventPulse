@@ -1,6 +1,7 @@
 using System.Net;
 using EventPulse.Modules.Participants.Domain;
 using EventPulse.Shared.Notifications;
+using EventPulse.Shared.Time;
 
 namespace EventPulse.Modules.Participants.Application.Invitations;
 
@@ -13,7 +14,9 @@ public static class InvitationEmail
         var culture = isEn ? "en-GB" : "pl-PL";
         var name = WebUtility.HtmlEncode(participant.FirstName);
         var ev = WebUtility.HtmlEncode(eventName);
-        var dateText = startsAt.ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo(culture));
+        // Render in the event's local time (Europe/Warsaw), not the raw UTC we read from Postgres,
+        // otherwise the e-mail shows a time offset by 1–2h from the real event start.
+        var dateText = EventClock.ToEventLocal(startsAt).ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo(culture));
 
         var defaultSubject = isEn ? $"Your invitation: {eventName}" : $"Twoje zaproszenie: {eventName}";
         var subject = brand?.ResolvedSubject(defaultSubject) ?? defaultSubject;

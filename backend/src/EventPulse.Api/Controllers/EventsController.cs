@@ -143,7 +143,7 @@ public sealed class EventsController : ControllerBase
                 $"Zostałeś(-aś) zaproszony(-a) na wydarzenie <strong>{System.Net.WebUtility.HtmlEncode(ev.Name)}</strong>.",
                 "Otwórz swoją osobistą stronę wydarzenia poniżej — znajdziesz tam agendę, swój kod QR i wszystkie szczegóły w jednym miejscu.",
             ],
-            InfoRows = [new EmailInfoRow("Kiedy", ev.StartsAt.ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("pl-PL")))],
+            InfoRows = [new EmailInfoRow("Kiedy", EventPulse.Shared.Time.EventClock.ToEventLocal(ev.StartsAt).ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("pl-PL")))],
             CtaLabel = "Otwórz stronę wydarzenia",
             CtaUrl = "https://eventpulse.pl",
             FallbackNote = "Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:",

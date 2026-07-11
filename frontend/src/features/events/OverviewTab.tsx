@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Card } from '../../components/ui'
+import { Card, Input } from '../../components/ui'
 import { Icon, type IconName } from '../../components/Icon'
 import { useEvent, useUpdateEvent, useEventClients, useSetEventClients } from './api'
 import { prettifyEventName } from './eventName'
@@ -12,6 +12,17 @@ import { useClients } from '../team/api'
 import { useAuthStore } from '../../stores/authStore'
 import { assetUrl } from '../../lib/api'
 import { EventStatus } from '../../types/api'
+
+/**
+ * ISO instant → `<input type="datetime-local">` value in the browser's local time.
+ * Mirrors the create wizard (SmartEventForm), so editing and creating store dates the same way.
+ */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 export function OverviewTab({ eventId }: { eventId: string }) {
   const { t, i18n } = useTranslation()
@@ -36,6 +47,11 @@ export function OverviewTab({ eventId }: { eventId: string }) {
   // Inline location-edit state (same pattern as rename).
   const [editingLocation, setEditingLocation] = useState(false)
   const [locationDraft, setLocationDraft] = useState('')
+
+  // Inline date/time edit state.
+  const [editingDate, setEditingDate] = useState(false)
+  const [startDraft, setStartDraft] = useState('')
+  const [endDraft, setEndDraft] = useState('')
 
   if (!event) {
     return (
@@ -93,6 +109,31 @@ export function OverviewTab({ eventId }: { eventId: string }) {
       clientEmail: event.clientEmail,
     })
     setEditingLocation(false)
+  }
+
+  function openDateEdit() {
+    if (!event) return
+    setStartDraft(toLocalInput(event.startsAt))
+    setEndDraft(toLocalInput(event.endsAt))
+    setEditingDate(true)
+  }
+
+  const dateEditInvalid =
+    !startDraft || !endDraft || new Date(endDraft).getTime() <= new Date(startDraft).getTime()
+
+  async function commitDate() {
+    if (!event || dateEditInvalid) return
+    // Same full-payload PUT as rename/location (backend replaces every field).
+    await updateEvent.mutateAsync({
+      name: event.name,
+      startsAt: new Date(startDraft).toISOString(),
+      endsAt: new Date(endDraft).toISOString(),
+      location: event.location,
+      description: event.description,
+      defaultLanguage: event.defaultLanguage,
+      clientEmail: event.clientEmail,
+    })
+    setEditingDate(false)
   }
 
   const dateLabel = new Date(event.startsAt).toLocaleDateString(i18n.language, {
@@ -213,25 +254,69 @@ export function OverviewTab({ eventId }: { eventId: string }) {
       <div className="grid gap-5 lg:grid-cols-3">
         {/* LEFT 2/3 */}
         <div className="space-y-5 lg:col-span-2">
-          {/* Schedule */}
+          {/* Schedule — editable inline (same pattern as rename/location) */}
           <Card>
-            <SectionHeader icon="calendar" title={t('eventDetail.schedule')} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <DetailRow label={t('events.starts')}>
-                {new Date(event.startsAt).toLocaleString(i18n.language, { dateStyle: 'full', timeStyle: 'short' })}
-              </DetailRow>
-              <DetailRow label={t('events.ends')}>
-                {new Date(event.endsAt).toLocaleString(i18n.language, { dateStyle: 'full', timeStyle: 'short' })}
-              </DetailRow>
-              <DetailRow label={t('eventDetail.duration')}>
-                {durationDays > 0 && `${durationDays} ${t('dashboard.days')} `}
-                {durationHrs > 0 && `${durationHrs} ${t('dashboard.hours')} `}
-                {durationMin > 0 && `${durationMin} ${t('dashboard.minutes')}`}
-              </DetailRow>
-              <DetailRow label={t('eventDetail.timezone')}>
-                {Intl.DateTimeFormat().resolvedOptions().timeZone}
-              </DetailRow>
+            <div className="flex items-center justify-between gap-2">
+              <SectionHeader icon="calendar" title={t('eventDetail.schedule')} />
+              {!editingDate && (
+                <button
+                  type="button"
+                  onClick={openDateEdit}
+                  className="shrink-0 rounded-lg border border-slate-700/60 bg-slate-800/50 px-2.5 py-1 text-xs text-slate-300 transition hover:border-indigo-400/40 hover:text-white"
+                >
+                  ✎ {t('eventDetail.edit')}
+                </button>
+              )}
             </div>
+            {editingDate ? (
+              <div className="mt-3 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-slate-400">{t('events.starts')}</span>
+                    <Input type="datetime-local" value={startDraft} onChange={(e) => setStartDraft(e.target.value)} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-slate-400">{t('events.ends')}</span>
+                    <Input type="datetime-local" value={endDraft} onChange={(e) => setEndDraft(e.target.value)} />
+                  </label>
+                </div>
+                {dateEditInvalid && <p className="text-xs text-rose-400">{t('events.endBeforeStart')}</p>}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void commitDate()}
+                    disabled={dateEditInvalid || updateEvent.isPending}
+                    className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    {updateEvent.isPending ? '…' : t('common.save')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingDate(false)}
+                    className="rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:text-white"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailRow label={t('events.starts')}>
+                  {new Date(event.startsAt).toLocaleString(i18n.language, { dateStyle: 'full', timeStyle: 'short' })}
+                </DetailRow>
+                <DetailRow label={t('events.ends')}>
+                  {new Date(event.endsAt).toLocaleString(i18n.language, { dateStyle: 'full', timeStyle: 'short' })}
+                </DetailRow>
+                <DetailRow label={t('eventDetail.duration')}>
+                  {durationDays > 0 && `${durationDays} ${t('dashboard.days')} `}
+                  {durationHrs > 0 && `${durationHrs} ${t('dashboard.hours')} `}
+                  {durationMin > 0 && `${durationMin} ${t('dashboard.minutes')}`}
+                </DetailRow>
+                <DetailRow label={t('eventDetail.timezone')}>
+                  {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                </DetailRow>
+              </div>
+            )}
           </Card>
 
           {/* Location — editable inline (same pattern as rename) */}
