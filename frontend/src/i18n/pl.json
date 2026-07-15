@@ -48,7 +48,8 @@
     "edit": "Edytuj",
     "logout": "Wyloguj",
     "error": "Coś poszło nie tak",
-    "yes": "Tak"
+    "yes": "Tak",
+    "no": "Nie"
   },
   "auth": {
     "loginTitle": "Zaloguj się",
@@ -221,10 +222,17 @@
     "language": "Język",
     "diet": "Dieta",
     "shirtSize": "Rozmiar koszulki",
+    "wishes": "Uwagi / życzenia",
     "table": "Stolik",
     "room": "Pokój",
     "group": "Grupa",
-    "transfer": "Transfer z lotniska"
+    "transfer": "Transfer z lotniska",
+    "consents": "Zgody",
+    "rodo": "Zgoda RODO",
+    "photoConsent": "Zgoda na wizerunek",
+    "networkingConsent": "Zgoda na networking",
+    "formAnswers": "Formularz",
+    "noAnswer": "— brak odpowiedzi —"
   },
   "agenda": {
     "title": "Agenda",

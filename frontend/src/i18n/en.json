@@ -48,7 +48,8 @@
     "edit": "Edit",
     "logout": "Log out",
     "error": "Something went wrong",
-    "yes": "Yes"
+    "yes": "Yes",
+    "no": "No"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -221,10 +222,17 @@
     "language": "Language",
     "diet": "Diet",
     "shirtSize": "Shirt size",
+    "wishes": "Notes / wishes",
     "table": "Table",
     "room": "Room",
     "group": "Group",
-    "transfer": "Airport transfer"
+    "transfer": "Airport transfer",
+    "consents": "Consents",
+    "rodo": "GDPR consent",
+    "photoConsent": "Photo/image consent",
+    "networkingConsent": "Networking consent",
+    "formAnswers": "Form",
+    "noAnswer": "— no answer —"
   },
   "agenda": {
     "title": "Agenda",

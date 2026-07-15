@@ -212,6 +212,12 @@ export interface ParticipantDto {
   parentParticipantId: string | null
   age: number | null
   accessToken: string
+  hasAcceptedRodo: boolean
+  photoConsent: boolean
+  networkingConsent: boolean
+  shirtSize: string | null
+  wishes: string | null
+  customFields: Record<string, string>
 }
 
 export interface CompanionDto {
