@@ -773,7 +773,7 @@ function RodoGate({ profile, onLogout }: { profile: MyProfileDto; onLogout: () =
               type="submit"
               className="mt-2 w-full justify-center"
               disabled={!rodo || phoneMissing || update.isPending}
-              style={theme ? { background: theme.btnBg } : undefined}
+              style={theme ? { background: theme.btnBg, color: theme.btnText } : undefined}
             >
               {t('participant.unlock')}
             </Button>
@@ -946,7 +946,7 @@ function OnboardingGate({
               className="flex-1 justify-center"
               onClick={next}
               disabled={blocked}
-              style={theme ? { background: theme.btnBg } : undefined}
+              style={theme ? { background: theme.btnBg, color: theme.btnText } : undefined}
             >
               {isLast ? t('participant.onboardingFinish') : t('participant.onboardingNext')}
             </Button>

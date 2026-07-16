@@ -1,4 +1,5 @@
 using System.Net;
+using EventPulse.Modules.Participants.Application.Invitations;
 using EventPulse.Modules.Participants.Domain;
 using EventPulse.Shared.Notifications;
 using EventPulse.Shared.Persistence;
@@ -79,34 +80,27 @@ public static class LoginLinkEmail
 {
     public static EmailMessage Build(Participant participant, string link, EmailBrand? brand = null)
     {
-        var isEn = participant.Language.Equals("en", StringComparison.OrdinalIgnoreCase);
         var name = WebUtility.HtmlEncode(participant.FirstName);
 
-        var content = isEn
-            ? new EmailContent
-            {
-                Preheader = "Your personal login link",
-                Heading = $"Hello {name},",
-                Paragraphs = ["Here is your personal link to open the event app. It's tied to your account — please don't share it."],
-                CtaLabel = "Open my event page",
-                CtaUrl = link,
-                FallbackNote = "If the button doesn't work, copy this link into your browser:",
-                FooterNote = "You requested this link on the event's login page.",
-            }
-            : new EmailContent
-            {
-                Preheader = "Twój osobisty link do logowania",
-                Heading = $"Cześć {name},",
-                Paragraphs = ["Oto Twój osobisty link do aplikacji wydarzenia. Jest przypisany do Twojego konta — nie udostępniaj go innym."],
-                CtaLabel = "Otwórz stronę wydarzenia",
-                CtaUrl = link,
-                FallbackNote = "Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:",
-                FooterNote = "Poprosiłeś(-aś) o ten link na stronie logowania wydarzenia.",
-            };
+        var content = new EmailContent
+        {
+            Preheader = "Twój link do logowania · Your login link",
+            Heading = $"Cześć {name}, / Hello {name},",
+            Paragraphs =
+            [
+                "Oto Twój osobisty link do aplikacji wydarzenia. Jest przypisany do Twojego konta — nie udostępniaj go innym.",
+                InvitationEmail.Divider,
+                "<em style=\"color:#6b7280;\">English:</em> Here is your personal link to open the event app. It's tied to your account — please don't share it.",
+            ],
+            CtaLabel = "Otwórz stronę wydarzenia / Open event page",
+            CtaUrl = link,
+            FallbackNote = "Jeśli przycisk nie działa, skopiuj ten link / If the button doesn't work, copy this link:",
+            FooterNote = "Poprosiłeś(-aś) o ten link na stronie logowania. / You requested this link on the login page.",
+        };
 
-        var defaultSubject = isEn ? "Your login link" : "Twój link do logowania";
+        var defaultSubject = "Twój link do logowania / Your login link";
         var subject = brand?.ResolvedSubject(defaultSubject) ?? defaultSubject;
-        var text = $"{(isEn ? "Your event link" : "Twój link do wydarzenia")}: {link}";
+        var text = $"Twój link / Your link: {link}";
         return new EmailMessage(participant.Email!, $"{participant.FirstName} {participant.LastName}", subject, EmailLayout.Render(content, brand), text, brand?.FromName);
     }
 }

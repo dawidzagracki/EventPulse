@@ -11,11 +11,40 @@ import {
   useSendClientLinks,
   useSendInvitations,
 } from './api'
+import { useCustomFields } from '../events/api'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { FileButton } from '../../components/FileButton'
 import { Icon } from '../../components/Icon'
 import { useAuthStore } from '../../stores/authStore'
-import { ParticipantStatusName, type ImportResult, type ParticipantDto } from '../../types/api'
+import {
+  CustomFieldType,
+  ParticipantStatusName,
+  type CustomFieldDto,
+  type ImportResult,
+  type ParticipantDto,
+} from '../../types/api'
+
+/** Parses a MultiSelect answer ("[\"A\",\"B\"]") back into its option labels; anything else → []. */
+function parseMultiSelectAnswer(raw: string | undefined): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/** Renders a stored custom-field answer as display text, per field type. Null = no answer given. */
+function formatCustomFieldAnswer(field: CustomFieldDto, raw: string | undefined, yesLabel: string, noLabel: string): string | null {
+  if (raw === undefined || raw === '') return null
+  if (field.type === CustomFieldType.Checkbox) return raw === 'true' ? yesLabel : noLabel
+  if (field.type === CustomFieldType.MultiSelect) {
+    const list = parseMultiSelectAnswer(raw)
+    return list.length > 0 ? list.join(', ') : null
+  }
+  return raw
+}
 
 type View = { kind: 'empty' } | { kind: 'new' } | { kind: 'detail'; participant: ParticipantDto }
 type StatusFilter = 'all' | 'invited' | 'confirmed' | 'checkedIn' | 'noShow'
@@ -579,9 +608,11 @@ function ParticipantDetail({
   participant: ParticipantDto
   onDeleted: () => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const en = i18n.resolvedLanguage === 'en'
   const status = statusMeta(participant.status)
   const del = useDeleteParticipant(eventId)
+  const { data: customFieldDefs } = useCustomFields(eventId)
 
   async function remove() {
     if (!window.confirm(t('participants.deleteConfirm', { name: `${participant.firstName} ${participant.lastName}` }))) return
@@ -655,9 +686,39 @@ function ParticipantDetail({
           <DetailItem icon="document" label={t('participants.language')}>{participant.language.toUpperCase()}</DetailItem>
         </Section>
 
-        {participant.dietaryPreferences && (
+        {/* Consents — always shown so the organiser can see exactly what the guest agreed to. */}
+        <Section title={t('participants.consents')}>
+          <ConsentBadge label={t('participants.rodo')} accepted={participant.hasAcceptedRodo} required />
+          <ConsentBadge label={t('participants.photoConsent')} accepted={participant.photoConsent} />
+          <ConsentBadge label={t('participants.networkingConsent')} accepted={participant.networkingConsent} />
+        </Section>
+
+        {(participant.dietaryPreferences || participant.shirtSize || participant.wishes) && (
           <Section title={t('participants.preferences')}>
-            <DetailItem icon="document" label={t('participants.diet')}>{participant.dietaryPreferences}</DetailItem>
+            {participant.dietaryPreferences && (
+              <DetailItem icon="document" label={t('participants.diet')}>{participant.dietaryPreferences}</DetailItem>
+            )}
+            {participant.shirtSize && (
+              <DetailItem icon="document" label={t('participants.shirtSize')}>{participant.shirtSize}</DetailItem>
+            )}
+            {participant.wishes && (
+              <DetailItem icon="sparkles" label={t('participants.wishes')}>{participant.wishes}</DetailItem>
+            )}
+          </Section>
+        )}
+
+        {/* Custom-field ("Formularz") answers — every field defined for this event, with the guest's answer. */}
+        {customFieldDefs && customFieldDefs.length > 0 && (
+          <Section title={t('participants.formAnswers')}>
+            {customFieldDefs.map((f) => {
+              const label = (en && f.labelEn) || f.labelPl
+              const answer = formatCustomFieldAnswer(f, participant.customFields[f.id], t('common.yes'), t('common.no'))
+              return (
+                <DetailItem key={f.id} icon="document" label={label}>
+                  {answer ?? <span className="italic text-slate-500">{t('participants.noAnswer')}</span>}
+                </DetailItem>
+              )
+            })}
           </Section>
         )}
 
@@ -723,6 +784,26 @@ function DetailItem({
         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">{label}</p>
         <p className="truncate text-sm text-white">{children}</p>
       </div>
+    </div>
+  )
+}
+
+/** A yes/no consent row (RODO / photo / networking) — green check when accepted, red/dim otherwise. */
+function ConsentBadge({ label, accepted, required }: { label: string; accepted: boolean; required?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-2.5">
+      <span className="text-sm text-slate-200">
+        {label}
+        {required && <span className="ml-1 text-rose-400">*</span>}
+      </span>
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+          accepted ? 'bg-emerald-400/15 text-emerald-300' : 'bg-slate-700/40 text-slate-400'
+        }`}
+      >
+        {accepted ? <Icon name="check" className="h-3 w-3" /> : <span className="text-xs leading-none">✕</span>}
+        {accepted ? 'Tak' : 'Nie'}
+      </span>
     </div>
   )
 }

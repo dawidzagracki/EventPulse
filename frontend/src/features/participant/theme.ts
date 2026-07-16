@@ -14,6 +14,8 @@ export interface BrandTheme {
   heroBg: string
   /** Primary button background. */
   btnBg: string
+  /** Readable text/icon colour ON the primary button (dark for light brand colours, white otherwise). */
+  btnText: string
   /** Subtle tinted border for cards/tiles. */
   border: string
   /** Header / bottom-nav bar background: dark base tinted with the brand hue (semi-opaque for blur). */
@@ -28,6 +30,15 @@ function hexToRgb(hex: string): [number, number, number] | null {
 }
 
 const rgba = (rgb: [number, number, number], a: number) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`
+
+/** WCAG relative luminance (0 = black … 1 = white). */
+function relLuminance([r, g, b]: [number, number, number]): number {
+  const chan = [r, g, b].map((v) => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2]
+}
 
 /** Mix a colour toward black to get a deeper shade (keeps the hue, works on any input). */
 function shade(rgb: [number, number, number], factor: number): [number, number, number] {
@@ -55,6 +66,8 @@ export function buildBrandTheme(primary?: string | null, accent?: string | null)
       `linear-gradient(180deg, ${rgba(deep, 0.28)}, rgba(2,6,23,0) 340px), #020617`,
     heroBg: `linear-gradient(135deg, ${rgba(p, 0.34)}, ${rgba(a, 0.16)} 55%, transparent)`,
     btnBg: `linear-gradient(135deg, ${rgba(p, 1)}, ${rgba(shade(p, 0.8), 1)})`,
+    // Contrast for the button label: dark text on light brand colours, white otherwise.
+    btnText: relLuminance(p) > 0.6 ? '#0f172a' : '#ffffff',
     border: rgba(p, 0.35),
     barBg: rgba(bar, 0.9),
   }
