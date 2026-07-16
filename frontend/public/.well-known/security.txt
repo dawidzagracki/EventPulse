@@ -1,0 +1,4 @@
+Contact: mailto:admin@eventpulse.pl
+Expires: 2027-07-16T00:00:00.000Z
+Preferred-Languages: pl, en
+Canonical: https://eventpulse.pl/.well-known/security.txt
