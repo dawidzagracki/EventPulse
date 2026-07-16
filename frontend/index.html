@@ -19,7 +19,50 @@
     <meta property="og:url" content="https://eventpulse.pl/" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!--
+        Static pre-render: visible to crawlers and URL scanners that do not execute
+        JavaScript (e-mail link filters judge the domain by this content). React
+        replaces this subtree the moment the bundle mounts.
+      -->
+      <div style="max-width:52rem;margin:0 auto;padding:3rem 1.5rem;font-family:system-ui,sans-serif;background:#020617;color:#cbd5e1;min-height:100vh">
+        <header>
+          <h1 style="color:#fff">EventPulse — platforma do zarządzania wydarzeniami firmowymi</h1>
+          <p>
+            EventPulse to narzędzie dla agencji eventowych i ich klientów: zaproszenia e-mail,
+            rejestracja gości, strony wydarzeń, check-in kodami QR i frekwencja na żywo —
+            wszystko w jednym miejscu, zgodnie z RODO.
+          </p>
+        </header>
+        <main>
+          <h2 style="color:#fff">Co oferuje platforma</h2>
+          <ul>
+            <li>Personalizowane zaproszenia e-mail z indywidualnym linkiem dla każdego gościa i potwierdzenia obecności (RSVP).</li>
+            <li>Kreator publicznych stron wydarzeń: agenda, lokalizacja, licznik czasu, galeria i formularz rejestracji.</li>
+            <li>Check-in kodami QR — recepcja skanuje telefonem, wejścia zapisują się w czasie rzeczywistym.</li>
+            <li>Dashboard frekwencji na żywo dla organizatora.</li>
+            <li>Galeria zdjęć publikowana wyłącznie za zgodą uczestników (RODO).</li>
+            <li>Quizy, konkursy i aktywności dla uczestników prosto z telefonu.</li>
+          </ul>
+          <h2 style="color:#fff">Dla kogo</h2>
+          <p>
+            Platforma jest przeznaczona dla agencji eventowych obsługujących konferencje, gale,
+            premiery produktów i wydarzenia integracyjne oraz dla ich klientów. Dostęp do panelu
+            organizatora przyznaje agencja obsługująca wydarzenie. Goście korzystają z osobistego
+            linku otrzymanego w zaproszeniu e-mail. Dane przetwarzane są na serwerach w Unii
+            Europejskiej (OVH, Francja), a połączenia są szyfrowane (HTTPS).
+          </p>
+        </main>
+        <footer>
+          <p>
+            <a href="/privacy" style="color:#a5b4fc">Polityka prywatności (RODO)</a> ·
+            <a href="/login" style="color:#a5b4fc">Logowanie dla organizatorów</a> ·
+            Kontakt: <a href="mailto:admin@eventpulse.pl" style="color:#a5b4fc">admin@eventpulse.pl</a>
+          </p>
+          <p>© 2026 EventPulse. Wszystkie prawa zastrzeżone.</p>
+        </footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

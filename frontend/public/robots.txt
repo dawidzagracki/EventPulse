@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /p/
+Disallow: /op/
+Disallow: /me
+Disallow: /events
+
+Sitemap: https://eventpulse.pl/sitemap.xml
