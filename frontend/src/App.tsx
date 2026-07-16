@@ -10,6 +10,8 @@ import { PublicEventPage } from './features/public/PublicEventPage'
 import { RequestLinkPage } from './features/public/RequestLinkPage'
 import { OperatorLandingPage } from './features/operator/OperatorLandingPage'
 import { TeamPage } from './features/team/TeamPage'
+import { LandingPage } from './features/public/LandingPage'
+import { PrivacyPage } from './features/public/PrivacyPage'
 
 const adminGuard = (element: React.ReactNode) => (
   <ProtectedRoute allow={['Agency', 'Client']}>{element}</ProtectedRoute>
@@ -42,6 +44,8 @@ export const router = createBrowserRouter([
   { path: '/events/:eventId/scanner', element: scannerGuard(<ScannerPage />) },
   { path: '/events/:eventId', element: adminGuard(<EventDetailPage />) },
   { path: '/events', element: adminGuard(<EventsListPage />) },
-  { path: '/', element: <Navigate to="/events" replace /> },
+  { path: '/privacy', element: <PrivacyPage /> },
+  // Public homepage — logged-in users are redirected to their panel inside the component.
+  { path: '/', element: <LandingPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ])
