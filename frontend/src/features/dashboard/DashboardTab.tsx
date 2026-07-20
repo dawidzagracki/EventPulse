@@ -181,8 +181,12 @@ export function DashboardTab({ eventId }: { eventId: string }) {
                 <h3 className="mb-3 text-sm font-semibold text-white">{t('dashboard.funnel')}</h3>
                 <Funnel
                   steps={[
-                    { label: t('dashboard.funnelInvited'), value: data.invited, color: 'from-indigo-500 to-violet-500' },
-                    { label: t('dashboard.funnelConfirmed'), value: data.confirmed, color: 'from-violet-500 to-fuchsia-500' },
+                    // Statuses are mutually-exclusive buckets (a confirmed guest is no longer
+                    // in "Invited"), so the funnel accumulates them into subsets that shrink
+                    // downward — otherwise later stages can exceed the top and read >100%.
+                    // checkedIn already includes checked-out guests (both have CheckedInAt).
+                    { label: t('dashboard.funnelInvited'), value: data.total, color: 'from-indigo-500 to-violet-500' },
+                    { label: t('dashboard.funnelConfirmed'), value: data.confirmed + data.checkedIn, color: 'from-violet-500 to-fuchsia-500' },
                     { label: t('dashboard.funnelCheckedIn'), value: data.checkedIn, color: 'from-emerald-500 to-teal-500' },
                     { label: t('dashboard.funnelCheckedOut'), value: data.checkedOut, color: 'from-sky-500 to-cyan-500' },
                   ]}
@@ -683,7 +687,11 @@ function Funnel({ steps }: { steps: { label: string; value: number; color: strin
     <ul className="space-y-2">
       {steps.map((s, i) => {
         const pct = (s.value / max) * 100
-        const dropPct = i > 0 && steps[0].value > 0 ? Math.round((s.value / steps[0].value) * 100) : null
+        // A funnel stage is a subset of the top, so its share can never exceed 100%.
+        const dropPct =
+          i > 0 && steps[0].value > 0
+            ? Math.min(100, Math.round((s.value / steps[0].value) * 100))
+            : null
         return (
           <li key={s.label}>
             <div className="mb-1 flex items-center justify-between text-xs">
