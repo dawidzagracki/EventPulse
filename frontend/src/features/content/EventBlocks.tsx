@@ -263,7 +263,7 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
         }}
       />
 
-      <div className={`relative px-6 py-24 text-center sm:px-12 sm:py-36 ${cText}`}>
+      <div className={`relative px-5 py-20 text-center sm:px-12 sm:py-36 ${cText}`}>
         {ctx.branding.logoUrl && (
           <img
             src={assetUrl(ctx.branding.logoUrl) ?? undefined}
@@ -278,18 +278,18 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
           </span>
           <E block={block} k="subtitle" ctx={ctx} placeholder="NADTYTUŁ" />
         </span>
-        <h1 className="mt-7 text-balance text-5xl font-black leading-[1.02] tracking-tight drop-shadow-2xl sm:text-7xl lg:text-8xl">
+        <h1 className="mt-7 text-balance text-4xl font-black leading-[1.05] tracking-tight drop-shadow-2xl sm:text-7xl lg:text-8xl">
           <E block={block} k="title" ctx={ctx} placeholder="Tytuł wydarzenia" />
         </h1>
-        <div className={`mx-auto mt-8 flex max-w-xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-base sm:text-lg ${cSoft}`}>
-          <span className="inline-flex items-center gap-2">
-            <span className={cDim}>📅</span>
+        <div className={`mx-auto mt-8 flex max-w-xl flex-col items-center justify-center gap-2 text-base sm:flex-row sm:flex-wrap sm:gap-x-4 sm:text-lg ${cSoft}`}>
+          <span className="inline-flex max-w-full items-center gap-2">
+            <span className={`shrink-0 ${cDim}`}>📅</span>
             <E block={block} k="dateLabel" ctx={ctx} placeholder="Data" />
           </span>
           <span className={`hidden h-1 w-1 rounded-full sm:inline-block ${cSep}`} />
-          <span className="inline-flex items-center gap-2">
-            <span className={cDim}>📍</span>
-            <E block={block} k="location" ctx={ctx} placeholder="Miejsce" fallback={ctx.location} />
+          <span className="inline-flex max-w-full items-center gap-2">
+            <span className={`shrink-0 ${cDim}`}>📍</span>
+            <E block={block} k="location" ctx={ctx} placeholder="Miejsce" fallback={ctx.location} className="min-w-0 text-balance" />
           </span>
         </div>
         <a
@@ -315,7 +315,7 @@ function DescriptionBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext 
   return (
     <section
       id={`block-${block.id}`}
-      className={`relative overflow-hidden rounded-3xl p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
+      className={`relative overflow-hidden rounded-3xl p-6 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-10 lg:p-16 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="mx-auto max-w-4xl">
@@ -349,7 +349,7 @@ function StatsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`relative overflow-hidden rounded-3xl p-10 sm:p-16 ${stl.className}`}
+      className={`relative overflow-hidden rounded-3xl p-6 sm:p-10 lg:p-16 ${stl.className}`}
       style={{
         background: `linear-gradient(135deg, ${primary} 0%, ${ctx.branding.accentColor} 100%)`,
         ...stl.style,
@@ -389,7 +389,7 @@ function FeaturesBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-xl shadow-slate-200/40 ring-1 ring-slate-200 sm:p-10 lg:p-16 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="mx-auto max-w-5xl">
@@ -441,7 +441,7 @@ function TestimonialBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext 
   return (
     <section
       id={`block-${block.id}`}
-      className={`relative overflow-hidden rounded-3xl p-10 ring-1 ring-slate-200 sm:p-16 ${stl.className}`}
+      className={`relative overflow-hidden rounded-3xl p-6 ring-1 ring-slate-200 sm:p-10 lg:p-16 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <div className="mx-auto max-w-3xl text-center">
@@ -483,7 +483,7 @@ function SplitBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
     >
       <div className={`grid items-center gap-0 lg:grid-cols-2 ${reverse ? 'lg:[&>*:first-child]:order-2' : ''}`}>
         {/* Text side */}
-        <div className="p-10 sm:p-16">
+        <div className="p-6 sm:p-10 lg:p-16">
           <div className="flex items-center gap-3">
             <span className="h-1 w-10 rounded-full" style={{ background: primary }} />
             <p className="text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: primary }}>
@@ -533,7 +533,7 @@ function AgendaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -584,7 +584,7 @@ function MapBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
       className={`overflow-hidden rounded-3xl shadow-sm ring-1 ring-slate-200 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
-      <div className="p-10 sm:p-14">
+      <div className="p-6 sm:p-10 lg:p-14">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           <E block={block} k="title" ctx={ctx} placeholder="Lokalizacja" />
         </h2>
@@ -609,7 +609,7 @@ function GalleryBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -702,7 +702,7 @@ function FaqBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -739,7 +739,7 @@ function TeamBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -775,7 +775,7 @@ function VideoBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
       className={`overflow-hidden rounded-3xl shadow-sm ring-1 ring-slate-200 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
-      <div className="p-10 sm:p-14">
+      <div className="p-6 sm:p-10 lg:p-14">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           <E block={block} k="title" ctx={ctx} placeholder="Wideo" />
         </h2>
@@ -803,7 +803,7 @@ function SponsorsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -881,7 +881,7 @@ function ContestsBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) 
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>
@@ -917,7 +917,7 @@ function QuizzesBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`rounded-3xl p-10 shadow-sm ring-1 ring-slate-200 sm:p-14 ${stl.className}`}
+      className={`rounded-3xl p-6 shadow-sm ring-1 ring-slate-200 sm:p-10 lg:p-14 ${stl.className}`}
       style={{ background: '#ffffff', ...stl.style }}
     >
       <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: stl.titleColor ?? '#0f172a' }}>

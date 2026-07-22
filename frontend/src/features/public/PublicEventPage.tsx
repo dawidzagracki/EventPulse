@@ -202,7 +202,7 @@ export function PublicEventPage() {
         onLangChange={(l) => i18n.changeLanguage(l)}
       />
 
-      <main className="mx-auto max-w-6xl space-y-10 px-6 py-12">
+      <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:space-y-10 sm:px-6 sm:py-12">
         {blocks.length === 0 ? (
           <p className="text-center text-slate-400">{t('public.empty')}</p>
         ) : (
@@ -214,7 +214,7 @@ export function PublicEventPage() {
         )}
       </main>
 
-      <footer className="mx-auto max-w-6xl px-6 pb-12 pt-4 text-center text-xs text-slate-400">
+      <footer className="mx-auto max-w-6xl px-4 pb-12 pt-4 text-center text-xs text-slate-400 sm:px-6">
         Powered by EventPulse
       </footer>
     </div>
