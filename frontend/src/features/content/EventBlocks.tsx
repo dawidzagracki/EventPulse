@@ -667,7 +667,7 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
   return (
     <section
       id={`block-${block.id}`}
-      className={`overflow-hidden rounded-3xl p-12 text-center text-white ${stl.className}`}
+      className={`overflow-hidden rounded-3xl p-6 text-center text-white sm:p-10 lg:p-12 ${stl.className}`}
       style={{
         background: `linear-gradient(135deg, ${primary}, ${ctx.branding.accentColor})`,
         ...stl.style,
@@ -676,10 +676,10 @@ function CountdownBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext })
       <h2 className="text-2xl font-bold sm:text-3xl">
         <E block={block} k="title" ctx={ctx} placeholder="Do startu zostało" />
       </h2>
-      <div className="mx-auto mt-8 grid max-w-2xl grid-cols-4 gap-3 sm:gap-5">
+      <div className="mx-auto mt-8 grid max-w-2xl grid-cols-4 gap-2 sm:gap-3 lg:gap-5">
         {cells.map((cell, i) => (
-          <div key={i} className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm sm:p-6">
-            <p className="text-3xl font-black tabular-nums sm:text-5xl" style={digitStyle}>
+          <div key={i} className="rounded-2xl bg-white/10 p-2.5 backdrop-blur-sm sm:p-4 lg:p-6">
+            <p className="text-2xl font-black tabular-nums sm:text-4xl lg:text-5xl" style={digitStyle}>
               {String(cell.v).padStart(2, '0')}
             </p>
             <p
@@ -842,7 +842,7 @@ function CtaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   return (
     <section
       id={`block-${block.id}`}
-      className={`overflow-hidden rounded-3xl p-12 text-center sm:p-16 ${cText} ${stl.className}`}
+      className={`overflow-hidden rounded-3xl p-6 text-center sm:p-10 lg:p-16 ${cText} ${stl.className}`}
       style={{
         background: `linear-gradient(135deg, ${primary}, ${ctx.branding.accentColor})`,
         ...stl.style,
