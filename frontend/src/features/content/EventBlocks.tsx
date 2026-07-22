@@ -178,12 +178,15 @@ function E({
   k,
   ctx,
   placeholder,
+  fallback,
   className = '',
 }: {
   block: PageBlock
   k: string
   ctx: BlockContext
   placeholder?: string
+  /** Shown when the field is empty in both languages — e.g. the event's own location. */
+  fallback?: string
   className?: string
 }) {
   // Current-language value (used verbatim for editing / change detection).
@@ -192,8 +195,10 @@ function E({
   // filled in only one language still shows its content everywhere. In EDIT mode
   // stay strict (empty stays empty) so you always edit the right language field.
   const other = ctx.lang === 'en' ? 'pl' : 'en'
-  const shown = ctx.edit ? cur : cur || ((block.content?.[other]?.[k] as string) ?? '')
-  const ph = ctx.lang === 'en' && placeholder ? PLACEHOLDER_EN[placeholder] ?? placeholder : placeholder
+  const shown = ctx.edit ? cur : cur || ((block.content?.[other]?.[k] as string) ?? '') || (fallback ?? '')
+  // While editing, the fallback stands in as the placeholder so the field shows what
+  // visitors will actually see instead of a generic hint.
+  const ph = fallback ?? (ctx.lang === 'en' && placeholder ? PLACEHOLDER_EN[placeholder] ?? placeholder : placeholder)
   const ts = textPresetStyle(block, k)
   if (!ctx.edit) {
     return <span className={className} style={ts}>{shown || ph || ''}</span>
@@ -284,7 +289,7 @@ function HeroBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
           <span className={`hidden h-1 w-1 rounded-full sm:inline-block ${cSep}`} />
           <span className="inline-flex items-center gap-2">
             <span className={cDim}>📍</span>
-            <E block={block} k="location" ctx={ctx} placeholder="Miejsce" />
+            <E block={block} k="location" ctx={ctx} placeholder="Miejsce" fallback={ctx.location} />
           </span>
         </div>
         <a
