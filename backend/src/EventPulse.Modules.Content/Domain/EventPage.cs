@@ -24,6 +24,9 @@ public sealed class EventPage : TenantEntity
     public string? FaviconUrl { get; set; }
     public string? BackgroundColor { get; set; }
 
+    /// <summary>Hides the event name beside the logo in the public nav (logo-only header).</summary>
+    public bool HideNameInNav { get; set; }
+
     // SEO / Open Graph.
     public string? SeoTitle { get; set; }
     public string? SeoDescription { get; set; }

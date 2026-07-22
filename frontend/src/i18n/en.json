@@ -385,6 +385,8 @@
     "accentColor": "Accent color",
     "logoUrl": "Logo (URL or file)",
     "logoUpload": "Upload",
+    "hideNameInNav": "Hide the name beside the logo",
+    "hideNameInNavHint": "The page header shows the logo only, without the event name.",
     "logoBadType": "Only JPG or PNG allowed.",
     "logoTooBig": "File too large (max 5 MB).",
     "logoUploadError": "Could not upload the logo.",

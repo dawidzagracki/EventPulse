@@ -99,6 +99,7 @@ public sealed class UpdateBrandingHandler(IAppDbContext db) : IRequestHandler<Up
         page.LogoUrl = b.LogoUrl;
         page.FaviconUrl = b.FaviconUrl;
         page.BackgroundColor = b.BackgroundColor;
+        page.HideNameInNav = b.HideNameInNav;
         await db.SaveChangesAsync(ct);
         return PageDto.From(page);
     }
@@ -240,7 +241,7 @@ public sealed class GetPublishedPageHandler(IAppDbContext db) : IRequestHandler<
         return new PublishedPageDto(
             PageDto.Parse(page.PublishedContent),
             new BrandingDto(page.PrimaryColor, page.SecondaryColor, page.AccentColor, page.FontFamily,
-                page.LogoUrl, page.FaviconUrl, page.BackgroundColor),
+                page.LogoUrl, page.FaviconUrl, page.BackgroundColor, page.HideNameInNav),
             new SeoDto(page.SeoTitle, page.SeoDescription, page.OgImageUrl),
             page.PublishedVersion);
     }

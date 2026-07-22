@@ -195,6 +195,7 @@ export function PublicEventPage() {
       <ScopedStyles blocks={blocks} />
       <GlassNav
         logoUrl={page.data.branding.logoUrl}
+        hideNameInNav={page.data.branding.hideNameInNav}
         eventName={event.data?.name ?? null}
         navItems={navItems}
         lang={lang}
@@ -252,12 +253,14 @@ function blockTypeFallbackLabel(type: string, lang: 'pl' | 'en'): string {
  */
 function GlassNav({
   logoUrl,
+  hideNameInNav,
   eventName,
   navItems,
   lang,
   onLangChange,
 }: {
   logoUrl: string | null
+  hideNameInNav: boolean
   eventName: string | null
   navItems: { id: string; label: string }[]
   lang: 'pl' | 'en'
@@ -360,7 +363,7 @@ function GlassNav({
             ) : (
               <Logo size={scrolled ? 28 : 34} />
             )}
-            {eventName && (
+            {eventName && !hideNameInNav && (
               <span
                 className={`hidden font-semibold tracking-tight text-slate-900/85 sm:inline ${scrolled ? 'text-sm' : 'text-[15px]'}`}
               >

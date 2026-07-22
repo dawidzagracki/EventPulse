@@ -335,6 +335,8 @@ export interface BrandingDto {
   logoUrl: string | null
   faviconUrl: string | null
   backgroundColor: string | null
+  /** Hides the event name beside the logo in the public nav (logo-only header). */
+  hideNameInNav: boolean
 }
 
 export interface BrandingSuggestionDto {

@@ -385,6 +385,8 @@
     "accentColor": "Kolor akcentu",
     "logoUrl": "Logo (URL lub plik)",
     "logoUpload": "Wgraj",
+    "hideNameInNav": "Ukryj nazwę obok logo",
+    "hideNameInNavHint": "W nagłówku strony zostanie samo logo, bez nazwy wydarzenia.",
     "logoBadType": "Dozwolone tylko JPG lub PNG.",
     "logoTooBig": "Plik jest za duży (maks. 5 MB).",
     "logoUploadError": "Nie udało się wgrać logo.",

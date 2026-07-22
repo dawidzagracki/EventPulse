@@ -10,7 +10,8 @@ public sealed record BrandingDto(
     string FontFamily,
     string? LogoUrl,
     string? FaviconUrl,
-    string? BackgroundColor);
+    string? BackgroundColor,
+    bool HideNameInNav = false);
 
 public sealed record SeoDto(string? Title, string? Description, string? OgImageUrl);
 
@@ -31,7 +32,7 @@ public sealed record PageDto(
         page.EventId,
         Parse(page.DraftContent),
         new BrandingDto(page.PrimaryColor, page.SecondaryColor, page.AccentColor, page.FontFamily,
-            page.LogoUrl, page.FaviconUrl, page.BackgroundColor),
+            page.LogoUrl, page.FaviconUrl, page.BackgroundColor, page.HideNameInNav),
         new SeoDto(page.SeoTitle, page.SeoDescription, page.OgImageUrl),
         page.PublishedVersion,
         page.PublishedContent is not null,

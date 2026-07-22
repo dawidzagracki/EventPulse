@@ -22,6 +22,7 @@ public sealed class EventPageConfiguration : IEntityTypeConfiguration<EventPage>
         builder.Property(p => p.FaviconUrl).HasMaxLength(2048);
         // Holds a full CSS background value: solid colour, linear-gradient(...) or url(...) cover.
         builder.Property(p => p.BackgroundColor).HasMaxLength(2048);
+        builder.Property(p => p.HideNameInNav).HasDefaultValue(false);
         builder.Property(p => p.SeoTitle).HasMaxLength(200);
         builder.Property(p => p.SeoDescription).HasMaxLength(400);
         builder.Property(p => p.OgImageUrl).HasMaxLength(2048);

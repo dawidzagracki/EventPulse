@@ -19,7 +19,7 @@ import { useContests, useQuizzes } from '../engagement/api'
 import { DropZone, EditorFrame, RenderBlock, type BlockContext } from './EventBlocks'
 import { useDragAutoScroll } from './useDragAutoScroll'
 import { ALL_BLOCK_TYPES, BLOCK_SCHEMAS, CATEGORY_META, blockIcon, blockLabel, blockSchema, type BlockCategory } from './blockSchema'
-import { Button, Card, Field, Input, Select } from '../../components/ui'
+import { Button, Card, Field, Input, Select, Toggle } from '../../components/ui'
 import { ColorPicker } from '../../components/ColorPicker'
 import { EmojiPicker } from '../../components/EmojiPicker'
 import { Icon } from '../../components/Icon'
@@ -1066,6 +1066,14 @@ function BrandingEditor({
           </div>
           {logoErr && <p className="mt-1 text-[11px] text-rose-400">{logoErr}</p>}
         </Field>
+        <div className="sm:col-span-2">
+          <Toggle
+            checked={branding.hideNameInNav}
+            onChange={(next) => onChange({ ...branding, hideNameInNav: next })}
+            label={t('page.hideNameInNav')}
+            description={t('page.hideNameInNavHint')}
+          />
+        </div>
         <Button variant="subtle" onClick={onSave} disabled={saving}>
           {t('page.saveBranding')}
         </Button>
