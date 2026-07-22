@@ -159,6 +159,7 @@ export function PublicEventPage() {
     contests: contests.data ?? [],
     quizzes: quizzes.data ?? [],
     startsAt: event.data?.startsAt,
+    location: event.data?.location ?? undefined,
   }
 
   // Build dynamic anchor links. A block is included when:

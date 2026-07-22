@@ -20,6 +20,8 @@ export interface BlockContext {
   contests?: { id: string; name: string; mode: number }[]
   quizzes?: { id: string; title: string }[]
   startsAt?: string
+  /** The event's location (Overview tab) — blocks fall back to it when they carry no address. */
+  location?: string
   /** When set, the block is rendered inside the editor and text becomes contentEditable. */
   edit?: EditMode
 }
@@ -566,7 +568,9 @@ function AgendaBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
 
 function MapBlock({ block, ctx }: { block: PageBlock; ctx: BlockContext }) {
   const c = pick(block, ctx.lang)
-  const address = c.address
+  // An address typed into the block wins; otherwise follow the event's location from the
+  // Overview tab, so editing it there keeps the map and the printed address in sync.
+  const address = (c.address ?? '').trim() || ctx.location || ''
   const src = mapEmbedSrc(address)
   const stl = getBlockStyle(block)
   return (

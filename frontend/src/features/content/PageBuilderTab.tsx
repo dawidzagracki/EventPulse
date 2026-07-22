@@ -365,10 +365,11 @@ function Editor({ eventId, page }: { eventId: string; page: PageDto }) {
       contests: (contests ?? []).map((c) => ({ id: c.id, name: c.name, mode: c.mode })),
       quizzes: (quizzes ?? []).map((q) => ({ id: q.id, title: q.title })),
       startsAt: event?.startsAt,
+      location: event?.location ?? undefined,
       edit: { onTextChange: setText },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eventId, branding, lang, event?.startsAt, contests, quizzes, agenda],
+    [eventId, branding, lang, event?.startsAt, event?.location, contests, quizzes, agenda],
   )
 
   return (
