@@ -273,18 +273,28 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         style={theme ? { background: theme.barBg, borderTopColor: theme.border } : undefined}
       >
         {(() => {
-          // Keep the elevated QR button dead-centre no matter how many tabs the
-          // organiser hid: split the remaining tabs into two equal-width halves
-          // (flex-1 each) with QR in a fixed centre slot between them.
-          const renderTab = (tb: (typeof tabs)[number], grow = true) => {
-            const active = activeTab === tb.id
-            const isQr = tb.id === 'qr'
-            return (
-              <button
-                key={tb.id}
-                onClick={() => setTab(tb.id)}
-                className={`relative flex ${grow ? 'flex-1' : 'w-20'} flex-col items-center gap-0.5 py-2.5`}
-              >
+          // A nav slot is either a view tab (switches the app view) or an external
+          // link to the public event page. When the organiser hides an optional tab,
+          // the freed slot is filled with a "Strona" link so the bar isn't left sparse.
+          type NavEntry = { id: string; label: string; emoji: string; href?: string }
+          const entries: NavEntry[] = tabs.map((tb) => ({ id: tb.id, label: tb.label, emoji: tb.emoji }))
+          const hiddenOptional = (['agenda', 'activities', 'gallery'] as const).filter(
+            (id) => !tabs.some((tb) => tb.id === id),
+          ).length
+          if (publicUrl && hiddenOptional > 0) {
+            const websiteEntry: NavEntry = { id: 'website', label: t('participant.tabWebsite'), emoji: '🌐', href: publicUrl }
+            const profileIdx = entries.findIndex((e) => e.id === 'profile')
+            entries.splice(profileIdx >= 0 ? profileIdx : entries.length, 0, websiteEntry)
+          }
+
+          // Keep the elevated QR button dead-centre no matter how many entries there
+          // are: split the rest into two equal-width halves with QR in a fixed centre slot.
+          const renderEntry = (e: NavEntry, grow = true) => {
+            const active = activeTab === e.id
+            const isQr = e.id === 'qr'
+            const cls = `relative flex ${grow ? 'flex-1' : 'w-20'} flex-col items-center gap-0.5 py-2.5`
+            const inner = (
+              <>
                 {isQr ? (
                   <span
                     className={`-mt-6 flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-lg transition ${
@@ -294,28 +304,37 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
                     }`}
                     style={active && accent ? { background: accent } : undefined}
                   >
-                    {tb.emoji}
+                    {e.emoji}
                   </span>
                 ) : (
-                  <span className={`text-lg transition ${active ? 'scale-110' : 'opacity-60'}`}>{tb.emoji}</span>
+                  <span className={`text-lg transition ${active ? 'scale-110' : 'opacity-60'}`}>{e.emoji}</span>
                 )}
                 <span
                   className={`max-w-full truncate px-1 text-[10px] font-medium ${active ? 'text-indigo-300' : 'text-slate-500'}`}
                   style={active && accent ? { color: accent } : undefined}
                 >
-                  {tb.label}
+                  {e.label}
                 </span>
+              </>
+            )
+            return e.href ? (
+              <a key={e.id} href={e.href} target="_blank" rel="noopener noreferrer" className={cls}>
+                {inner}
+              </a>
+            ) : (
+              <button key={e.id} onClick={() => setTab(e.id as Tab)} className={cls}>
+                {inner}
               </button>
             )
           }
-          const qrTab = tabs.find((tb) => tb.id === 'qr')
-          const others = tabs.filter((tb) => tb.id !== 'qr')
+          const qrEntry = entries.find((e) => e.id === 'qr')
+          const others = entries.filter((e) => e.id !== 'qr')
           const mid = Math.ceil(others.length / 2)
           return (
             <div className="mx-auto flex max-w-2xl items-stretch">
-              <div className="flex flex-1 items-stretch">{others.slice(0, mid).map((tb) => renderTab(tb))}</div>
-              {qrTab && renderTab(qrTab, false)}
-              <div className="flex flex-1 items-stretch">{others.slice(mid).map((tb) => renderTab(tb))}</div>
+              <div className="flex flex-1 items-stretch">{others.slice(0, mid).map((e) => renderEntry(e))}</div>
+              {qrEntry && renderEntry(qrEntry, false)}
+              <div className="flex flex-1 items-stretch">{others.slice(mid).map((e) => renderEntry(e))}</div>
             </div>
           )
         })()}
