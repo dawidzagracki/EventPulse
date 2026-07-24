@@ -21,6 +21,7 @@ import {
   useUpdatePreferences,
 } from './api'
 import { useAuthStore } from '../../stores/authStore'
+import { rememberGuestEvent, getGuestReturnPath } from '../../lib/guestEvent'
 import { Button, Card, Field, Input } from '../../components/ui'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
 import { Logo } from '../../components/Logo'
@@ -52,10 +53,17 @@ export function ParticipantHome() {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
   const { data: profile, isLoading } = useMyProfile()
+  const { data: ev } = useMyEvent()
+
+  // Remember the event so logout / session-expiry can return the guest to their
+  // own "email me my link" page instead of the admin dashboard login.
+  useEffect(() => {
+    if (ev?.id) rememberGuestEvent(ev.id)
+  }, [ev?.id])
 
   function handleLogout() {
     logout()
-    navigate('/login', { replace: true })
+    navigate(getGuestReturnPath(), { replace: true })
   }
 
   if (isLoading || !profile) {
