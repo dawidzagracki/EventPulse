@@ -272,15 +272,18 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
         className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800/70 bg-slate-950/85 backdrop-blur-xl"
         style={theme ? { background: theme.barBg, borderTopColor: theme.border } : undefined}
       >
-        <div className="mx-auto flex max-w-2xl items-stretch">
-          {tabs.map((tb) => {
+        {(() => {
+          // Keep the elevated QR button dead-centre no matter how many tabs the
+          // organiser hid: split the remaining tabs into two equal-width halves
+          // (flex-1 each) with QR in a fixed centre slot between them.
+          const renderTab = (tb: (typeof tabs)[number], grow = true) => {
             const active = activeTab === tb.id
             const isQr = tb.id === 'qr'
             return (
               <button
                 key={tb.id}
                 onClick={() => setTab(tb.id)}
-                className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5"
+                className={`relative flex ${grow ? 'flex-1' : 'w-20'} flex-col items-center gap-0.5 py-2.5`}
               >
                 {isQr ? (
                   <span
@@ -297,15 +300,25 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
                   <span className={`text-lg transition ${active ? 'scale-110' : 'opacity-60'}`}>{tb.emoji}</span>
                 )}
                 <span
-                  className={`text-[10px] font-medium ${active ? 'text-indigo-300' : 'text-slate-500'}`}
+                  className={`max-w-full truncate px-1 text-[10px] font-medium ${active ? 'text-indigo-300' : 'text-slate-500'}`}
                   style={active && accent ? { color: accent } : undefined}
                 >
                   {tb.label}
                 </span>
               </button>
             )
-          })}
-        </div>
+          }
+          const qrTab = tabs.find((tb) => tb.id === 'qr')
+          const others = tabs.filter((tb) => tb.id !== 'qr')
+          const mid = Math.ceil(others.length / 2)
+          return (
+            <div className="mx-auto flex max-w-2xl items-stretch">
+              <div className="flex flex-1 items-stretch">{others.slice(0, mid).map((tb) => renderTab(tb))}</div>
+              {qrTab && renderTab(qrTab, false)}
+              <div className="flex flex-1 items-stretch">{others.slice(mid).map((tb) => renderTab(tb))}</div>
+            </div>
+          )
+        })()}
       </nav>
     </div>
   )
@@ -342,14 +355,14 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {/* What's next */}
-        <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
+        <div className="min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
             {t('participant.whatsNext')}
           </p>
           {next ? (
             <>
-              <p className="mt-1 truncate text-sm font-semibold text-white">{isEn ? next.titleEn : next.titlePl}</p>
-              <p className="text-xs text-slate-400">
+              <p className="mt-1 line-clamp-2 text-sm font-semibold text-white">{isEn ? next.titleEn : next.titlePl}</p>
+              <p className="truncate text-xs text-slate-400">
                 {new Date(next.startsAt).toLocaleString(i18n.language, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
                 {next.locationName ? ` · ${next.locationName}` : ''}
               </p>
@@ -361,7 +374,7 @@ function GreetingHero({ profile }: { profile: MyProfileDto }) {
 
         {/* Seat */}
         {seat && (
-          <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
+          <div className="min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
               {t('participant.yourSeat')}
             </p>
