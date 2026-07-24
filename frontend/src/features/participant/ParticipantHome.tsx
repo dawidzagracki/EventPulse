@@ -1110,11 +1110,38 @@ function CustomFieldControl({
     return <textarea className={cls} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
   }
   if (field.type === CustomFieldType.Checkbox) {
+    // Explicit Yes/No choice — a lone ticked box gave no way to answer "no",
+    // and an unticked one is ambiguous (declined vs. skipped). Stored value stays
+    // 'true'/'false', so existing answers and the server contract are unchanged.
+    const opts = [
+      { v: 'true', label: t('common.yes') },
+      { v: 'false', label: t('common.no') },
+    ]
     return (
-      <label className="flex items-center gap-2 text-sm text-slate-200">
-        <input type="checkbox" checked={value === 'true'} onChange={(e) => onChange(e.target.checked ? 'true' : 'false')} />
-        {t('common.yes')}
-      </label>
+      <div className="flex gap-2">
+        {opts.map((o) => {
+          const active = value === o.v
+          return (
+            <label
+              key={o.v}
+              className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
+                active
+                  ? 'border-indigo-400/60 bg-indigo-500/15 font-medium text-white'
+                  : 'border-slate-700/70 bg-slate-900/60 text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`cf-${field.id}`}
+                className="sr-only"
+                checked={active}
+                onChange={() => onChange(o.v)}
+              />
+              {o.label}
+            </label>
+          )
+        })}
+      </div>
     )
   }
   if (field.type === CustomFieldType.Select) {
