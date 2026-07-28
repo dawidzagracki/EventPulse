@@ -743,9 +743,12 @@ function GateBrandHeader({ onLogout }: { onLogout: () => void }) {
           )}
         </span>
       </div>
-      <Button variant="ghost" onClick={onLogout}>
-        {t('common.logout')}
-      </Button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <LanguageSwitcher />
+        <Button variant="ghost" onClick={onLogout}>
+          {t('common.logout')}
+        </Button>
+      </div>
     </div>
   )
 }
