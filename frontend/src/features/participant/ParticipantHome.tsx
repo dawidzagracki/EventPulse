@@ -1163,7 +1163,11 @@ function CustomFieldControl({
   value: string
   onChange: (v: string) => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const en = i18n.resolvedLanguage === 'en'
+  // English option label when the organiser provided one (index-aligned); the stored
+  // value + selection rules always stay keyed on the Polish option, so nothing else changes.
+  const optLabel = (plOption: string, i: number) => (en && field.optionsEn?.[i]) || plOption
   const cls = 'w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100'
 
   if (field.type === CustomFieldType.Textarea) {
@@ -1208,9 +1212,9 @@ function CustomFieldControl({
     return (
       <select className={cls} value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">—</option>
-        {field.options.map((o) => (
+        {field.options.map((o, i) => (
           <option key={o} value={o}>
-            {o}
+            {optLabel(o, i)}
           </option>
         ))}
       </select>
@@ -1239,7 +1243,7 @@ function CustomFieldControl({
     }
     return (
       <div className="space-y-1.5">
-        {field.options.map((label) => {
+        {field.options.map((label, i) => {
           const checked = selected.includes(label)
           // Dim when picking it would drop part of the current selection (incompatible with a rule).
           const dimmed = !checked && selected.some((s) => !compatible(label, s))
@@ -1249,7 +1253,7 @@ function CustomFieldControl({
               className={`flex items-center gap-2 text-sm text-slate-200 ${dimmed ? 'opacity-50' : ''}`}
             >
               <input type="checkbox" checked={checked} onChange={() => toggle(label)} />
-              {label}
+              {optLabel(label, i)}
             </label>
           )
         })}

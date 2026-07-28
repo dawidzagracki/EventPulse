@@ -15,6 +15,7 @@ public sealed record CustomFieldDto(
     string? LabelEn,
     CustomFieldType Type,
     IReadOnlyList<string> Options,
+    IReadOnlyList<string>? OptionsEn,
     IReadOnlyDictionary<string, OptionRuleDto> OptionRules,
     bool Required,
     int Order)
@@ -26,7 +27,10 @@ public sealed record CustomFieldDto(
         var raw = ParseOptions(f.OptionsJson);
         // Options are returned as clean labels; the legacy leading "!" (exclusive) is stripped here.
         var options = raw.Select(StripBang).ToList();
-        return new(f.Id, f.LabelPl, f.LabelEn, f.Type, options, BuildRules(f.OptionRulesJson, raw), f.Required, f.Order);
+        var optionsEn = ParseOptions(f.OptionsEnJson).Select(StripBang).ToList();
+        return new(f.Id, f.LabelPl, f.LabelEn, f.Type, options,
+            optionsEn.Count > 0 ? optionsEn : null,
+            BuildRules(f.OptionRulesJson, raw), f.Required, f.Order);
     }
 
     public static IReadOnlyList<string> ParseOptions(string? json)
@@ -73,6 +77,7 @@ public sealed record CustomFieldInput(
     CustomFieldType Type,
     IReadOnlyList<string>? Options,
     bool Required,
+    IReadOnlyList<string>? OptionsEn = null,
     IReadOnlyDictionary<string, OptionRuleInput>? OptionRules = null);
 
 public sealed record OnboardingStepDto(

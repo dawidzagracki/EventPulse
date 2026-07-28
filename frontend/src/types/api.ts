@@ -94,6 +94,7 @@ export interface CustomFieldDto {
   labelEn: string | null
   type: number
   options: string[]
+  optionsEn: string[] | null
   optionRules: Record<string, OptionRuleDto>
   required: boolean
   order: number
@@ -105,6 +106,7 @@ export interface CustomFieldInput {
   labelEn: string | null
   type: number
   options: string[] | null
+  optionsEn?: string[] | null
   required: boolean
   optionRules?: Record<string, OptionRuleDto> | null
 }

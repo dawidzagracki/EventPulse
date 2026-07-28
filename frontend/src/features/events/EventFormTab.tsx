@@ -143,6 +143,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
       labelEn: f.labelEn,
       type: f.type,
       options: f.options,
+      optionsEn: f.optionsEn,
       optionRules: f.optionRules,
       required: f.required,
     })),
@@ -154,7 +155,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
   function add() {
     setRows((rs) => [
       ...rs,
-      { _key: `new-${rs.length}-${performance.now()}`, id: null, labelPl: '', labelEn: null, type: CustomFieldType.Text, options: [], optionRules: null, required: false },
+      { _key: `new-${rs.length}-${performance.now()}`, id: null, labelPl: '', labelEn: null, type: CustomFieldType.Text, options: [], optionsEn: [], optionRules: null, required: false },
     ])
   }
   function remove(key: string) {
@@ -170,6 +171,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
         labelEn: r.labelEn?.trim() || null,
         type: r.type,
         options: OPTION_TYPES.includes(r.type) ? (r.options ?? []).filter((o) => o.trim()) : null,
+        optionsEn: OPTION_TYPES.includes(r.type) ? ((r.optionsEn ?? []).filter((o) => o.trim()) || null) : null,
         optionRules: r.type === CustomFieldType.MultiSelect ? (r.optionRules ?? null) : null,
         required: r.required,
       }))
@@ -189,7 +191,7 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
           <div key={r._key} className="rounded-xl border border-slate-800/70 bg-slate-900/40 p-3">
             <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
               <Input
-                placeholder="Nazwa pola (np. Rozmiar buta)"
+                placeholder="Nazwa pola PL (np. Rozmiar buta)"
                 value={r.labelPl}
                 onChange={(e) => update(r._key, { labelPl: e.target.value })}
               />
@@ -215,13 +217,25 @@ function CustomFieldsForm({ eventId, initial }: { eventId: string; initial: Cust
                 </button>
               </div>
             </div>
+            <Input
+              className="mt-2"
+              placeholder="Nazwa pola EN (English label — opcjonalnie)"
+              value={r.labelEn ?? ''}
+              onChange={(e) => update(r._key, { labelEn: e.target.value || null })}
+            />
             {OPTION_TYPES.includes(r.type) && (
               <>
                 <Input
                   className="mt-2"
-                  placeholder="Opcje oddzielone przecinkami (np. S, M, L, XL)"
+                  placeholder="Opcje PL oddzielone przecinkami (np. S, M, L, XL)"
                   value={(r.options ?? []).join(', ')}
                   onChange={(e) => update(r._key, { options: e.target.value.split(',').map((o) => o.trim()) })}
+                />
+                <Input
+                  className="mt-2"
+                  placeholder="Opcje EN w tej samej kolejności (English options — opcjonalnie)"
+                  value={(r.optionsEn ?? []).join(', ')}
+                  onChange={(e) => update(r._key, { optionsEn: e.target.value.split(',').map((o) => o.trim()) })}
                 />
                 {r.type === CustomFieldType.MultiSelect && (
                   <OptionRulesEditor
@@ -321,16 +335,29 @@ function OnboardingForm({ eventId, initial }: { eventId: string; initial: Onboar
               </button>
             </div>
             <Input
-              placeholder="Tytuł ekranu"
+              placeholder="Tytuł ekranu PL"
               value={r.titlePl}
               onChange={(e) => update(r._key, { titlePl: e.target.value })}
+            />
+            <Input
+              className="mt-2"
+              placeholder="Tytuł ekranu EN (English title — opcjonalnie)"
+              value={r.titleEn ?? ''}
+              onChange={(e) => update(r._key, { titleEn: e.target.value || null })}
             />
             <textarea
               className="mt-2 w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
               rows={3}
-              placeholder="Treść (opcjonalnie)"
+              placeholder="Treść PL (opcjonalnie)"
               value={r.bodyPl ?? ''}
               onChange={(e) => update(r._key, { bodyPl: e.target.value })}
+            />
+            <textarea
+              className="mt-2 w-full rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+              rows={3}
+              placeholder="Treść EN (English body — opcjonalnie)"
+              value={r.bodyEn ?? ''}
+              onChange={(e) => update(r._key, { bodyEn: e.target.value || null })}
             />
             <div className="mt-2">
               <Toggle
