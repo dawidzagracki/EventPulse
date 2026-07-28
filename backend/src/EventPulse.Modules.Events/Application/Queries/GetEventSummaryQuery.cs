@@ -29,7 +29,10 @@ public sealed record EventSummaryDto(
     bool ShowShirtSize,
     string? CompanyName,
     bool ShowPhotoConsent,
-    bool AppUseBrandColors);
+    bool AppUseBrandColors,
+    bool ShowHotelTile,
+    string? HotelName,
+    string? HotelAddress);
 
 /// <summary>
 /// Loads a lightweight event summary for the in-app participant view. Tenant-scoped
@@ -54,6 +57,6 @@ public sealed class GetEventSummaryHandler : IRequestHandler<GetEventSummaryQuer
             ev.UsesLocationData, ev.PhoneRequired, ev.AllowCompanions, ev.MaxCompanions,
             ev.CustomPhotosUrl, ev.CustomPhotosText,
             ev.ShowAgendaTab, ev.ShowActivitiesTab, ev.ShowGalleryTab, ev.ShowPreferencesTile, ev.ShowShirtSize,
-            ev.CompanyName, ev.ShowPhotoConsent, ev.AppUseBrandColors);
+            ev.CompanyName, ev.ShowPhotoConsent, ev.AppUseBrandColors, ev.ShowHotelTile, ev.HotelName, ev.HotelAddress);
     }
 }

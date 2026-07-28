@@ -29,7 +29,10 @@ public sealed record UpdateEventSettingsCommand(
     bool AllowSelfRegistration,
     string? CompanyName,
     bool ShowPhotoConsent,
-    bool AppUseBrandColors) : IRequest<EventDto>;
+    bool AppUseBrandColors,
+    bool ShowHotelTile,
+    string? HotelName,
+    string? HotelAddress) : IRequest<EventDto>;
 
 public sealed class UpdateEventSettingsValidator : AbstractValidator<UpdateEventSettingsCommand>
 {
@@ -45,6 +48,8 @@ public sealed class UpdateEventSettingsValidator : AbstractValidator<UpdateEvent
             .When(x => !string.IsNullOrWhiteSpace(x.CustomPhotosUrl))
             .WithMessage("CustomPhotosUrl must be a valid http(s) URL.");
         RuleFor(x => x.CompanyName).MaximumLength(200);
+        RuleFor(x => x.HotelName).MaximumLength(200);
+        RuleFor(x => x.HotelAddress).MaximumLength(400);
     }
 
     private static bool BeAValidHttpUrl(string? url) =>
@@ -97,6 +102,9 @@ public sealed class UpdateEventSettingsHandler : IRequestHandler<UpdateEventSett
         ev.CompanyName = string.IsNullOrWhiteSpace(request.CompanyName) ? null : request.CompanyName.Trim();
         ev.ShowPhotoConsent = request.ShowPhotoConsent;
         ev.AppUseBrandColors = request.AppUseBrandColors;
+        ev.ShowHotelTile = request.ShowHotelTile;
+        ev.HotelName = string.IsNullOrWhiteSpace(request.HotelName) ? null : request.HotelName.Trim();
+        ev.HotelAddress = string.IsNullOrWhiteSpace(request.HotelAddress) ? null : request.HotelAddress.Trim();
 
         await _db.SaveChangesAsync(cancellationToken);
         return EventDto.From(ev);

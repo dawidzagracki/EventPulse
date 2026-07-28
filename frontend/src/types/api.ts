@@ -146,6 +146,9 @@ export interface EventSettingsDto {
   companyName: string | null
   showPhotoConsent: boolean
   appUseBrandColors: boolean
+  showHotelTile: boolean
+  hotelName: string | null
+  hotelAddress: string | null
 }
 
 export interface EventDto {

@@ -101,7 +101,10 @@ public sealed class EventsController : ControllerBase
             body.AllowSelfRegistration,
             body.CompanyName,
             body.ShowPhotoConsent,
-            body.AppUseBrandColors);
+            body.AppUseBrandColors,
+            body.ShowHotelTile,
+            body.HotelName,
+            body.HotelAddress);
         return Ok(await _mediator.Send(command, ct));
     }
 
@@ -210,5 +213,8 @@ public sealed class EventsController : ControllerBase
         bool AllowSelfRegistration = false,
         string? CompanyName = null,
         bool ShowPhotoConsent = true,
-        bool AppUseBrandColors = false);
+        bool AppUseBrandColors = false,
+        bool ShowHotelTile = false,
+        string? HotelName = null,
+        string? HotelAddress = null);
 }

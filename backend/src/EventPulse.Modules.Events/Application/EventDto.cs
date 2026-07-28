@@ -49,11 +49,14 @@ public sealed record EventSettingsDto(
     bool AllowSelfRegistration,
     string? CompanyName,
     bool ShowPhotoConsent,
-    bool AppUseBrandColors)
+    bool AppUseBrandColors,
+    bool ShowHotelTile,
+    string? HotelName,
+    string? HotelAddress)
 {
     public static EventSettingsDto From(Event e) => new(
         e.UsesLocationData, e.PhoneRequired, e.AllowCompanions, e.MaxCompanions,
         e.AnonymizeEnabled, e.AnonymizeAfterDays, e.AnonymizedAt, e.CustomPhotosUrl, e.CustomPhotosText,
         e.ShowAgendaTab, e.ShowActivitiesTab, e.ShowGalleryTab, e.ShowPreferencesTile, e.ShowShirtSize, e.AllowSelfRegistration,
-        e.CompanyName, e.ShowPhotoConsent, e.AppUseBrandColors);
+        e.CompanyName, e.ShowPhotoConsent, e.AppUseBrandColors, e.ShowHotelTile, e.HotelName, e.HotelAddress);
 }

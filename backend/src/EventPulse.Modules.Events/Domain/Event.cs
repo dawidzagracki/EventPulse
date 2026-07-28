@@ -117,4 +117,16 @@ public sealed class Event : AggregateRoot
 
     /// <summary>Theme the participant app with the event page's brand colours (instead of the default look).</summary>
     public bool AppUseBrandColors { get; set; }
+
+    /// <summary>
+    /// Show a hotel tile in the guest app. Off = the tile is hidden and the address can't be set.
+    /// The tile only appears when this is on AND an address is filled in.
+    /// </summary>
+    public bool ShowHotelTile { get; set; }
+
+    /// <summary>Optional hotel display name on the guest-app hotel tile (falls back to a generic label).</summary>
+    public string? HotelName { get; set; }
+
+    /// <summary>Hotel address — the tile subtitle, and opens Google Maps when the guest taps it.</summary>
+    public string? HotelAddress { get; set; }
 }

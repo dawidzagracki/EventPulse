@@ -146,6 +146,43 @@ function SettingsForm({ eventId, event }: { eventId: string; event: EventDto }) 
         </div>
       </Card>
 
+      {/* Hotel */}
+      <Card>
+        <h3 className="text-base font-semibold text-white">Hotel</h3>
+        <p className="mt-1 text-sm text-slate-400">
+          Pokaż gościom kafelek z hotelem. Po kliknięciu otwiera adres w Mapach Google. Wyłączony = kafelek nie pojawia się w aplikacji.
+        </p>
+        <div className="mt-4 space-y-4">
+          <Toggle
+            checked={form.showHotelTile}
+            onChange={(v) => set('showHotelTile', v)}
+            label="Pokaż kafelek hotelu"
+            description="Widoczny w aplikacji gościa tylko, gdy uzupełnisz adres poniżej."
+          />
+          {form.showHotelTile && (
+            <div className="space-y-4 border-l-2 border-slate-800 pl-4">
+              <Field label="Nazwa hotelu (opcjonalnie)">
+                <Input
+                  value={form.hotelName ?? ''}
+                  onChange={(e) => set('hotelName', e.target.value || null)}
+                  placeholder="np. Hotel Concordia"
+                />
+              </Field>
+              <Field label="Adres hotelu">
+                <Input
+                  value={form.hotelAddress ?? ''}
+                  onChange={(e) => set('hotelAddress', e.target.value || null)}
+                  placeholder="np. ul. Przykładowa 1, 50-001 Wrocław"
+                />
+              </Field>
+              <p className="-mt-2 text-xs text-slate-500">
+                Adres używany na kafelku i do otwarcia w Mapach Google. Bez adresu kafelek się nie pokaże.
+              </p>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* Widoczność w aplikacji gościa */}
       <Card glow>
         <h3 className="text-base font-semibold text-white">Widoczność w aplikacji gościa</h3>
@@ -321,5 +358,8 @@ function serverForm(s: import('../../types/api').EventSettingsDto): UpdateEventS
     companyName: s.companyName,
     showPhotoConsent: s.showPhotoConsent,
     appUseBrandColors: s.appUseBrandColors,
+    showHotelTile: s.showHotelTile,
+    hotelName: s.hotelName,
+    hotelAddress: s.hotelAddress,
   }
 }

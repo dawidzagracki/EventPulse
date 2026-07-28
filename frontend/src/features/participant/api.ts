@@ -45,6 +45,9 @@ export interface MyEventDto {
   companyName: string | null
   showPhotoConsent: boolean
   appUseBrandColors: boolean
+  showHotelTile: boolean
+  hotelName: string | null
+  hotelAddress: string | null
 }
 
 export function useMyEvent() {

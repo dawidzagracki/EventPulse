@@ -244,6 +244,26 @@ function ParticipantApp({ profile, onLogout }: { profile: MyProfileDto; onLogout
                 <span className="shrink-0 text-slate-400">→</span>
               </a>
             )}
+            {/* Hotel tile — only when enabled AND an address is set; opens Google Maps. */}
+            {ev?.showHotelTile && ev.hotelAddress && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.hotelAddress)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-slate-800/80 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-4 transition hover:border-amber-400/40"
+                style={theme ? { background: theme.heroBg, borderColor: theme.border } : undefined}
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-lg"
+                  style={theme ? { background: theme.accentSoft } : undefined}
+                >🏨</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-white">{ev.hotelName || t('participant.hotelTitle')}</span>
+                  <span className="block truncate text-xs text-slate-400">{ev.hotelAddress}</span>
+                </span>
+                <span className="shrink-0 text-slate-400">📍</span>
+              </a>
+            )}
             <AgendaSection />
           </div>
         )}

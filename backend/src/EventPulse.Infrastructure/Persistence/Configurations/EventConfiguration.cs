@@ -41,6 +41,9 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.CompanyName).HasMaxLength(200);
         builder.Property(e => e.ShowPhotoConsent).HasDefaultValue(true);
         builder.Property(e => e.AppUseBrandColors).HasDefaultValue(false);
+        builder.Property(e => e.ShowHotelTile).HasDefaultValue(false);
+        builder.Property(e => e.HotelName).HasMaxLength(200);
+        builder.Property(e => e.HotelAddress).HasMaxLength(400);
 
         builder.HasIndex(e => e.Slug).IsUnique();
         builder.HasIndex(e => e.TenantId);
