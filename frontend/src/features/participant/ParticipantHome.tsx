@@ -444,6 +444,8 @@ function EventSummaryCard() {
   const theme = useBrandTheme()
   if (!ev) return null
 
+  const isEn = (i18n.resolvedLanguage ?? 'pl') === 'en'
+  const description = (isEn && ev.descriptionEn) || ev.description
   const start = new Date(ev.startsAt)
   const end = new Date(ev.endsAt)
   const diffMs = start.getTime() - nowMs()
@@ -482,8 +484,8 @@ function EventSummaryCard() {
         <InfoCell label={t('participant.evWhen')} value={dateStr} />
         <InfoCell label={t('participant.evWhere')} value={ev.location || '—'} />
       </div>
-      {ev.description && (
-        <p className="border-t border-slate-800/60 bg-slate-950/30 px-5 py-3 text-sm text-slate-300">{ev.description}</p>
+      {description && (
+        <p className="border-t border-slate-800/60 bg-slate-950/30 px-5 py-3 text-sm text-slate-300">{description}</p>
       )}
     </div>
   )

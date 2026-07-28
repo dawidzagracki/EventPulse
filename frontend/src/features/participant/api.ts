@@ -31,6 +31,7 @@ export interface MyEventDto {
   endsAt: string
   location: string | null
   description: string | null
+  descriptionEn: string | null
   usesLocationData: boolean
   phoneRequired: boolean
   allowCompanions: boolean

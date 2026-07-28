@@ -76,7 +76,7 @@ public sealed class EventsController : ControllerBase
     public async Task<ActionResult<EventDto>> Update(Guid id, UpdateEventBody body, CancellationToken ct)
     {
         var command = new UpdateEventCommand(
-            id, body.Name, body.StartsAt, body.EndsAt, body.Location, body.Description, body.DefaultLanguage, body.ClientEmail);
+            id, body.Name, body.StartsAt, body.EndsAt, body.Location, body.Description, body.DescriptionEn, body.DefaultLanguage, body.ClientEmail);
         return Ok(await _mediator.Send(command, ct));
     }
 
@@ -189,6 +189,7 @@ public sealed class EventsController : ControllerBase
         DateTimeOffset EndsAt,
         string? Location,
         string? Description,
+        string? DescriptionEn,
         string? DefaultLanguage,
         string? ClientEmail);
 

@@ -48,6 +48,11 @@ export function OverviewTab({ eventId }: { eventId: string }) {
   const [editingLocation, setEditingLocation] = useState(false)
   const [locationDraft, setLocationDraft] = useState('')
 
+  // Inline description-edit state (bilingual: PL shown by default, EN for guests in EN mode).
+  const [editingDescription, setEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState('')
+  const [descriptionEnDraft, setDescriptionEnDraft] = useState('')
+
   // Inline date/time edit state.
   const [editingDate, setEditingDate] = useState(false)
   const [startDraft, setStartDraft] = useState('')
@@ -90,6 +95,7 @@ export function OverviewTab({ eventId }: { eventId: string }) {
       endsAt: event.endsAt,
       location: event.location,
       description: event.description,
+      descriptionEn: event.descriptionEn,
       defaultLanguage: event.defaultLanguage,
       clientEmail: event.clientEmail,
     })
@@ -105,10 +111,26 @@ export function OverviewTab({ eventId }: { eventId: string }) {
       endsAt: event.endsAt,
       location: trimmed || null,
       description: event.description,
+      descriptionEn: event.descriptionEn,
       defaultLanguage: event.defaultLanguage,
       clientEmail: event.clientEmail,
     })
     setEditingLocation(false)
+  }
+
+  async function commitDescription() {
+    if (!event) return
+    await updateEvent.mutateAsync({
+      name: event.name,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      location: event.location,
+      description: descriptionDraft.trim() || null,
+      descriptionEn: descriptionEnDraft.trim() || null,
+      defaultLanguage: event.defaultLanguage,
+      clientEmail: event.clientEmail,
+    })
+    setEditingDescription(false)
   }
 
   function openDateEdit() {
@@ -130,6 +152,7 @@ export function OverviewTab({ eventId }: { eventId: string }) {
       endsAt: new Date(endDraft).toISOString(),
       location: event.location,
       description: event.description,
+      descriptionEn: event.descriptionEn,
       defaultLanguage: event.defaultLanguage,
       clientEmail: event.clientEmail,
     })
@@ -375,18 +398,80 @@ export function OverviewTab({ eventId }: { eventId: string }) {
             )}
           </Card>
 
-          {/* Description */}
-          {event.description ? (
-            <Card>
+          {/* Description — editable inline, bilingual (PL + optional EN for guests in EN mode) */}
+          <Card>
+            <div className="flex items-start justify-between gap-2">
               <SectionHeader icon="document" title={t('eventDetail.description')} />
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">{event.description}</p>
-            </Card>
-          ) : (
-            <Card>
-              <SectionHeader icon="document" title={t('eventDetail.description')} />
+              {!editingDescription && (
+                <button
+                  onClick={() => {
+                    setDescriptionDraft(event.description ?? '')
+                    setDescriptionEnDraft(event.descriptionEn ?? '')
+                    setEditingDescription(true)
+                  }}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-[11px] font-medium text-slate-300 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white"
+                >
+                  ✏ {t('common.edit')}
+                </button>
+              )}
+            </div>
+            {editingDescription ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    🇵🇱 {t('eventDetail.descriptionPl')}
+                  </span>
+                  <textarea
+                    autoFocus
+                    rows={3}
+                    value={descriptionDraft}
+                    onChange={(e) => setDescriptionDraft(e.target.value)}
+                    placeholder={t('eventDetail.descriptionPlaceholder')}
+                    className="w-full rounded-lg border border-indigo-400/60 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-2 ring-indigo-500/20"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    🇬🇧 {t('eventDetail.descriptionEn')}
+                  </span>
+                  <textarea
+                    rows={3}
+                    value={descriptionEnDraft}
+                    onChange={(e) => setDescriptionEnDraft(e.target.value)}
+                    placeholder={t('eventDetail.descriptionEnPlaceholder')}
+                    className="w-full rounded-lg border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                  <p className="text-[11px] text-slate-500">{t('eventDetail.descriptionEnHint')}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => void commitDescription()}
+                    disabled={updateEvent.isPending}
+                    className="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:opacity-90 disabled:opacity-50"
+                  >
+                    {updateEvent.isPending ? '…' : t('common.save')}
+                  </button>
+                  <button onClick={() => setEditingDescription(false)} className="rounded-lg px-3 py-2 text-sm text-slate-400 hover:text-white">
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : event.description || event.descriptionEn ? (
+              <div className="space-y-3">
+                {event.description && (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">{event.description}</p>
+                )}
+                {event.descriptionEn && (
+                  <p className="whitespace-pre-wrap border-t border-slate-800/60 pt-3 text-sm leading-relaxed text-slate-400">
+                    <span className="mr-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">🇬🇧 EN</span>
+                    {event.descriptionEn}
+                  </p>
+                )}
+              </div>
+            ) : (
               <EmptyBlock icon="document" title={t('eventDetail.noDescription')} />
-            </Card>
-          )}
+            )}
+          </Card>
         </div>
 
         {/* RIGHT 1/3 */}

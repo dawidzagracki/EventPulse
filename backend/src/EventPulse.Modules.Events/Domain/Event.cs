@@ -21,6 +21,9 @@ public sealed class Event : AggregateRoot
     public string? Location { get; set; }
     public string? Description { get; set; }
 
+    /// <summary>English version of the description shown to guests in EN mode (optional; falls back to PL).</summary>
+    public string? DescriptionEn { get; set; }
+
     /// <summary>Default UI language for the event: "pl" or "en".</summary>
     public string DefaultLanguage { get; set; } = "pl";
 

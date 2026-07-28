@@ -14,6 +14,7 @@ public sealed record UpdateEventCommand(
     DateTimeOffset EndsAt,
     string? Location,
     string? Description,
+    string? DescriptionEn,
     string? DefaultLanguage,
     string? ClientEmail) : IRequest<EventDto>;
 
@@ -47,6 +48,7 @@ public sealed class UpdateEventHandler : IRequestHandler<UpdateEventCommand, Eve
         ev.EndsAt = request.EndsAt;
         ev.Location = request.Location?.Trim();
         ev.Description = request.Description;
+        ev.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
         ev.DefaultLanguage = request.DefaultLanguage ?? ev.DefaultLanguage;
         ev.ClientEmail = request.ClientEmail?.Trim().ToLowerInvariant();
 

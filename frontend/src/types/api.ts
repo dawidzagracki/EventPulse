@@ -162,6 +162,7 @@ export interface EventDto {
   endsAt: string
   location: string | null
   description: string | null
+  descriptionEn: string | null
   defaultLanguage: string
   clientEmail: string | null
   createdAt: string
@@ -184,6 +185,7 @@ export interface CreateEventRequest {
   endsAt: string
   location?: string | null
   description?: string | null
+  descriptionEn?: string | null
   defaultLanguage?: string | null
   clientEmail?: string | null
 }

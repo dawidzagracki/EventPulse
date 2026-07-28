@@ -47,6 +47,7 @@ export interface UpdateEventRequest {
   endsAt: string
   location?: string | null
   description?: string | null
+  descriptionEn?: string | null
   defaultLanguage?: string | null
   clientEmail?: string | null
 }

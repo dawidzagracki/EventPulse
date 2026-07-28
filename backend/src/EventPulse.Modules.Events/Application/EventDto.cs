@@ -11,6 +11,7 @@ public sealed record EventDto(
     DateTimeOffset EndsAt,
     string? Location,
     string? Description,
+    string? DescriptionEn,
     string DefaultLanguage,
     string? ClientEmail,
     DateTimeOffset CreatedAt,
@@ -20,7 +21,7 @@ public sealed record EventDto(
 {
     public static EventDto From(Event e) => new(
         e.Id, e.Name, e.Slug, e.Status, e.StartsAt, e.EndsAt,
-        e.Location, e.Description, e.DefaultLanguage, e.ClientEmail, e.CreatedAt, e.UpdatedAt,
+        e.Location, e.Description, e.DescriptionEn, e.DefaultLanguage, e.ClientEmail, e.CreatedAt, e.UpdatedAt,
         EventSettingsDto.From(e), EmailBrandingDto.From(e));
 }
 

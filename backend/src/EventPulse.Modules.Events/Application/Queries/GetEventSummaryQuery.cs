@@ -16,6 +16,7 @@ public sealed record EventSummaryDto(
     DateTimeOffset EndsAt,
     string? Location,
     string? Description,
+    string? DescriptionEn,
     bool UsesLocationData,
     bool PhoneRequired,
     bool AllowCompanions,
@@ -53,7 +54,7 @@ public sealed class GetEventSummaryHandler : IRequestHandler<GetEventSummaryQuer
             ?? throw new NotFoundException("Event not found.");
 
         return new EventSummaryDto(
-            ev.Id, ev.Name, ev.Slug, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description,
+            ev.Id, ev.Name, ev.Slug, ev.Status, ev.StartsAt, ev.EndsAt, ev.Location, ev.Description, ev.DescriptionEn,
             ev.UsesLocationData, ev.PhoneRequired, ev.AllowCompanions, ev.MaxCompanions,
             ev.CustomPhotosUrl, ev.CustomPhotosText,
             ev.ShowAgendaTab, ev.ShowActivitiesTab, ev.ShowGalleryTab, ev.ShowPreferencesTile, ev.ShowShirtSize,
