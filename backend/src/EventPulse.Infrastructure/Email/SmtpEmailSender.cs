@@ -13,11 +13,16 @@ public sealed class SmtpEmailSender : IEmailSender
 
     public SmtpEmailSender(IOptions<EmailOptions> options) => _options = options.Value;
 
-    public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Builds the MIME message. Separate from sending so the structure that decides whether an
+    /// inline image actually renders (multipart/related + Content-ID) can be asserted in tests
+    /// without talking to an SMTP server.
+    /// </summary>
+    public static MimeMessage BuildMime(EmailMessage message, EmailOptions options)
     {
         var mime = new MimeMessage();
         mime.From.Add(new MailboxAddress(
-            string.IsNullOrWhiteSpace(message.FromName) ? _options.FromName : message.FromName, _options.From));
+            string.IsNullOrWhiteSpace(message.FromName) ? options.FromName : message.FromName, options.From));
         mime.To.Add(new MailboxAddress(message.ToName, message.ToEmail));
         mime.Subject = message.Subject;
         var body = new BodyBuilder
@@ -41,6 +46,12 @@ public sealed class SmtpEmailSender : IEmailSender
         }
 
         mime.Body = body.ToMessageBody();
+        return mime;
+    }
+
+    public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+    {
+        var mime = BuildMime(message, _options);
 
         using var client = new SmtpClient();
         var security = _options.Smtp.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
