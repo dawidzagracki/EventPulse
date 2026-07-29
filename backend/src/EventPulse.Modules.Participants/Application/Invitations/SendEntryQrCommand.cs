@@ -57,6 +57,6 @@ public sealed class SendEntryQrHandler : IRequestHandler<SendEntryQrCommand, Uni
     }
 
     /// <summary>The QR payload — identical to every other QR in the system (GetParticipantQrQuery).</summary>
-    internal static string BuildLink(string linkBaseUrl, Guid accessToken)
+    public static string BuildLink(string linkBaseUrl, Guid accessToken)
         => $"{linkBaseUrl.TrimEnd('/')}/{accessToken}";
 }
