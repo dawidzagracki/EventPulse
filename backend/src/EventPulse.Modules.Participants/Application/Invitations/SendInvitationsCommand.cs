@@ -27,8 +27,11 @@ public sealed class SendInvitationsHandler : IRequestHandler<SendInvitationsComm
     public async Task<SendInvitationsResult> Handle(SendInvitationsCommand request, CancellationToken cancellationToken)
     {
         // Only primary guests with an e-mail get invitations (accompanying persons have neither).
+        // Entry-only guests are skipped on purpose — they got their QR code by mail and are not
+        // meant to be pushed towards the app.
         var query = _db.Set<Participant>()
-            .Where(p => p.EventId == request.EventId && p.ParentParticipantId == null && p.Email != null);
+            .Where(p => p.EventId == request.EventId && p.ParentParticipantId == null && p.Email != null
+                && !p.EntryOnly);
         if (request.OnlyNotInvited)
         {
             query = query.Where(p => p.Status == ParticipantStatus.Invited);

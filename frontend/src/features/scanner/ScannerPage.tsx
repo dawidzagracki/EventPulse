@@ -14,10 +14,15 @@ type Feedback =
   | { kind: 'ok'; item: ScanResultItem; mode: number }
   | { kind: 'warn'; item: ScanResultItem; mode: number }
   | { kind: 'limit'; item: ScanResultItem }
+  | { kind: 'nocheckin'; item: ScanResultItem }
   | { kind: 'error'; reason: 'notfound' | 'badcode' }
   | { kind: 'queued' }
 
 const stationKey = (eventId: string) => `ep.scanner.station.${eventId}`
+// The check-in/out mode and its lock are persisted per event too: an accidental refresh at the
+// exit door used to silently revert the scanner to Check-in with the lock open.
+const modeKey = (eventId: string) => `ep.scanner.mode.${eventId}`
+const modeLockKey = (eventId: string) => `ep.scanner.modeLocked.${eventId}`
 const tutorialKey = 'ep.scanner.tutorialSeen'
 
 // Module-scope clock read so the component body stays "pure" for the linter
@@ -45,10 +50,35 @@ export function ScannerPage() {
     navigate('/login', { replace: true })
   }
 
+  // Mode + lock are persisted so a refresh can't quietly send the exit door back to Check-in.
+  function setKindPersisted(next: number) {
+    setKind(next)
+    try {
+      localStorage.setItem(modeKey(eventId), String(next))
+    } catch {
+      // Private mode / full storage: in-memory state still applies for this session.
+    }
+  }
+
+  function toggleModeLock() {
+    setModeLocked((v) => {
+      const next = !v
+      try {
+        localStorage.setItem(modeLockKey(eventId), next ? '1' : '0')
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
   const [station, setStation] = useState<string | null>(() => localStorage.getItem(stationKey(eventId)))
   const [showTutorial, setShowTutorial] = useState<boolean>(() => !localStorage.getItem(tutorialKey))
-  const [kind, setKind] = useState<number>(ScanKind.CheckIn)
-  const [modeLocked, setModeLocked] = useState(false)
+  const [kind, setKind] = useState<number>(() => {
+    const saved = localStorage.getItem(modeKey(eventId))
+    return saved === String(ScanKind.CheckOut) ? ScanKind.CheckOut : ScanKind.CheckIn
+  })
+  const [modeLocked, setModeLocked] = useState(() => localStorage.getItem(modeLockKey(eventId)) === '1')
   const [pending, setPending] = useState(0)
   const [online, setOnline] = useState(navigator.onLine)
   const [camera, setCamera] = useState<'idle' | 'on' | 'unsupported' | 'denied'>('idle')
@@ -140,6 +170,11 @@ export function ScannerPage() {
         showFeedback({ kind: 'error', reason: 'notfound' })
       } else if (mine.status === 'limit') {
         showFeedback({ kind: 'limit', item: mine })
+      } else if (mine.status === 'duplicate') {
+        // Already sent by a background flush; it carries no name, so never show it as a green pass.
+        showFeedback({ kind: 'queued' })
+      } else if (mine.status === 'nocheckin') {
+        showFeedback({ kind: 'nocheckin', item: mine })
       } else if (mine.alreadyCheckedIn) {
         showFeedback({ kind: 'warn', item: mine, mode })
       } else {
@@ -157,6 +192,8 @@ export function ScannerPage() {
       setScanCount((c) => c + 1)
       feedback('ok')
     } else if (next.kind === 'warn') {
+      feedback('warn')
+    } else if (next.kind === 'nocheckin') {
       feedback('warn')
     } else if (next.kind === 'limit') {
       feedback('error')
@@ -319,7 +356,7 @@ export function ScannerPage() {
             {([ScanKind.CheckIn, ScanKind.CheckOut] as const).map((k) => (
               <button
                 key={k}
-                onClick={() => !modeLocked && setKind(k)}
+                onClick={() => !modeLocked && setKindPersisted(k)}
                 disabled={modeLocked && kind !== k}
                 className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                   kind === k
@@ -334,7 +371,7 @@ export function ScannerPage() {
             ))}
           </div>
           <button
-            onClick={() => setModeLocked((v) => !v)}
+            onClick={() => toggleModeLock()}
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition ${
               modeLocked
                 ? 'border-amber-400/40 bg-amber-500/15 text-amber-300'
@@ -503,7 +540,7 @@ function FeedbackOverlay({ fb, onDismiss }: { fb: Feedback; onDismiss: () => voi
   const tone =
     fb.kind === 'ok'
       ? { bg: 'from-emerald-500 to-teal-600', ring: 'ring-emerald-300', icon: '✓' }
-      : fb.kind === 'warn'
+      : fb.kind === 'warn' || fb.kind === 'nocheckin'
         ? { bg: 'from-amber-500 to-orange-600', ring: 'ring-amber-300', icon: '!' }
         : fb.kind === 'limit'
           ? { bg: 'from-amber-500 to-rose-600', ring: 'ring-amber-300', icon: '⛔' }
@@ -522,6 +559,12 @@ function FeedbackOverlay({ fb, onDismiss }: { fb: Feedback; onDismiss: () => voi
     name = item.name ?? '—'
     headline = t('scanner.limitReached')
     sub = t('scanner.limitReachedHint')
+  } else if (fb.kind === 'nocheckin') {
+    // Checked out without ever being checked in — almost always the wrong mode selected.
+    item = fb.item
+    name = item.name ?? '—'
+    headline = t('scanner.noCheckIn')
+    sub = t('scanner.noCheckInHint')
   } else {
     item = fb.item
     name = item.name ?? '—'

@@ -84,6 +84,41 @@ public class ScanningEndpointsTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Checkout_without_checkin_warns_and_keeps_the_guest_visible()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        var (_, token) = await AddParticipantAsync(admin, eventId);
+
+        // kind = 1 (CheckOut) for someone who was never checked in — the classic "wrong mode at
+        // the entrance" mistake. It must be flagged, not reported as a clean pass.
+        var batch = new
+        {
+            items = new[]
+            {
+                new { clientId = Guid.NewGuid(), participantToken = token, kind = 1, occurredAt = DateTimeOffset.UtcNow, stationCode = (string?)null, online = true },
+            },
+        };
+
+        var resp = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", batch);
+        resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("nocheckin", body.GetProperty("items")[0].GetProperty("status").GetString());
+
+        // The guest must stay countable: still pending (not CheckedOut), so no-show marking and the
+        // dashboard funnel keep seeing them.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var p = await db.Set<Participant>().IgnoreQueryFilters().FirstAsync(x => x.AccessToken == token);
+        Assert.NotEqual(ParticipantStatus.CheckedOut, p.Status);
+        Assert.Null(p.CheckedInAt);
+        Assert.NotNull(p.CheckedOutAt); // the scan itself is still recorded
+
+        var noShows = await admin.PostAsync($"/api/events/{eventId}/no-shows", null);
+        Assert.Equal(1, (await noShows.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("marked").GetInt32());
+    }
+
+    [Fact]
     public async Task Unknown_token_is_reported_not_found()
     {
         var admin = await AdminClientAsync();

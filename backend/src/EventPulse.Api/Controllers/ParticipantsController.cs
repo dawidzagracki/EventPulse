@@ -81,12 +81,24 @@ public sealed class ParticipantsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ParticipantDto>> Add(Guid eventId, AddParticipantBody body, CancellationToken ct)
+    public async Task<ActionResult<AddParticipantResult>> Add(Guid eventId, AddParticipantBody body, CancellationToken ct)
     {
-        await EnsureEventInTenantAsync(eventId, ct);
+        var ev = await EnsureEventInTenantAsync(eventId, ct);
         var command = new AddParticipantCommand(
-            eventId, body.FirstName, body.LastName, body.Email, body.Phone, body.Company, body.Position, body.Language);
+            eventId, body.FirstName, body.LastName, body.Email, body.Phone, body.Company, body.Position, body.Language,
+            body.EntryOnly, body.SendQrEmail,
+            ev.Name, ev.StartsAt, ev.Location, ParticipantLinkBaseUrl, EmailBrandOf(ev));
         return Ok(await _mediator.Send(command, ct));
+    }
+
+    /// <summary>Mails this guest their entry QR code — the event-day fix for a lost or missing code.</summary>
+    [HttpPost("{id:guid}/qr-email")]
+    public async Task<IActionResult> SendQrEmail(Guid eventId, Guid id, CancellationToken ct)
+    {
+        var ev = await EnsureEventInTenantAsync(eventId, ct);
+        await _mediator.Send(
+            new SendEntryQrCommand(eventId, id, ev.Name, ev.StartsAt, ev.Location, ParticipantLinkBaseUrl, EmailBrandOf(ev)), ct);
+        return NoContent();
     }
 
     [HttpPost("{id:guid}/status")]
@@ -161,7 +173,10 @@ public sealed class ParticipantsController : ControllerBase
         string? Phone,
         string? Company,
         string? Position,
-        string? Language);
+        string? Language,
+        // Entry-only guest (QR by mail, no app invitation) + whether to send that mail right away.
+        bool EntryOnly = false,
+        bool SendQrEmail = false);
 
     [HttpPost("{id:guid}/logistics")]
     public async Task<ActionResult<ParticipantDto>> Logistics(Guid eventId, Guid id, LogisticsBody body, CancellationToken ct)

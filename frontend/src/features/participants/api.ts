@@ -25,12 +25,32 @@ export function useImportParticipants(eventId: string) {
   })
 }
 
+/** The created guest plus whether their QR e-mail actually went out (sending is best-effort). */
+export interface AddParticipantResult {
+  participant: ParticipantDto
+  qrEmailSent: boolean
+}
+
 export function useAddParticipant(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (body: { firstName: string; lastName: string; email: string }) =>
-      (await api.post<ParticipantDto>(`/api/events/${eventId}/participants`, body)).data,
+    mutationFn: async (body: {
+      firstName: string
+      lastName: string
+      email: string
+      entryOnly?: boolean
+      sendQrEmail?: boolean
+    }) => (await api.post<AddParticipantResult>(`/api/events/${eventId}/participants`, body)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['participants', eventId] }),
+  })
+}
+
+/** Re-sends a guest their entry QR code — the fix when someone loses the mail on the event day. */
+export function useSendEntryQr(eventId: string) {
+  return useMutation({
+    mutationFn: async (participantId: string) => {
+      await api.post(`/api/events/${eventId}/participants/${participantId}/qr-email`)
+    },
   })
 }
 

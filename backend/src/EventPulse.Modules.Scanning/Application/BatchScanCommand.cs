@@ -98,6 +98,9 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
             // about re-entries ("already checked in at 17:32").
             var alreadyCheckedIn = item.Kind == ScanKind.CheckIn && participant.CheckedInAt is not null;
             var previousAt = item.Kind == ScanKind.CheckOut ? participant.CheckedOutAt : participant.CheckedInAt;
+            // Checking someone OUT who was never checked IN almost always means the operator has
+            // the wrong mode selected. Flag it instead of reporting a cheerful success.
+            var checkOutWithoutCheckIn = item.Kind == ScanKind.CheckOut && participant.CheckedInAt is null;
 
             var occurredAt = item.OccurredAt.ToUniversalTime(); // timestamptz requires UTC
 
@@ -117,7 +120,7 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
             accepted++;
             results.Add(new ScanResultItem(
                 item.ClientId,
-                "accepted",
+                checkOutWithoutCheckIn ? "nocheckin" : "accepted",
                 Name: $"{participant.FirstName} {participant.LastName}".Trim(),
                 ParticipantStatus: (int)participant.Status,
                 TableName: participant.TableName,
@@ -157,7 +160,14 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
                     participant.CheckedOutAt = occurredAt;
                 }
 
-                participant.Status = ParticipantStatus.CheckedOut;
+                // Only move to CheckedOut for someone who actually checked in. Otherwise the guest
+                // would count as neither attending (attendance is keyed on CheckedInAt) nor absent
+                // (MarkNoShows skips CheckedOut) and would vanish from every report.
+                if (participant.CheckedInAt is not null)
+                {
+                    participant.Status = ParticipantStatus.CheckedOut;
+                }
+
                 break;
 
             case ScanKind.Station:

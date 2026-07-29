@@ -219,6 +219,7 @@ export interface ParticipantDto {
   parentParticipantId: string | null
   age: number | null
   accessToken: string
+  entryOnly: boolean
   hasAcceptedRodo: boolean
   photoConsent: boolean
   networkingConsent: boolean
@@ -442,7 +443,7 @@ export interface DashboardData {
 
 export interface ScanResultItem {
   clientId: string
-  status: 'accepted' | 'duplicate' | 'notfound' | string
+  status: 'accepted' | 'duplicate' | 'notfound' | 'limit' | 'nocheckin' | string
   name?: string | null
   participantStatus?: number | null
   tableName?: string | null

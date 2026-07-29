@@ -237,7 +237,13 @@
     "photoConsent": "Zgoda na wizerunek",
     "networkingConsent": "Zgoda na networking",
     "formAnswers": "Formularz",
-    "noAnswer": "— brak odpowiedzi —"
+    "noAnswer": "— brak odpowiedzi —",
+    "entryOnly": "Gość tylko z kodem QR",
+    "entryOnlyHint": "Nie zapraszamy go do aplikacji — od razu dostaje mailem swój kod QR do wejścia.",
+    "entryOnlyBadge": "tylko QR",
+    "sendQr": "Wyślij kod QR mailem",
+    "qrSent": "Kod QR wysłany",
+    "qrSendError": "Nie udało się wysłać maila z kodem QR. Gość jest na liście — spróbuj wysłać ponownie z jego karty."
   },
   "agenda": {
     "title": "Agenda",
@@ -521,7 +527,9 @@
     "tutSkip": "Pomiń",
     "tutDone": "Zaczynam",
     "logout": "Wyloguj",
-    "logoutConfirm": "Zakończyć sesję skanera i wylogować?"
+    "logoutConfirm": "Zakończyć sesję skanera i wylogować?",
+    "noCheckIn": "Brak wejścia",
+    "noCheckInHint": "Ta osoba nie była skanowana na wejściu. Sprawdź, czy nie masz ustawionego trybu „Wyjście” na bramce wejściowej."
   },
   "dashboard": {
     "title": "Dashboard",

@@ -22,6 +22,7 @@ public sealed record ParticipantDto(
     Guid? ParentParticipantId,
     int? Age,
     Guid AccessToken,
+    bool EntryOnly,
     // Consents (RODO/photo/networking) + form answers — surfaced to the admin panel so
     // organisers can see what a guest actually submitted (previously only the guest could see it).
     bool HasAcceptedRodo,
@@ -34,7 +35,7 @@ public sealed record ParticipantDto(
     public static ParticipantDto From(Participant p) => new(
         p.Id, p.EventId, p.FirstName, p.LastName, p.Email, p.Phone, p.Company, p.Position,
         p.Language, p.GroupName, p.TableName, p.RoomNumber, p.AirportTransfer, p.DietaryPreferences, p.Status,
-        p.ParentParticipantId, p.Age, p.AccessToken,
+        p.ParentParticipantId, p.Age, p.AccessToken, p.EntryOnly,
         p.HasAcceptedRodo, p.PhotoConsent, p.NetworkingConsent, p.ShirtSize, p.Wishes,
         ParseCustomFields(p.CustomFieldsJson));
 

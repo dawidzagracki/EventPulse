@@ -33,6 +33,7 @@ public sealed class ParticipantConfiguration : IEntityTypeConfiguration<Particip
         builder.Property(p => p.RodoVersion).HasMaxLength(20);
         builder.Property(p => p.CustomFieldsJson).HasMaxLength(8000);
         builder.Property(p => p.Status).HasConversion<int>();
+        builder.Property(p => p.EntryOnly).HasDefaultValue(false);
         builder.Ignore(p => p.HasAcceptedRodo);
 
         builder.HasIndex(p => new { p.EventId, p.Email }).IsUnique();

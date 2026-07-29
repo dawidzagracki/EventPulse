@@ -9,10 +9,11 @@ import {
   useImportParticipants,
   useParticipants,
   useSendClientLinks,
+  useSendEntryQr,
   useSendInvitations,
 } from './api'
 import { useCustomFields } from '../events/api'
-import { Button, Card, Field, Input } from '../../components/ui'
+import { Button, Card, Field, Input, Toggle } from '../../components/ui'
 import { FileButton } from '../../components/FileButton'
 import { Icon } from '../../components/Icon'
 import { useAuthStore } from '../../stores/authStore'
@@ -408,6 +409,14 @@ function ParticipantRow({
         </p>
         <p className="truncate text-[11px] text-slate-400">{participant.email}</p>
       </div>
+      {participant.entryOnly && (
+        <span
+          className="shrink-0 inline-flex items-center rounded-full bg-cyan-400/15 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-300 ring-1 ring-inset ring-cyan-400/30"
+          title="QR"
+        >
+          <Icon name="qr" className="h-3 w-3" />
+        </span>
+      )}
       <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${status.chip}`}>
         <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
         {status.label}
@@ -538,6 +547,16 @@ function Stat({ label, value, accent = 'slate' }: { label: string; value: number
   )
 }
 
+/** Marks a guest who only ever gets in with their QR code — never invited into the app. */
+function EntryOnlyBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-300 ring-1 ring-inset ring-cyan-400/30">
+      <Icon name="qr" className="h-3 w-3" />
+      {label}
+    </span>
+  )
+}
+
 // ============ New participant ============
 function NewParticipantForm({
   eventId,
@@ -553,6 +572,9 @@ function NewParticipantForm({
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
+  // Entry-only guest: mail them the QR code straight away instead of inviting them into the app.
+  const [entryOnly, setEntryOnly] = useState(false)
+  const [qrFailed, setQrFailed] = useState(false)
 
   return (
     <Card>
@@ -568,7 +590,19 @@ function NewParticipantForm({
       <form
         onSubmit={async (e) => {
           e.preventDefault()
-          await add.mutateAsync({ firstName, lastName, email })
+          setQrFailed(false)
+          const result = await add.mutateAsync({
+            firstName,
+            lastName,
+            email,
+            entryOnly,
+            sendQrEmail: entryOnly,
+          })
+          // The guest is saved either way; only the mail can fail, so keep the form open to say so.
+          if (entryOnly && !result.qrEmailSent) {
+            setQrFailed(true)
+            return
+          }
           onDone()
         }}
         className="space-y-3"
@@ -584,6 +618,19 @@ function NewParticipantForm({
         <Field label={t('auth.email')}>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </Field>
+        <div className="rounded-xl border border-slate-800/80 bg-slate-950/40 p-3">
+          <Toggle
+            checked={entryOnly}
+            onChange={setEntryOnly}
+            label={t('participants.entryOnly')}
+            description={t('participants.entryOnlyHint')}
+          />
+        </div>
+        {qrFailed && (
+          <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+            {t('participants.qrSendError')}
+          </p>
+        )}
         <div className="flex gap-2 border-t border-slate-800/80 pt-3">
           <Button type="submit" disabled={add.isPending}>
             <Icon name="check" className="h-3.5 w-3.5" />
@@ -612,6 +659,11 @@ function ParticipantDetail({
   const en = i18n.resolvedLanguage === 'en'
   const status = statusMeta(participant.status)
   const del = useDeleteParticipant(eventId)
+  const sendQr = useSendEntryQr(eventId)
+  // Tagged with the guest id: the panel is reused across selections, so feedback for one guest
+  // must not linger when another is picked.
+  const [qrMail, setQrMail] = useState<{ id: string; state: 'sending' | 'sent' | 'error' } | null>(null)
+  const qrMailState = qrMail?.id === participant.id ? qrMail.state : 'idle'
   const { data: customFieldDefs } = useCustomFields(eventId)
 
   async function remove() {
@@ -641,6 +693,7 @@ function ParticipantDetail({
             <span className="rounded-full bg-slate-800/60 px-2 py-0.5 text-[10px] font-mono text-slate-300">
               {ParticipantStatusName[participant.status]}
             </span>
+            {participant.entryOnly && <EntryOnlyBadge label={t('participants.entryOnlyBadge')} />}
           </div>
         </div>
         <button
@@ -652,6 +705,35 @@ function ParticipantDetail({
           QR
         </button>
       </div>
+
+      {/* Mail the guest their QR code — the event-day fix when someone can't find their code. */}
+      {participant.email && !participant.parentParticipantId && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              setQrMail({ id: participant.id, state: 'sending' })
+              try {
+                await sendQr.mutateAsync(participant.id)
+                setQrMail({ id: participant.id, state: 'sent' })
+              } catch {
+                setQrMail({ id: participant.id, state: 'error' })
+              }
+            }}
+            disabled={qrMailState === 'sending'}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-gradient-to-r from-indigo-500/20 to-violet-500/20 px-3 py-1.5 text-sm font-semibold text-white transition hover:from-indigo-500/30 hover:to-violet-500/30 disabled:opacity-50"
+          >
+            <Icon name="mail" className="h-3.5 w-3.5" />
+            {qrMailState === 'sending' ? '…' : t('participants.sendQr')}
+          </button>
+          {qrMailState === 'sent' && (
+            <span className="text-xs font-medium text-emerald-300">✓ {t('participants.qrSent')}</span>
+          )}
+          {qrMailState === 'error' && (
+            <span className="text-xs font-medium text-amber-300">{t('participants.qrSendError')}</span>
+          )}
+        </div>
+      )}
 
       {/* Personal login link — for primary guests with an e-mail (clients can copy/share it). */}
       {participant.email && !participant.parentParticipantId && (

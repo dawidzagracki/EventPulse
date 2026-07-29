@@ -20,11 +20,27 @@ public sealed class SmtpEmailSender : IEmailSender
             string.IsNullOrWhiteSpace(message.FromName) ? _options.FromName : message.FromName, _options.From));
         mime.To.Add(new MailboxAddress(message.ToName, message.ToEmail));
         mime.Subject = message.Subject;
-        mime.Body = new BodyBuilder
+        var body = new BodyBuilder
         {
             HtmlBody = message.HtmlBody,
             TextBody = message.TextBody,
-        }.ToMessageBody();
+        };
+
+        foreach (var attachment in message.Attachments ?? [])
+        {
+            var contentType = ContentType.Parse(attachment.ContentType);
+            if (attachment.ContentId is null)
+            {
+                body.Attachments.Add(attachment.FileName, attachment.Content, contentType);
+                continue;
+            }
+
+            // Inline: the HTML references it as cid:{ContentId}, so the image renders in the body.
+            var inline = body.LinkedResources.Add(attachment.FileName, attachment.Content, contentType);
+            inline.ContentId = attachment.ContentId;
+        }
+
+        mime.Body = body.ToMessageBody();
 
         using var client = new SmtpClient();
         var security = _options.Smtp.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None;

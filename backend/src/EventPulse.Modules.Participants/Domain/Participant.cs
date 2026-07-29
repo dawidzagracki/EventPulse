@@ -55,6 +55,13 @@ public sealed class Participant : TenantEntity
     /// <summary>Set once the participant has completed the event's custom onboarding (if any).</summary>
     public DateTimeOffset? OnboardingCompletedAt { get; set; }
 
+    /// <summary>
+    /// Entry-only guest: someone who just needs to get in, not to use the app. They receive their
+    /// QR code directly in an e-mail and are skipped by the bulk app-invitation send. Their token
+    /// still works, so they can open the app via their personal link if they ever want to.
+    /// </summary>
+    public bool EntryOnly { get; set; }
+
     public ParticipantStatus Status { get; set; } = ParticipantStatus.Invited;
 
     public DateTimeOffset? CheckedInAt { get; set; }
