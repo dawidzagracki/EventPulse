@@ -243,7 +243,10 @@
     "entryOnlyBadge": "QR only",
     "sendQr": "E-mail the QR code",
     "qrSent": "QR code sent",
-    "qrSendError": "Couldn't send the QR e-mail. The guest is on the list — try again from their card."
+    "qrSendError": "Couldn't send the QR e-mail. The guest is on the list — try again from their card.",
+    "duplicateEmail": "This e-mail is already on this event’s guest list. Check the list — this person may already be added.",
+    "deleteError": "Could not remove the guest. Refresh the page and try again.",
+    "importError": "Could not read the file. Check that it is an .xlsx matching the template."
   },
   "agenda": {
     "title": "Agenda",

@@ -243,7 +243,10 @@
     "entryOnlyBadge": "tylko QR",
     "sendQr": "Wyślij kod QR mailem",
     "qrSent": "Kod QR wysłany",
-    "qrSendError": "Nie udało się wysłać maila z kodem QR. Gość jest na liście — spróbuj wysłać ponownie z jego karty."
+    "qrSendError": "Nie udało się wysłać maila z kodem QR. Gość jest na liście — spróbuj wysłać ponownie z jego karty.",
+    "duplicateEmail": "Ten e-mail jest już na liście gości tego wydarzenia. Sprawdź listę — być może ta osoba została już dodana.",
+    "deleteError": "Nie udało się usunąć gościa. Odśwież stronę i spróbuj ponownie.",
+    "importError": "Nie udało się wczytać pliku. Sprawdź, czy to plik .xlsx zgodny z szablonem."
   },
   "agenda": {
     "title": "Agenda",

@@ -16,6 +16,7 @@ import { useCustomFields } from '../events/api'
 import { Button, Card, Field, Input, Toggle } from '../../components/ui'
 import { FileButton } from '../../components/FileButton'
 import { Icon } from '../../components/Icon'
+import { apiErrorMessage } from '../../lib/apiError'
 import { useAuthStore } from '../../stores/authStore'
 import {
   CustomFieldType,
@@ -469,11 +470,18 @@ function ImportPanel({ eventId }: { eventId: string }) {
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
 
+  const [error, setError] = useState<string | null>(null)
+
   async function runImport(commit: boolean) {
     if (!file) return
-    const res = await importMut.mutateAsync({ file, commit })
-    setResult(res)
-    if (commit) setFile(null)
+    setError(null)
+    try {
+      const res = await importMut.mutateAsync({ file, commit })
+      setResult(res)
+      if (commit) setFile(null)
+    } catch (err) {
+      setError(apiErrorMessage(err, t('participants.importError')))
+    }
   }
 
   return (
@@ -506,6 +514,11 @@ function ImportPanel({ eventId }: { eventId: string }) {
           {t('participants.doImport')}
         </Button>
       </div>
+      {error && (
+        <p role="alert" className="mt-3 rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs text-rose-200">
+          {error}
+        </p>
+      )}
       {result && (
         <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-sm">
           <div className="flex flex-wrap gap-3 text-xs">
@@ -574,7 +587,9 @@ function NewParticipantForm({
   const [email, setEmail] = useState('')
   // Entry-only guest: mail them the QR code straight away instead of inviting them into the app.
   const [entryOnly, setEntryOnly] = useState(false)
-  const [qrFailed, setQrFailed] = useState(false)
+  // A rejected save (e.g. duplicate e-mail) must be spelled out — otherwise the form just sits
+  // there and the organiser cannot tell whether the guest was added.
+  const [notice, setNotice] = useState<{ tone: 'error' | 'warn'; text: string } | null>(null)
 
   return (
     <Card>
@@ -590,20 +605,29 @@ function NewParticipantForm({
       <form
         onSubmit={async (e) => {
           e.preventDefault()
-          setQrFailed(false)
-          const result = await add.mutateAsync({
-            firstName,
-            lastName,
-            email,
-            entryOnly,
-            sendQrEmail: entryOnly,
-          })
-          // The guest is saved either way; only the mail can fail, so keep the form open to say so.
-          if (entryOnly && !result.qrEmailSent) {
-            setQrFailed(true)
-            return
+          setNotice(null)
+          try {
+            const result = await add.mutateAsync({
+              firstName,
+              lastName,
+              email,
+              entryOnly,
+              sendQrEmail: entryOnly,
+            })
+            // The guest is saved either way; only the mail can fail, so keep the form open to say so.
+            if (entryOnly && !result.qrEmailSent) {
+              setNotice({ tone: 'warn', text: t('participants.qrSendError') })
+              return
+            }
+            onDone()
+          } catch (err) {
+            setNotice({
+              tone: 'error',
+              text: apiErrorMessage(err, t('common.error'), {
+                409: t('participants.duplicateEmail'),
+              }),
+            })
           }
-          onDone()
         }}
         className="space-y-3"
       >
@@ -626,9 +650,16 @@ function NewParticipantForm({
             description={t('participants.entryOnlyHint')}
           />
         </div>
-        {qrFailed && (
-          <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
-            {t('participants.qrSendError')}
+        {notice && (
+          <p
+            role="alert"
+            className={`rounded-lg border px-3 py-2 text-xs ${
+              notice.tone === 'error'
+                ? 'border-rose-400/30 bg-rose-400/10 text-rose-200'
+                : 'border-amber-400/30 bg-amber-400/10 text-amber-200'
+            }`}
+          >
+            {notice.text}
           </p>
         )}
         <div className="flex gap-2 border-t border-slate-800/80 pt-3">
@@ -662,14 +693,25 @@ function ParticipantDetail({
   const sendQr = useSendEntryQr(eventId)
   // Tagged with the guest id: the panel is reused across selections, so feedback for one guest
   // must not linger when another is picked.
-  const [qrMail, setQrMail] = useState<{ id: string; state: 'sending' | 'sent' | 'error' } | null>(null)
+  const [qrMail, setQrMail] = useState<{
+    id: string
+    state: 'sending' | 'sent' | 'error'
+    message?: string
+  } | null>(null)
   const qrMailState = qrMail?.id === participant.id ? qrMail.state : 'idle'
   const { data: customFieldDefs } = useCustomFields(eventId)
 
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   async function remove() {
     if (!window.confirm(t('participants.deleteConfirm', { name: `${participant.firstName} ${participant.lastName}` }))) return
-    await del.mutateAsync(participant.id)
-    onDeleted()
+    setDeleteError(null)
+    try {
+      await del.mutateAsync(participant.id)
+      onDeleted()
+    } catch (err) {
+      setDeleteError(apiErrorMessage(err, t('participants.deleteError')))
+    }
   }
   return (
     <Card>
@@ -716,8 +758,12 @@ function ParticipantDetail({
               try {
                 await sendQr.mutateAsync(participant.id)
                 setQrMail({ id: participant.id, state: 'sent' })
-              } catch {
-                setQrMail({ id: participant.id, state: 'error' })
+              } catch (err) {
+                setQrMail({
+                  id: participant.id,
+                  state: 'error',
+                  message: apiErrorMessage(err, t('participants.qrSendError')),
+                })
               }
             }}
             disabled={qrMailState === 'sending'}
@@ -730,7 +776,9 @@ function ParticipantDetail({
             <span className="text-xs font-medium text-emerald-300">✓ {t('participants.qrSent')}</span>
           )}
           {qrMailState === 'error' && (
-            <span className="text-xs font-medium text-amber-300">{t('participants.qrSendError')}</span>
+            <span role="alert" className="text-xs font-medium text-amber-300">
+              {qrMail?.message ?? t('participants.qrSendError')}
+            </span>
           )}
         </div>
       )}
@@ -831,6 +879,11 @@ function ParticipantDetail({
           ✕ {del.isPending ? '…' : t('participants.delete')}
         </button>
         <p className="mt-1.5 text-[11px] text-slate-500">{t('participants.deleteHint')}</p>
+        {deleteError && (
+          <p role="alert" className="mt-1.5 text-[11px] font-medium text-rose-300">
+            {deleteError}
+          </p>
+        )}
       </div>
     </Card>
   )
