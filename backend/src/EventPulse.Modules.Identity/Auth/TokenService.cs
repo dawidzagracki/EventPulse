@@ -25,7 +25,7 @@ public sealed class TokenService : ITokenService
         var expiresAt = principalType switch
         {
             PrincipalType.Participant => now.AddHours(_options.ParticipantTokenHours),
-            PrincipalType.Operator => now.AddHours(24), // long-lived event-shift token
+            PrincipalType.Operator => now.AddDays(_options.OperatorTokenDays), // whole-shift token; operators have no refresh
             _ => now.AddMinutes(_options.AccessTokenMinutes),
         };
 

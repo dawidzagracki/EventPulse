@@ -29,11 +29,12 @@ const tutorialKey = 'ep.scanner.tutorialSeen'
 // (these are only ever called from event handlers / async callbacks).
 const nowMs = () => Date.now()
 
-const PRESET_STATIONS = [
-  { id: 'entry', i18n: 'scanner.stationEntry', emoji: '🚪' },
-  { id: 'bar', i18n: 'scanner.stationBar', emoji: '🍸' },
-  { id: 'hall', i18n: 'scanner.stationHall', emoji: '🏛' },
-  { id: 'contest', i18n: 'scanner.stationContest', emoji: '🎯' },
+// With no stations defined for the event there is nothing to record presence at, so the only
+// meaningful choices are the two doors. Picking one also sets AND locks the direction, which is
+// what stops an exit door from checking people in.
+const DOOR_PRESETS = [
+  { id: 'entry', i18n: 'scanner.stationEntry', emoji: '🚪', kind: ScanKind.CheckIn },
+  { id: 'exit', i18n: 'scanner.stationExit', emoji: '🚶', kind: ScanKind.CheckOut },
 ] as const
 
 export function ScannerPage() {
@@ -60,16 +61,17 @@ export function ScannerPage() {
     }
   }
 
+  function setModeLock(next: boolean) {
+    setModeLocked(next)
+    try {
+      localStorage.setItem(modeLockKey(eventId), next ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }
+
   function toggleModeLock() {
-    setModeLocked((v) => {
-      const next = !v
-      try {
-        localStorage.setItem(modeLockKey(eventId), next ? '1' : '0')
-      } catch {
-        // ignore
-      }
-      return next
-    })
+    setModeLock(!modeLocked)
   }
 
   const [station, setStation] = useState<string | null>(() => localStorage.getItem(stationKey(eventId)))
@@ -257,9 +259,14 @@ export function ScannerPage() {
     }
   }, [station])
 
-  function chooseStation(code: string) {
+  function chooseStation(code: string, direction?: number) {
     localStorage.setItem(stationKey(eventId), code)
     setStation(code)
+    // A door preset implies its direction — apply it and lock it, so the mode can't drift.
+    if (direction !== undefined) {
+      setKindPersisted(direction)
+      setModeLock(true)
+    }
   }
 
   // ─────────── Station picker (onboarding) ───────────
@@ -434,7 +441,7 @@ export function ScannerPage() {
 }
 
 // ─────────── Station picker ───────────
-function StationPicker({ onPick, stations }: { onPick: (code: string) => void; stations: StationDto[] }) {
+function StationPicker({ onPick, stations }: { onPick: (code: string, direction?: number) => void; stations: StationDto[] }) {
   const { t } = useTranslation()
   const [custom, setCustom] = useState('')
   const [showCustom, setShowCustom] = useState(false)
@@ -470,10 +477,10 @@ function StationPicker({ onPick, stations }: { onPick: (code: string) => void; s
                   )}
                 </button>
               ))
-            : PRESET_STATIONS.map((s) => (
+            : DOOR_PRESETS.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => onPick(t(s.i18n))}
+                  onClick={() => onPick(t(s.i18n), s.kind)}
                   className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
                 >
                   <span className="text-3xl">{s.emoji}</span>

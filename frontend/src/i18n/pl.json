@@ -529,7 +529,8 @@
     "logout": "Wyloguj",
     "logoutConfirm": "Zakończyć sesję skanera i wylogować?",
     "noCheckIn": "Brak wejścia",
-    "noCheckInHint": "Ta osoba nie była skanowana na wejściu. Sprawdź, czy nie masz ustawionego trybu „Wyjście” na bramce wejściowej."
+    "noCheckInHint": "Ta osoba nie była skanowana na wejściu. Sprawdź, czy nie masz ustawionego trybu „Wyjście” na bramce wejściowej.",
+    "stationExit": "Wyjście"
   },
   "dashboard": {
     "title": "Dashboard",
