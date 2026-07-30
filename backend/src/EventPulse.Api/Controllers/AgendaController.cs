@@ -3,6 +3,7 @@ using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Events.Application;
 using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Identity.Auth;
+using EventPulse.Modules.Scanning.Application;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,55 @@ public sealed class AgendaController : ControllerBase
         _mediator = mediator;
         _configuration = configuration;
     }
+
+    /// <summary>Who scanned at each QR-checked agenda point, and when — the coach roll-call.</summary>
+    [HttpGet("activity")]
+    public async Task<ActionResult<IReadOnlyList<AgendaActivityDto>>> Activity(Guid eventId, CancellationToken ct)
+    {
+        await EnsureEventAsync(eventId, ct);
+        var agenda = await _mediator.Send(new ListAgendaQuery(eventId), ct);
+        var scans = await _mediator.Send(new StationScanLogQuery(eventId), ct);
+
+        // Scans carry the item title as their station code (see ScansController.AgendaScanPoints).
+        var byCode = scans
+            .GroupBy(s => s.StationCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        var result = agenda
+            .Where(i => i.RequiresCheckIn)
+            .OrderBy(i => i.StartsAt)
+            .Select(item =>
+            {
+                var entries = byCode.TryGetValue(item.TitlePl, out var found) ? found : [];
+                return new AgendaActivityDto(
+                    item.Id,
+                    item.TitlePl,
+                    item.TitleEn,
+                    item.CustomTypeIcon,
+                    item.StartsAt,
+                    entries.Count,
+                    entries.Select(e => e.ParticipantId).Distinct().Count(),
+                    entries
+                        .OrderBy(e => e.OccurredAt)
+                        .Select(e => new AgendaActivityEntryDto(e.ParticipantId, e.ParticipantName, e.OccurredAt))
+                        .ToList());
+            })
+            .ToList();
+
+        return Ok(result);
+    }
+
+    public sealed record AgendaActivityEntryDto(Guid ParticipantId, string ParticipantName, DateTimeOffset OccurredAt);
+
+    public sealed record AgendaActivityDto(
+        Guid AgendaItemId,
+        string TitlePl,
+        string TitleEn,
+        string? Icon,
+        DateTimeOffset StartsAt,
+        int Scans,
+        int People,
+        IReadOnlyList<AgendaActivityEntryDto> Entries);
 
     /// <summary>
     /// Mails every guest the current agenda. Deliberately manual: agenda edits send nothing on

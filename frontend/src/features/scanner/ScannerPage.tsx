@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { extractToken, fetchActiveStations, flushQueue } from './api'
 import { feedback } from './feedback'
@@ -11,8 +11,8 @@ import { ScanKind, type ScanResultItem, type StationDto } from '../../types/api'
 import { useAuthStore } from '../../stores/authStore'
 
 type Feedback =
-  | { kind: 'ok'; item: ScanResultItem; mode: number }
-  | { kind: 'warn'; item: ScanResultItem; mode: number }
+  | { kind: 'ok'; item: ScanResultItem; mode: number; stationCode?: string | null }
+  | { kind: 'warn'; item: ScanResultItem; mode: number; stationCode?: string | null }
   | { kind: 'limit'; item: ScanResultItem }
   | { kind: 'nocheckin'; item: ScanResultItem }
   | { kind: 'error'; reason: 'notfound' | 'badcode' }
@@ -40,16 +40,8 @@ const DOOR_PRESETS = [
 export function ScannerPage() {
   const { eventId = '' } = useParams()
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const principalType = useAuthStore((s) => s.principalType)
-  const logout = useAuthStore((s) => s.logout)
   const isOperator = principalType === 'Operator'
-
-  function exitScanner() {
-    if (!confirm(t('scanner.logoutConfirm'))) return
-    logout()
-    navigate('/login', { replace: true })
-  }
 
   // Mode + lock are persisted so a refresh can't quietly send the exit door back to Check-in.
   function setKindPersisted(next: number) {
@@ -178,9 +170,9 @@ export function ScannerPage() {
       } else if (mine.status === 'nocheckin') {
         showFeedback({ kind: 'nocheckin', item: mine })
       } else if (mine.alreadyCheckedIn) {
-        showFeedback({ kind: 'warn', item: mine, mode })
+        showFeedback({ kind: 'warn', item: mine, mode, stationCode: stationRef.current })
       } else {
-        showFeedback({ kind: 'ok', item: mine, mode })
+        showFeedback({ kind: 'ok', item: mine, mode, stationCode: stationRef.current })
       }
     } catch {
       showFeedback({ kind: 'queued' })
@@ -259,6 +251,12 @@ export function ScannerPage() {
     }
   }, [station])
 
+  /** Back to the picker. The only way out for an operator, who has no account to log out of. */
+  function backToPicker() {
+    localStorage.removeItem(stationKey(eventId))
+    setStation(null)
+  }
+
   function chooseStation(code: string, direction?: number) {
     localStorage.setItem(stationKey(eventId), code)
     setStation(code)
@@ -296,11 +294,11 @@ export function ScannerPage() {
         <div className="flex items-center justify-between gap-2">
           {isOperator ? (
             <button
-              onClick={exitScanner}
-              className="inline-flex items-center gap-1 text-sm text-rose-300 hover:text-rose-200"
+              onClick={backToPicker}
+              className="inline-flex items-center gap-1 text-sm text-indigo-300 hover:text-indigo-200"
             >
               <Icon name="chevronLeft" className="h-4 w-4" />
-              {t('scanner.logout')}
+              {t('scanner.stationChange')}
             </button>
           ) : (
             <Link to={`/events/${eventId}`} className="inline-flex items-center gap-1 text-sm text-indigo-300 hover:text-indigo-200">
@@ -330,15 +328,12 @@ export function ScannerPage() {
         {/* Station + total scans chips */}
         <div className="flex items-center justify-between gap-2">
           <button
-            onClick={() => {
-              localStorage.removeItem(stationKey(eventId))
-              setStation(null)
-            }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1 text-xs font-medium text-slate-200 hover:border-indigo-400/40"
-            title={t('scanner.stationChange')}
+            onClick={backToPicker}
+            className="inline-flex items-center gap-1.5 rounded-full border border-indigo-400/30 bg-slate-900/60 px-3 py-1 text-xs font-medium text-slate-200 hover:border-indigo-400/60 hover:bg-slate-900"
           >
             <Icon name="mapPin" className="h-3 w-3 text-indigo-300" />
-            {station}
+            <span className="max-w-[9rem] truncate">{station}</span>
+            <span className="text-[10px] font-semibold text-indigo-300">{t('scanner.stationChangeShort')}</span>
           </button>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/60 px-3 py-1 text-xs text-slate-400">
             <Icon name="check" className="h-3 w-3 text-emerald-400" />
@@ -446,8 +441,10 @@ function StationPicker({ onPick, stations }: { onPick: (code: string, direction?
   const [custom, setCustom] = useState('')
   const [showCustom, setShowCustom] = useState(false)
 
-  // Prefer the event's defined stations; fall back to the generic presets when none exist.
-  const defined = stations.filter((s) => s.active)
+  // The doors are ALWAYS offered. They used to be an either/or fallback, which meant that as soon
+  // as the event had any station (or a QR-flagged agenda point) there was no way left to check
+  // anyone in or out.
+  const points = stations.filter((s) => s.active)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6">
@@ -460,34 +457,46 @@ function StationPicker({ onPick, stations }: { onPick: (code: string, direction?
           <p className="mt-1 text-sm text-slate-400">{t('scanner.stationPickHint')}</p>
         </div>
 
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+          {t('scanner.groupDoors')}
+        </p>
         <div className="grid grid-cols-2 gap-3">
-          {defined.length > 0
-            ? defined.map((s) => (
+          {DOOR_PRESETS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onPick(t(s.i18n), s.kind)}
+              className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
+            >
+              <span className="text-3xl">{s.emoji}</span>
+              <span className="text-sm font-semibold text-white">{t(s.i18n)}</span>
+            </button>
+          ))}
+        </div>
+
+        {points.length > 0 && (
+          <>
+            <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+              {t('scanner.groupPoints')}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {points.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => onPick(s.name)}
-                  className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-fuchsia-400/40 hover:bg-slate-900"
                 >
                   <span className="text-3xl">{s.icon || '📍'}</span>
-                  <span className="text-sm font-semibold text-white">{s.name}</span>
+                  <span className="text-center text-sm font-semibold leading-snug text-white">{s.name}</span>
                   {s.scanLimitPerParticipant > 0 && (
                     <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
                       {t('scanner.limitPerPerson', { n: s.scanLimitPerParticipant })}
                     </span>
                   )}
                 </button>
-              ))
-            : DOOR_PRESETS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => onPick(t(s.i18n), s.kind)}
-                  className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900"
-                >
-                  <span className="text-3xl">{s.emoji}</span>
-                  <span className="text-sm font-semibold text-white">{t(s.i18n)}</span>
-                </button>
               ))}
-        </div>
+            </div>
+          </>
+        )}
 
         {!showCustom ? (
           <button
@@ -576,12 +585,20 @@ function FeedbackOverlay({ fb, onDismiss }: { fb: Feedback; onDismiss: () => voi
     item = fb.item
     name = item.name ?? '—'
     if (fb.kind === 'warn') {
-      headline = fb.mode === ScanKind.CheckIn ? t('scanner.alreadyIn') : t('scanner.alreadyOut')
+      headline =
+        fb.mode === ScanKind.Station
+          ? t('scanner.alreadyScanned')
+          : fb.mode === ScanKind.CheckIn
+            ? t('scanner.alreadyIn')
+            : t('scanner.alreadyOut')
       if (item.previousAt) {
         sub = t('scanner.lastScanAt', {
           time: new Date(item.previousAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }),
         })
       }
+    } else if (fb.mode === ScanKind.Station) {
+      headline = t('scanner.verifiedOk')
+      sub = fb.stationCode ?? null
     } else {
       headline = fb.mode === ScanKind.CheckIn ? t('scanner.checkedInOk') : t('scanner.checkedOutOk')
     }

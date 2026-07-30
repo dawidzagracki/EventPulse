@@ -1,3 +1,4 @@
+using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Events.Application.Queries;
 using EventPulse.Modules.Identity.Auth;
 using EventPulse.Modules.Scanning.Application;
@@ -31,13 +32,40 @@ public sealed class ScansController : ControllerBase
         return Ok(new { marked = count });
     }
 
-    /// <summary>Active stations the operator can scan at (reachable with an operator token).</summary>
+    /// <summary>
+    /// Points the operator can scan at: the event's own stations plus every agenda item flagged
+    /// "requires QR check-in" (a coach, a dinner…). Agenda items are merged here because this is the
+    /// only layer that sees both modules — Scanning and Agenda do not reference each other.
+    /// </summary>
     [HttpGet("api/events/{eventId:guid}/scanner/stations")]
     public async Task<ActionResult<IReadOnlyList<StationDto>>> ScannerStations(Guid eventId, CancellationToken ct)
     {
         await _mediator.Send(new GetEventByIdQuery(eventId), ct);
-        return Ok(await _mediator.Send(new ListActiveStationsQuery(eventId), ct));
+        var stations = await _mediator.Send(new ListActiveStationsQuery(eventId), ct);
+        var agenda = await _mediator.Send(new ListAgendaQuery(eventId), ct);
+        return Ok(stations.Concat(AgendaScanPoints(agenda)).ToList());
     }
+
+    /// <summary>
+    /// Agenda items that need a QR, as stations. They are presence points: CountsAsCheckIn = false
+    /// makes the scanner record ScanKind.Station, so scanning someone onto a coach never touches the
+    /// event check-in numbers. The station code is the item title, because every consumer
+    /// (dashboard rollup, station summary, the scanner's own mode lookup) matches on that name.
+    /// </summary>
+    private static IEnumerable<StationDto> AgendaScanPoints(IReadOnlyList<AgendaItemDto> agenda)
+        => agenda
+            .Where(i => i.RequiresCheckIn)
+            .OrderBy(i => i.StartsAt)
+            .Select((item, index) => new StationDto(
+                item.Id,
+                item.TitlePl,
+                item.TitleEn,
+                item.CustomTypeIcon,
+                ScanLimitPerParticipant: 0, // unlimited: the summary already separates scans from people
+                CountsAsCheckIn: false,
+                AllowSelfScan: false,       // nothing prints guest-facing QRs for agenda points
+                Active: true,
+                Order: 1000 + index));      // after the event's real stations
 
     public sealed record BatchScanBody(List<ScanInput> Items);
 }

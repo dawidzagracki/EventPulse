@@ -537,7 +537,12 @@
     "logoutConfirm": "Zakończyć sesję skanera i wylogować?",
     "noCheckIn": "Brak wejścia",
     "noCheckInHint": "Ta osoba nie była skanowana na wejściu. Sprawdź, czy nie masz ustawionego trybu „Wyjście” na bramce wejściowej.",
-    "stationExit": "Wyjście"
+    "stationExit": "Wyjście",
+    "verifiedOk": "ZWERYFIKOWANO",
+    "alreadyScanned": "JUŻ ZESKANOWANY",
+    "groupDoors": "Bramki wejście / wyjście",
+    "groupPoints": "Punkty z kodem QR",
+    "stationChangeShort": "zmień"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -584,7 +589,10 @@
     "clientWelcomeBody": "Tu na bieżąco widzisz frekwencję i postępy. Sprawdź jak wygląda strona publiczna lub przejrzyj uczestników.",
     "rename": "Zmień nazwę",
     "renamePrompt": "Podaj nową nazwę wydarzenia",
-    "save": "Zapisz"
+    "save": "Zapisz",
+    "agendaActivity": "Aktywność w agendzie",
+    "noAgendaActivity": "Brak punktów agendy z kodem QR",
+    "noAgendaScans": "Nikt się jeszcze nie odbił"
   },
   "feedback": {
     "title": "Oceń wydarzenie",

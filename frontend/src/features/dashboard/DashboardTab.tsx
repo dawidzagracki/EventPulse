@@ -33,6 +33,32 @@ function useDashboard(eventId: string) {
   })
 }
 
+/** Who scanned at each QR-flagged agenda point. Separate from the dashboard payload on purpose:
+ *  that one is rebroadcast over SignalR on every scan, so names would ride the hot path. */
+interface AgendaActivityEntry {
+  participantId: string
+  participantName: string
+  occurredAt: string
+}
+
+interface AgendaActivity {
+  agendaItemId: string
+  titlePl: string
+  titleEn: string
+  icon: string | null
+  startsAt: string
+  scans: number
+  people: number
+  entries: AgendaActivityEntry[]
+}
+
+function useAgendaActivity(eventId: string) {
+  return useQuery({
+    queryKey: ['agenda', eventId, 'activity'],
+    queryFn: async () => (await api.get<AgendaActivity[]>(`/api/events/${eventId}/agenda/activity`)).data,
+  })
+}
+
 function useFeedback(eventId: string) {
   return useQuery({
     queryKey: ['feedback', eventId],
@@ -54,6 +80,8 @@ export function DashboardTab({ eventId }: { eventId: string }) {
   const { t, i18n } = useTranslation()
   const qc = useQueryClient()
   const { data, isLoading } = useDashboard(eventId)
+  const { data: agendaActivity } = useAgendaActivity(eventId)
+  const [openPoint, setOpenPoint] = useState<string | null>(null)
   const { data: feedback } = useFeedback(eventId)
   const { data: event } = useEvent(eventId)
 
@@ -228,6 +256,68 @@ export function DashboardTab({ eventId }: { eventId: string }) {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </Card>
+
+          {/* Agenda checkpoints — who was scanned onto the coach, at the dinner, … */}
+          <Card>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">{t('dashboard.agendaActivity')}</h3>
+              <span className="rounded-full bg-fuchsia-400/15 px-2.5 py-0.5 text-[11px] font-semibold text-fuchsia-300 ring-1 ring-inset ring-fuchsia-400/30">
+                {agendaActivity?.length ?? 0}
+              </span>
+            </div>
+            {!agendaActivity || agendaActivity.length === 0 ? (
+              <EmptyHint icon="qr" label={t('dashboard.noAgendaActivity')} />
+            ) : (
+              <ul className="space-y-2">
+                {agendaActivity.map((point) => {
+                  const open = openPoint === point.agendaItemId
+                  return (
+                    <li key={point.agendaItemId} className="rounded-xl border border-slate-800/80 bg-slate-950/40">
+                      <button
+                        onClick={() => setOpenPoint(open ? null : point.agendaItemId)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+                        aria-expanded={open}
+                      >
+                        <span className="text-lg">{point.icon || '📍'}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-slate-200">{point.titlePl}</span>
+                          <span className="block text-[11px] text-slate-500">
+                            👤 {point.people} · {point.scans} {t('dashboard.scans')}
+                          </span>
+                        </span>
+                        <Icon
+                          name="chevronLeft"
+                          className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${open ? '-rotate-90' : 'rotate-180'}`}
+                        />
+                      </button>
+                      {open && (
+                        <ul className="border-t border-slate-800/80 px-3 py-2">
+                          {point.entries.length === 0 ? (
+                            <li className="py-1 text-[11px] text-slate-500">{t('dashboard.noAgendaScans')}</li>
+                          ) : (
+                            point.entries.map((e) => (
+                              <li
+                                key={`${e.participantId}-${e.occurredAt}`}
+                                className="flex items-center justify-between gap-2 py-1 text-xs"
+                              >
+                                <span className="truncate text-slate-300">{e.participantName}</span>
+                                <span className="shrink-0 font-mono text-[11px] tabular-nums text-slate-500">
+                                  {new Date(e.occurredAt).toLocaleTimeString(i18n.language, {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      )}
                     </li>
                   )
                 })}

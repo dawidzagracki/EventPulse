@@ -537,7 +537,12 @@
     "logoutConfirm": "End the scanner session and log out?",
     "noCheckIn": "Never checked in",
     "noCheckInHint": "This guest was never scanned at the entrance. Check that the exit mode isn’t selected on an entry door.",
-    "stationExit": "Exit"
+    "stationExit": "Exit",
+    "verifiedOk": "VERIFIED",
+    "alreadyScanned": "ALREADY SCANNED",
+    "groupDoors": "Entry / exit doors",
+    "groupPoints": "QR checkpoints",
+    "stationChangeShort": "change"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -584,7 +589,10 @@
     "clientWelcomeBody": "Track attendance and progress live. Preview the public page or browse your participants.",
     "rename": "Rename",
     "renamePrompt": "New event name",
-    "save": "Save"
+    "save": "Save",
+    "agendaActivity": "Agenda checkpoints",
+    "noAgendaActivity": "No agenda points use a QR code",
+    "noAgendaScans": "Nobody scanned here yet"
   },
   "feedback": {
     "title": "Rate the event",
