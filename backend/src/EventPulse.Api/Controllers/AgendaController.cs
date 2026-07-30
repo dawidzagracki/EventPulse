@@ -43,16 +43,25 @@ public sealed class AgendaController : ControllerBase
             .Select(item =>
             {
                 var entries = byCode.TryGetValue(item.TitlePl, out var found) ? found : [];
+
+                // One guest at one checkpoint is one scan, keeping the earliest moment. The scanner
+                // now refuses to write repeats, but rows recorded before that fix still collapse
+                // here instead of inflating the count.
+                var perGuest = entries
+                    .GroupBy(e => e.ParticipantId)
+                    .Select(g => g.OrderBy(e => e.OccurredAt).First())
+                    .OrderBy(e => e.OccurredAt)
+                    .ToList();
+
                 return new AgendaActivityDto(
                     item.Id,
                     item.TitlePl,
                     item.TitleEn,
                     item.CustomTypeIcon,
                     item.StartsAt,
-                    entries.Count,
-                    entries.Select(e => e.ParticipantId).Distinct().Count(),
-                    entries
-                        .OrderBy(e => e.OccurredAt)
+                    perGuest.Count,
+                    perGuest.Count,
+                    perGuest
                         .Select(e => new AgendaActivityEntryDto(e.ParticipantId, e.ParticipantName, e.OccurredAt))
                         .ToList());
             })

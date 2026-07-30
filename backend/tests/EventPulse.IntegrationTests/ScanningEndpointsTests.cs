@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using EventPulse.Infrastructure.Persistence;
 using EventPulse.Modules.Participants.Domain;
+using EventPulse.Modules.Scanning.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -209,6 +210,125 @@ public class ScanningEndpointsTests : IClassFixture<ApiFactory>
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(1, body.GetProperty("notFound").GetInt32());
         Assert.Equal(0, body.GetProperty("accepted").GetInt32());
+    }
+
+    /// <summary>Builds a one-item presence batch for a station code.</summary>
+    private static object StationBatch(Guid token, string code) => new
+    {
+        items = new[]
+        {
+            new
+            {
+                clientId = Guid.NewGuid(),
+                participantToken = token,
+                kind = 2, // ScanKind.Station
+                occurredAt = DateTimeOffset.UtcNow,
+                stationCode = code,
+                online = true,
+            },
+        },
+    };
+
+    [Fact]
+    public async Task Re_scanning_the_same_guest_at_one_point_stays_a_single_scan()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        var (_, token) = await AddParticipantAsync(admin, eventId);
+        const string coach = "Autokar z Hotelu do Concordii";
+        await AddAgendaItemAsync(admin, eventId, coach, requiresCheckIn: true);
+
+        var first = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, coach));
+        Assert.Equal(1, (await first.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accepted").GetInt32());
+
+        // A different clientId, so this is a genuinely new scan of the same badge — not a re-sync.
+        var second = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, coach));
+        var body = await second.Content.ReadFromJsonAsync<JsonElement>();
+        var item = body.GetProperty("items")[0];
+        Assert.Equal("already", item.GetProperty("status").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(item.GetProperty("previousAt").GetString()));
+        Assert.Equal(0, body.GetProperty("accepted").GetInt32());
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(1, await db.Set<ScanEvent>().IgnoreQueryFilters()
+            .CountAsync(x => x.EventId == eventId && x.StationCode == coach));
+
+        var activity = await admin.GetFromJsonAsync<JsonElement>($"/api/events/{eventId}/agenda/activity");
+        var point = activity.EnumerateArray().Single();
+        Assert.Equal(1, point.GetProperty("people").GetInt32());
+        Assert.Equal(1, point.GetProperty("scans").GetInt32());
+        Assert.Equal(1, point.GetProperty("entries").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task The_same_guest_at_a_different_point_is_a_separate_scan()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        var (_, token) = await AddParticipantAsync(admin, eventId);
+        await AddAgendaItemAsync(admin, eventId, "Autokar z hotelu do Kermi", requiresCheckIn: true);
+        await AddAgendaItemAsync(admin, eventId, "Autokar z Kermi do hotelu", requiresCheckIn: true);
+
+        var there = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, "Autokar z hotelu do Kermi"));
+        var back = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, "Autokar z Kermi do hotelu"));
+
+        Assert.Equal(1, (await there.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accepted").GetInt32());
+        Assert.Equal(1, (await back.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accepted").GetInt32());
+
+        var activity = await admin.GetFromJsonAsync<JsonElement>($"/api/events/{eventId}/agenda/activity");
+        Assert.All(activity.EnumerateArray(), p => Assert.Equal(1, p.GetProperty("people").GetInt32()));
+    }
+
+    [Fact]
+    public async Task A_configured_station_keeps_its_own_higher_limit()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        var (_, token) = await AddParticipantAsync(admin, eventId);
+
+        // "2 drinks per guest" — the pre-existing feature must survive the once-per-point default.
+        var save = await admin.PutAsJsonAsync($"/api/events/{eventId}/stations", new
+        {
+            stations = new[]
+            {
+                new { id = (Guid?)null, name = "Bar", nameEn = (string?)null, icon = "🍸", scanLimitPerParticipant = 2, countsAsCheckIn = false, allowSelfScan = true, active = true },
+            },
+        });
+        save.EnsureSuccessStatusCode();
+
+        var one = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, "Bar"));
+        var two = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, "Bar"));
+        var three = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", StationBatch(token, "Bar"));
+
+        Assert.Equal(1, (await one.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accepted").GetInt32());
+        Assert.Equal(1, (await two.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accepted").GetInt32());
+        var third = await three.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("limit", third.GetProperty("items")[0].GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task The_doors_still_record_every_pass()
+    {
+        var admin = await AdminClientAsync();
+        var eventId = await CreateEventAsync(admin);
+        var (_, token) = await AddParticipantAsync(admin, eventId);
+
+        object DoorBatch() => new
+        {
+            items = new[]
+            {
+                new { clientId = Guid.NewGuid(), participantToken = token, kind = 0, occurredAt = DateTimeOffset.UtcNow, stationCode = "Wejście", online = true },
+            },
+        };
+
+        await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", DoorBatch());
+        var again = await admin.PostAsJsonAsync($"/api/events/{eventId}/scans/batch", DoorBatch());
+
+        // Doors are unchanged: the re-entry is accepted and flagged, not collapsed away.
+        var body = await again.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1, body.GetProperty("accepted").GetInt32());
+        Assert.True(body.GetProperty("items")[0].GetProperty("alreadyCheckedIn").GetBoolean());
     }
 
     private async Task AddAgendaItemAsync(HttpClient client, Guid eventId, string title, bool requiresCheckIn)

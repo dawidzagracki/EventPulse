@@ -167,6 +167,8 @@ export function ScannerPage() {
       } else if (mine.status === 'duplicate') {
         // Already sent by a background flush; it carries no name, so never show it as a green pass.
         showFeedback({ kind: 'queued' })
+      } else if (mine.status === 'already') {
+        showFeedback({ kind: 'warn', item: mine, mode, stationCode: stationRef.current })
       } else if (mine.status === 'nocheckin') {
         showFeedback({ kind: 'nocheckin', item: mine })
       } else if (mine.alreadyCheckedIn) {

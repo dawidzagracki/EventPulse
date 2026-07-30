@@ -42,9 +42,10 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
             .ToListAsync(cancellationToken);
         var seen = existing.ToHashSet();
 
-        // Stations with a per-participant cap (e.g. "2 beers"), keyed by their name (= scan code).
-        var limitedStations = await db.Set<Station>().AsNoTracking()
-            .Where(s => s.EventId == request.EventId && s.ScanLimitPerParticipant > 0)
+        // Every station of the event, keyed by name (= scan code), so a code with no row can be told
+        // apart from one configured as unlimited. See ResolveStationCap.
+        var stationCaps = await db.Set<Station>().AsNoTracking()
+            .Where(s => s.EventId == request.EventId)
             .ToDictionaryAsync(s => s.Name, s => s.ScanLimitPerParticipant, StringComparer.OrdinalIgnoreCase, cancellationToken);
         var batchStationCounts = new Dictionary<(Guid, string), int>();
 
@@ -74,20 +75,28 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
                 continue;
             }
 
-            // Per-station cap: reject once the participant hit the limit (e.g. their 3rd beer).
+            // Per-station cap. A presence point nobody configured counts each guest once, so
+            // accidentally re-scanning someone onto the same coach stays a single scan.
             var code = item.StationCode?.Trim();
-            if (!string.IsNullOrEmpty(code) && limitedStations.TryGetValue(code, out var limit))
+            var cap = ResolveStationCap(item.Kind, code, stationCaps);
+            if (cap is not null && !string.IsNullOrEmpty(code))
             {
                 var key = (participant.Id, code);
-                var priorDb = await db.Set<ScanEvent>().CountAsync(
-                    s => s.EventId == request.EventId && s.ParticipantId == participant.Id && s.StationCode == code,
-                    cancellationToken);
+                var priorScans = await db.Set<ScanEvent>()
+                    .Where(s => s.EventId == request.EventId && s.ParticipantId == participant.Id && s.StationCode == code)
+                    .Select(s => s.OccurredAt)
+                    .ToListAsync(cancellationToken);
                 var priorBatch = batchStationCounts.GetValueOrDefault(key);
-                if (priorDb + priorBatch >= limit)
+                if (priorScans.Count + priorBatch >= cap)
                 {
+                    // A repeat at a once-per-guest point is information, not a misconfiguration:
+                    // tell the operator when this person was first recorded here and move on.
+                    var repeat = cap == 1;
                     results.Add(new ScanResultItem(
-                        item.ClientId, "limit",
-                        Name: $"{participant.FirstName} {participant.LastName}".Trim()));
+                        item.ClientId,
+                        repeat ? "already" : "limit",
+                        Name: $"{participant.FirstName} {participant.LastName}".Trim(),
+                        PreviousAt: priorScans.Count > 0 ? priorScans.Min() : null));
                     continue;
                 }
 
@@ -138,6 +147,27 @@ public sealed class BatchScanHandler(IAppDbContext db, ISender mediator, IEventN
         }
 
         return new BatchScanResult(accepted, duplicates, notFound, results);
+    }
+
+    /// <summary>
+    /// How many times one guest may be scanned at a code. Only presence scans are capped — the doors
+    /// keep every check-in/out as an audit trail, and attendance is keyed on CheckedInAt anyway.
+    /// A configured station keeps its own meaning (0 = unlimited, N = N); a code with no station row
+    /// — an agenda checkpoint or an ad-hoc code — counts each guest exactly once.
+    /// </summary>
+    private static int? ResolveStationCap(ScanKind kind, string? code, IReadOnlyDictionary<string, int> stationCaps)
+    {
+        if (kind != ScanKind.Station || string.IsNullOrEmpty(code))
+        {
+            return null;
+        }
+
+        if (!stationCaps.TryGetValue(code, out var configured))
+        {
+            return 1;
+        }
+
+        return configured > 0 ? configured : null; // 0 stays "unlimited"
     }
 
     // Last-write-wins by device timestamp (UTC-normalized by the caller).

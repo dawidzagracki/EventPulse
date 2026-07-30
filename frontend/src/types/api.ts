@@ -443,7 +443,7 @@ export interface DashboardData {
 
 export interface ScanResultItem {
   clientId: string
-  status: 'accepted' | 'duplicate' | 'notfound' | 'limit' | 'nocheckin' | string
+  status: 'accepted' | 'duplicate' | 'notfound' | 'limit' | 'nocheckin' | 'already' | string
   name?: string | null
   participantStatus?: number | null
   tableName?: string | null
