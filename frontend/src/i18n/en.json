@@ -278,7 +278,11 @@
     "addType": "Add type",
     "typeColor": "Color",
     "typeNamePl": "Name (PL)",
-    "typeNameEn": "Name (EN)"
+    "typeNameEn": "Name (EN)",
+    "notify": "Notify guests of changes",
+    "confirmNotify": "Send guests one e-mail with the current agenda? Agenda edits on their own never send anything.",
+    "notified": "Guests notified: {{count}}",
+    "notifyError": "Could not send the notification. Please try again."
   },
   "participant": {
     "invalidLink": "Invalid or expired link.",
@@ -723,7 +727,8 @@
     "principalAgency": "Super admin",
     "principalClient": "Client",
     "principalParticipant": "Participant",
-    "principalSystem": "System"
+    "principalSystem": "System",
+    "principalOperator": "Operator (scanner)"
   },
   "status": {
     "0": "Draft",

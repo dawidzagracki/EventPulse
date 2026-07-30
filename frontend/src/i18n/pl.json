@@ -278,7 +278,11 @@
     "addType": "Dodaj typ",
     "typeColor": "Kolor",
     "typeNamePl": "Nazwa (PL)",
-    "typeNameEn": "Nazwa (EN)"
+    "typeNameEn": "Nazwa (EN)",
+    "notify": "Powiadom uczestników o zmianach",
+    "confirmNotify": "Wysłać uczestnikom jeden mail z aktualną agendą? Zmiany w agendzie same z siebie nie wysyłają żadnych maili.",
+    "notified": "Powiadomiono uczestników: {{count}}",
+    "notifyError": "Nie udało się wysłać powiadomienia. Spróbuj ponownie."
   },
   "participant": {
     "invalidLink": "Nieprawidłowy lub wygasły link.",
@@ -723,7 +727,8 @@
     "principalAgency": "Super admin",
     "principalClient": "Klient",
     "principalParticipant": "Uczestnik",
-    "principalSystem": "System"
+    "principalSystem": "System",
+    "principalOperator": "Operator (skaner)"
   },
   "status": {
     "0": "Szkic",

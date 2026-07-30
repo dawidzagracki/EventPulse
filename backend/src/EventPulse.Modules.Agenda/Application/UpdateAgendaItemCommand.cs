@@ -46,7 +46,6 @@ public sealed class UpdateAgendaItemHandler : IRequestHandler<UpdateAgendaItemCo
         item.DressCode = input.DressCode;
         item.GroupName = input.GroupName;
 
-        item.RaiseChanged(request.EventName, AgendaChangeType.Updated);
         await _db.SaveChangesAsync(cancellationToken);
         return AgendaItemDto.From(item);
     }

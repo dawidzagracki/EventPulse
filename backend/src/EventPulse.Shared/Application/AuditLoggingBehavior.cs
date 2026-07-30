@@ -37,6 +37,7 @@ public sealed class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavio
         {
             UserId = _user.UserId,
             PrincipalType = _user.PrincipalType,
+            ActorEmail = _user.Email,
             Action = typeName,
             Payload = TrySerialize(request),
         });

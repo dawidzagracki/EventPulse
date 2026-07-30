@@ -2,6 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import type { AgendaItemDto, AgendaItemInput, AgendaTypeDto, AgendaTypeInput } from '../../types/api'
 
+/** Result of the on-demand "notify guests" send — mirrors SendInvitationsResult. */
+export interface NotifyAgendaResult {
+  sentCount: number
+  failedCount: number
+}
+
+/**
+ * Mails every guest the current agenda. Agenda edits send nothing on their own, so this is the only
+ * way a change reaches guests — one deliberate wave instead of one per edited item.
+ */
+export function useNotifyAgenda(eventId: string) {
+  return useMutation({
+    mutationFn: async () =>
+      (await api.post<NotifyAgendaResult>(`/api/events/${eventId}/agenda/notify`)).data,
+  })
+}
+
 export function useAgenda(eventId: string) {
   return useQuery({
     queryKey: ['agenda', eventId],

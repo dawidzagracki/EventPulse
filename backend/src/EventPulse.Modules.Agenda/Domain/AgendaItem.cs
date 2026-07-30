@@ -2,7 +2,7 @@ using EventPulse.Shared.Domain;
 
 namespace EventPulse.Modules.Agenda.Domain;
 
-/// <summary>A point in an event's schedule. Bilingual (PL/EN). Raises <see cref="AgendaChanged"/> on edits.</summary>
+/// <summary>A point in an event's schedule. Bilingual (PL/EN).</summary>
 public sealed class AgendaItem : AggregateRoot
 {
     public Guid EventId { get; set; }
@@ -33,7 +33,4 @@ public sealed class AgendaItem : AggregateRoot
 
     /// <summary>If set, the item is only for this group; null means the whole event.</summary>
     public string? GroupName { get; set; }
-
-    public void RaiseChanged(string eventName, AgendaChangeType changeType) =>
-        Raise(new AgendaChanged(EventId, eventName, Id, changeType, TitlePl, TitleEn));
 }

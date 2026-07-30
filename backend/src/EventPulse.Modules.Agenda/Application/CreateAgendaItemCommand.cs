@@ -44,7 +44,6 @@ public sealed class CreateAgendaItemHandler : IRequestHandler<CreateAgendaItemCo
             GroupName = input.GroupName,
         };
 
-        item.RaiseChanged(request.EventName, AgendaChangeType.Created);
         _db.Set<AgendaItem>().Add(item);
         await _db.SaveChangesAsync(cancellationToken);
         return AgendaItemDto.From(item);

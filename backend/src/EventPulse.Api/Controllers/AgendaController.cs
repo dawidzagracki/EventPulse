@@ -1,3 +1,4 @@
+using EventPulse.Api.Infrastructure;
 using EventPulse.Modules.Agenda.Application;
 using EventPulse.Modules.Events.Application;
 using EventPulse.Modules.Events.Application.Queries;
@@ -14,8 +15,32 @@ namespace EventPulse.Api.Controllers;
 public sealed class AgendaController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public AgendaController(IMediator mediator) => _mediator = mediator;
+    public AgendaController(IMediator mediator, IConfiguration configuration)
+    {
+        _mediator = mediator;
+        _configuration = configuration;
+    }
+
+    /// <summary>
+    /// Mails every guest the current agenda. Deliberately manual: agenda edits send nothing on
+    /// their own, so the organiser decides when one notification goes out.
+    /// </summary>
+    [HttpPost("notify")]
+    [Authorize(Policy = AuthPolicies.Agency)]
+    public async Task<ActionResult<NotifyAgendaResult>> Notify(Guid eventId, CancellationToken ct)
+    {
+        var ev = await EnsureEventAsync(eventId, ct);
+        var result = await _mediator.Send(
+            new NotifyAgendaChangeCommand(
+                eventId,
+                ev.Name,
+                EmailBrandFactory.ParticipantLinkBaseUrl(_configuration),
+                EmailBrandFactory.For(ev)),
+            ct);
+        return Ok(result);
+    }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AgendaItemDto>>> List(Guid eventId, CancellationToken ct)

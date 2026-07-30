@@ -8,6 +8,7 @@ import {
   useAgenda,
   useDeleteAgendaItem,
   useAgendaTypes,
+  useNotifyAgenda,
   useSaveAgendaTypes,
 } from './api'
 import { Button, Card, Field, Input } from '../../components/ui'
@@ -15,6 +16,7 @@ import { ColorPicker } from '../../components/ColorPicker'
 import { EmojiPicker } from '../../components/EmojiPicker'
 import { DateTimeInput } from '../../components/DateTimeInput'
 import { Icon, type IconName } from '../../components/Icon'
+import { apiErrorMessage } from '../../lib/apiError'
 import type { AgendaItemDto, AgendaItemInput, AgendaTypeDto, AgendaTypeInput } from '../../types/api'
 
 type View =
@@ -79,8 +81,22 @@ export function AgendaTab({ eventId }: { eventId: string }) {
   const { data: items, isLoading } = useAgenda(eventId)
   const { data: customTypes } = useAgendaTypes(eventId)
   const deleteMut = useDeleteAgendaItem(eventId)
+  const notifyMut = useNotifyAgenda(eventId)
   const [view, setView] = useState<View>({ kind: 'empty' })
   const [typesOpen, setTypesOpen] = useState(false)
+  // Editing the agenda no longer mails anyone, so the organiser says when guests are told.
+  const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+
+  async function notifyGuests() {
+    if (!window.confirm(t('agenda.confirmNotify'))) return
+    setNotice(null)
+    try {
+      const result = await notifyMut.mutateAsync()
+      setNotice({ tone: 'ok', text: t('agenda.notified', { count: result.sentCount }) })
+    } catch (err) {
+      setNotice({ tone: 'error', text: apiErrorMessage(err, t('agenda.notifyError')) })
+    }
+  }
 
   // Group items by day and sort chronologically.
   const grouped = useMemo(() => {
@@ -104,7 +120,16 @@ export function AgendaTab({ eventId }: { eventId: string }) {
         </div>
         {!readOnly && (
           <>
-            <Button variant="subtle" className="ml-auto" onClick={() => setTypesOpen((v) => !v)}>
+            <Button
+              variant="subtle"
+              className="ml-auto"
+              onClick={() => void notifyGuests()}
+              disabled={notifyMut.isPending || (items?.length ?? 0) === 0}
+            >
+              <Icon name="mail" className="h-3.5 w-3.5" />
+              {notifyMut.isPending ? '…' : t('agenda.notify')}
+            </Button>
+            <Button variant="subtle" onClick={() => setTypesOpen((v) => !v)}>
               🏷 {t('agenda.manageTypes')}
             </Button>
             <Button onClick={() => setView({ kind: 'new' })}>
@@ -114,6 +139,19 @@ export function AgendaTab({ eventId }: { eventId: string }) {
           </>
         )}
       </div>
+
+      {notice && (
+        <p
+          role="alert"
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            notice.tone === 'ok'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+              : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+          }`}
+        >
+          {notice.tone === 'ok' ? `✓ ${notice.text}` : notice.text}
+        </p>
+      )}
 
       {typesOpen && <AgendaTypesManager eventId={eventId} onClose={() => setTypesOpen(false)} />}
 

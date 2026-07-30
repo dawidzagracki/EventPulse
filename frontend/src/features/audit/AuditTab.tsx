@@ -9,6 +9,8 @@ interface AuditEntry {
   id: string
   userId: string | null
   principalType: string | null
+  /** The actor's login. Recorded at write time; resolved from the account tables for older rows. */
+  actorEmail: string | null
   action: string
   createdAt: string
   payload: string | null
@@ -48,6 +50,7 @@ function principalLabel(p: string | null, t: (k: string) => string): string {
   if (p === 'Agency') return t('audit.principalAgency')
   if (p === 'Client') return t('audit.principalClient')
   if (p === 'Participant') return t('audit.principalParticipant')
+  if (p === 'Operator') return t('audit.principalOperator')
   return p
 }
 
@@ -56,6 +59,7 @@ function principalAvatarStyle(p: string | null): string {
   if (p === 'Agency') return 'from-violet-500 to-fuchsia-500'
   if (p === 'Client') return 'from-sky-500 to-cyan-500'
   if (p === 'Participant') return 'from-emerald-500 to-teal-500'
+  if (p === 'Operator') return 'from-amber-500 to-orange-500'
   return 'from-slate-500 to-slate-700'
 }
 
@@ -73,7 +77,11 @@ export function AuditTab() {
       const meta = actionMeta(e.action)
       if (filter !== 'all' && meta.tone !== filter) return false
       if (!q) return true
-      return e.action.toLowerCase().includes(q) || (e.principalType ?? '').toLowerCase().includes(q)
+      return (
+        e.action.toLowerCase().includes(q) ||
+        (e.principalType ?? '').toLowerCase().includes(q) ||
+        (e.actorEmail ?? '').toLowerCase().includes(q)
+      )
     })
   }, [data, query, filter])
 
@@ -212,9 +220,18 @@ export function AuditTab() {
                                 <span
                                   className={`inline-flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-bold text-white ${principalAvatarStyle(e.principalType)}`}
                                 >
-                                  {(e.principalType ?? 'S').charAt(0)}
+                                  {(e.actorEmail ?? e.principalType ?? 'S').charAt(0).toUpperCase()}
                                 </span>
-                                {principalLabel(e.principalType, t)}
+                                {e.actorEmail ? (
+                                  <>
+                                    <span className="font-medium text-slate-200">{e.actorEmail}</span>
+                                    <span className="rounded-full bg-slate-800/70 px-1.5 py-0.5 text-[10px] text-slate-400">
+                                      {principalLabel(e.principalType, t)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  principalLabel(e.principalType, t)
+                                )}
                               </p>
                             </div>
 

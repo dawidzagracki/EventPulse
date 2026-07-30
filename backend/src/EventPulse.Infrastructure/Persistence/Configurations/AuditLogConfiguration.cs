@@ -11,6 +11,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.ToTable("audit_logs");
         builder.HasKey(a => a.Id);
         builder.Property(a => a.PrincipalType).HasMaxLength(20);
+        builder.Property(a => a.ActorEmail).HasMaxLength(320);
         builder.Property(a => a.Action).HasMaxLength(200).IsRequired();
         builder.Property(a => a.Payload).HasColumnType("jsonb");
         builder.HasIndex(a => a.TenantId);

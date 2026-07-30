@@ -20,7 +20,6 @@ public sealed class DeleteAgendaItemHandler : IRequestHandler<DeleteAgendaItemCo
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Agenda item not found.");
 
-        item.RaiseChanged(request.EventName, AgendaChangeType.Removed); // captured before removal
         _db.Set<AgendaItem>().Remove(item);
         await _db.SaveChangesAsync(cancellationToken);
     }
