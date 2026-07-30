@@ -43,7 +43,17 @@ export async function startQrScanner(
   }
 
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    // Ask for 720p. Without a size hint browsers hand back their default capture — commonly
+    // 640x480 — which leaves only ~5 px per module on a 37x37 code shown on a phone screen, right
+    // at the decoder's floor. `ideal` degrades gracefully, so a device that cannot do 720p still
+    // grants the camera rather than failing the constraint.
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    })
     if (stopped) {
       stream.getTracks().forEach((tr) => tr.stop())
       return { stop }
@@ -73,7 +83,10 @@ export async function startQrScanner(
           if (cctx) {
             cctx.drawImage(video, 0, 0, w, h)
             const image = cctx.getImageData(0, 0, w, h)
-            const found = jsQR(image.data, w, h, { inversionAttempts: 'dontInvert' })
+            // attemptBoth is jsQR's default and matters here: a screenshot taken with a forced
+            // dark theme or Smart Invert arrives with reversed polarity, and 'dontInvert' cannot
+            // read it at all. This is the fallback path, i.e. the iPhones the hostesses use.
+            const found = jsQR(image.data, w, h, { inversionAttempts: 'attemptBoth' })
             if (found?.data) onResult(found.data)
           }
         }

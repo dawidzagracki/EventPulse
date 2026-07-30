@@ -397,7 +397,7 @@ export function ScannerPage() {
               <>
                 {/* Scan reticle */}
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="h-48 w-48 rounded-2xl border-2 border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+                  <div className="h-64 w-64 rounded-2xl border-2 border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
                 </div>
                 <p className="absolute inset-x-0 bottom-2 text-center text-xs text-white/80">{t('scanner.tapToScan')}</p>
               </>
