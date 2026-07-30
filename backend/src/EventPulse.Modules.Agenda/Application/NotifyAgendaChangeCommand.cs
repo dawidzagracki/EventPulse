@@ -59,8 +59,7 @@ public sealed class NotifyAgendaChangeHandler : IRequestHandler<NotifyAgendaChan
             throw new ConflictException("No guest on this event has an e-mail address to notify.");
         }
 
-        var sent = 0;
-        var failed = 0;
+        var mails = new List<EmailMessage>();
         foreach (var participant in participants)
         {
             // Group-scoped items are only for their group — the same rule the participant app uses.
@@ -73,20 +72,12 @@ public sealed class NotifyAgendaChangeHandler : IRequestHandler<NotifyAgendaChan
             }
 
             var link = $"{request.LinkBaseUrl.TrimEnd('/')}/{participant.AccessToken}";
-            var message = AgendaUpdateEmail.Build(participant, request.EventName, forGuest, link, request.Brand);
-
-            try
-            {
-                await _email.SendAsync(message, cancellationToken);
-                sent++;
-            }
-            catch
-            {
-                // Per-recipient, so one bad address cannot stop the rest of the send.
-                failed++;
-            }
+            mails.Add(AgendaUpdateEmail.Build(participant, request.EventName, forGuest, link, request.Brand));
         }
 
-        return new NotifyAgendaResult(sent, failed);
+        // One connection for the whole run; failures are still counted per recipient, so one bad
+        // address cannot stop the rest.
+        var result = await _email.SendManyAsync(mails, cancellationToken);
+        return new NotifyAgendaResult(result.Sent, result.Failed);
     }
 }

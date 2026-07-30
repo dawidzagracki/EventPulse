@@ -25,23 +25,25 @@ export function useImportParticipants(eventId: string) {
   })
 }
 
-/** The created guest plus whether their QR e-mail actually went out (sending is best-effort). */
-export interface AddParticipantResult {
-  participant: ParticipantDto
-  qrEmailSent: boolean
-}
-
 export function useAddParticipant(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
+    // Adding a guest sends nothing — invitations and QR codes go out only from an explicit action.
     mutationFn: async (body: {
       firstName: string
       lastName: string
       email: string
       entryOnly?: boolean
-      sendQrEmail?: boolean
-    }) => (await api.post<AddParticipantResult>(`/api/events/${eventId}/participants`, body)).data,
+    }) => (await api.post<ParticipantDto>(`/api/events/${eventId}/participants`, body)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['participants', eventId] }),
+  })
+}
+
+/** Sends ONE guest their invitation pair: the app link plus, separately, their QR code. */
+export function useSendInvitationToOne(eventId: string) {
+  return useMutation({
+    mutationFn: async (participantId: string) =>
+      (await api.post<SendInvitationsResult>(`/api/events/${eventId}/participants/${participantId}/invitation`)).data,
   })
 }
 

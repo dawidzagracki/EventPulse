@@ -10,6 +10,7 @@ import {
   useParticipants,
   useSendClientLinks,
   useSendEntryQr,
+  useSendInvitationToOne,
   useSendInvitations,
 } from './api'
 import { useCustomFields } from '../events/api'
@@ -607,18 +608,7 @@ function NewParticipantForm({
           e.preventDefault()
           setNotice(null)
           try {
-            const result = await add.mutateAsync({
-              firstName,
-              lastName,
-              email,
-              entryOnly,
-              sendQrEmail: entryOnly,
-            })
-            // The guest is saved either way; only the mail can fail, so keep the form open to say so.
-            if (entryOnly && !result.qrEmailSent) {
-              setNotice({ tone: 'warn', text: t('participants.qrSendError') })
-              return
-            }
+            await add.mutateAsync({ firstName, lastName, email, entryOnly })
             onDone()
           } catch (err) {
             setNotice({
@@ -691,6 +681,7 @@ function ParticipantDetail({
   const status = statusMeta(participant.status)
   const del = useDeleteParticipant(eventId)
   const sendQr = useSendEntryQr(eventId)
+  const sendInvite = useSendInvitationToOne(eventId)
   // Tagged with the guest id: the panel is reused across selections, so feedback for one guest
   // must not linger when another is picked.
   const [qrMail, setQrMail] = useState<{
@@ -748,16 +739,43 @@ function ParticipantDetail({
         </button>
       </div>
 
-      {/* Mail the guest their QR code — the event-day fix when someone can't find their code. */}
+      {/* Two explicit sends: the full invitation (link + QR), or just the QR code. Adding a guest
+          never mails anything, so everything a guest receives is triggered from here. */}
       {participant.email && !participant.parentParticipantId && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!window.confirm(t('participants.confirmInviteOne'))) return
+              setQrMail({ id: participant.id, state: 'sending' })
+              try {
+                const result = await sendInvite.mutateAsync(participant.id)
+                setQrMail({
+                  id: participant.id,
+                  state: result.failedCount > 0 ? 'error' : 'sent',
+                  message: result.failedCount > 0 ? t('participants.inviteOneError') : t('participants.inviteOneSent'),
+                })
+              } catch (err) {
+                setQrMail({
+                  id: participant.id,
+                  state: 'error',
+                  message: apiErrorMessage(err, t('participants.inviteOneError')),
+                })
+              }
+            }}
+            disabled={qrMailState === 'sending'}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-gradient-to-r from-indigo-500/20 to-violet-500/20 px-3 py-1.5 text-sm font-semibold text-white transition hover:from-indigo-500/30 hover:to-violet-500/30 disabled:opacity-50"
+          >
+            <Icon name="sparkles" className="h-3.5 w-3.5" />
+            {qrMailState === 'sending' ? '…' : t('participants.sendInvitation')}
+          </button>
           <button
             type="button"
             onClick={async () => {
               setQrMail({ id: participant.id, state: 'sending' })
               try {
                 await sendQr.mutateAsync(participant.id)
-                setQrMail({ id: participant.id, state: 'sent' })
+                setQrMail({ id: participant.id, state: 'sent', message: t('participants.qrSent') })
               } catch (err) {
                 setQrMail({
                   id: participant.id,
@@ -767,13 +785,13 @@ function ParticipantDetail({
               }
             }}
             disabled={qrMailState === 'sending'}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-gradient-to-r from-indigo-500/20 to-violet-500/20 px-3 py-1.5 text-sm font-semibold text-white transition hover:from-indigo-500/30 hover:to-violet-500/30 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white disabled:opacity-50"
           >
-            <Icon name="mail" className="h-3.5 w-3.5" />
+            <Icon name="qr" className="h-3.5 w-3.5" />
             {qrMailState === 'sending' ? '…' : t('participants.sendQr')}
           </button>
           {qrMailState === 'sent' && (
-            <span className="text-xs font-medium text-emerald-300">✓ {t('participants.qrSent')}</span>
+            <span className="text-xs font-medium text-emerald-300">✓ {qrMail?.message ?? t('participants.qrSent')}</span>
           )}
           {qrMailState === 'error' && (
             <span role="alert" className="text-xs font-medium text-amber-300">

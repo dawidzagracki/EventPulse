@@ -51,9 +51,57 @@ public sealed class SmtpEmailSender : IEmailSender
 
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
-        var mime = BuildMime(message, _options);
+        using var client = new SmtpClient();
+        await ConnectAsync(client, cancellationToken);
+        await client.SendAsync(BuildMime(message, _options), cancellationToken);
+        await client.DisconnectAsync(true, cancellationToken);
+    }
+
+    /// <summary>
+    /// One connection and one authentication for the whole run, instead of a full handshake per
+    /// message. A failed message is counted and the run continues; a failed connection fails all of
+    /// them, because none of them could have been delivered.
+    /// </summary>
+    public async Task<EmailBatchResult> SendManyAsync(
+        IReadOnlyList<EmailMessage> messages,
+        CancellationToken cancellationToken = default)
+    {
+        if (messages.Count == 0)
+        {
+            return new EmailBatchResult(0, 0);
+        }
 
         using var client = new SmtpClient();
+        try
+        {
+            await ConnectAsync(client, cancellationToken);
+        }
+        catch
+        {
+            return new EmailBatchResult(0, messages.Count);
+        }
+
+        var sent = 0;
+        var failed = 0;
+        foreach (var message in messages)
+        {
+            try
+            {
+                await client.SendAsync(BuildMime(message, _options), cancellationToken);
+                sent++;
+            }
+            catch
+            {
+                failed++;
+            }
+        }
+
+        await client.DisconnectAsync(true, cancellationToken);
+        return new EmailBatchResult(sent, failed);
+    }
+
+    private async Task ConnectAsync(SmtpClient client, CancellationToken cancellationToken)
+    {
         var security = _options.Smtp.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
         await client.ConnectAsync(_options.Smtp.Host, _options.Smtp.Port, security, cancellationToken);
 
@@ -61,8 +109,5 @@ public sealed class SmtpEmailSender : IEmailSender
         {
             await client.AuthenticateAsync(_options.Smtp.User, _options.Smtp.Password ?? string.Empty, cancellationToken);
         }
-
-        await client.SendAsync(mime, cancellationToken);
-        await client.DisconnectAsync(true, cancellationToken);
     }
 }

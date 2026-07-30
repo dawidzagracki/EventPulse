@@ -63,6 +63,39 @@ public class EntryQrEmailTests
     }
 
     [Fact]
+    public void Subject_is_fixed_even_when_the_event_configures_its_own()
+    {
+        // The event's custom subject is written for the INVITATION. Applying it here as well gave
+        // both mails the same title, so a guest could not pick the QR one out of a full inbox.
+        var brand = new EmailBrand(Subject: "Zaproszenie na uroczyste otwarcie biura", EventName: "Kermi Grand Opening");
+
+        var qr = AgendaFreeBuild(brand);
+        Assert.Equal("Twój kod QR / Your QR code: Kermi Grand Opening", qr.Subject);
+        Assert.DoesNotContain("Zaproszenie", qr.Subject);
+
+        // …while the invitation still honours it — one brand, two distinguishable titles.
+        var invitation = InvitationEmail.Build(
+            Guest(), "Kermi Grand Opening", new DateTimeOffset(2026, 7, 30, 12, 30, 0, TimeSpan.Zero),
+            "https://eventpulse.pl/p/x", brand);
+        Assert.Equal("Zaproszenie na uroczyste otwarcie biura", invitation.Subject);
+        Assert.NotEqual(qr.Subject, invitation.Subject);
+    }
+
+    [Fact]
+    public void Keeps_the_event_branding_even_though_the_subject_is_fixed()
+    {
+        var brand = new EmailBrand(AccentColor: "#adce28", EventName: "Kermi Grand Opening", FromName: "Kermi");
+        var message = AgendaFreeBuild(brand);
+
+        Assert.Equal("Kermi", message.FromName);
+        Assert.Contains("#adce28", message.HtmlBody);
+    }
+
+    private static EmailMessage AgendaFreeBuild(EmailBrand brand) => EntryQrEmail.Build(
+        Guest(), "Kermi Grand Opening", new DateTimeOffset(2026, 7, 30, 12, 30, 0, TimeSpan.Zero),
+        "wyspa Słodowa 7", "https://eventpulse.pl/p/x", brand);
+
+    [Fact]
     public void Encodes_the_same_payload_as_every_other_qr_in_the_system()
     {
         var guest = Guest();

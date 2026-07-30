@@ -32,8 +32,12 @@ public static class EntryQrEmail
         var datePl = local.ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("pl-PL"));
         var dateEn = local.ToString("dddd, d MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("en-GB"));
 
-        var defaultSubject = $"Twój kod QR / Your QR code: {eventName}";
-        var subject = brand?.ResolvedSubject(defaultSubject) ?? defaultSubject;
+        // Deliberately NOT brand.ResolvedSubject: the event's custom subject is written for the
+        // invitation, so applying it here gave both mails the same title and the guest could not
+        // tell them apart in a full inbox. A fixed "Twój kod QR" prefix is what makes this one
+        // findable at the door; the event name keeps it unambiguous across events. The visual
+        // branding is untouched — colour, logo and sender name do not depend on the subject.
+        var subject = $"Twój kod QR / Your QR code: {eventName}";
 
         var infoRows = new List<EmailInfoRow>
         {

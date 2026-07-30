@@ -1,7 +1,5 @@
-using EventPulse.Modules.Participants.Application.Invitations;
 using EventPulse.Modules.Participants.Domain;
 using EventPulse.Shared.Application;
-using EventPulse.Shared.Notifications;
 using EventPulse.Shared.Persistence;
 using FluentValidation;
 using MediatR;
@@ -18,21 +16,11 @@ public sealed record AddParticipantCommand(
     string? Company,
     string? Position,
     string? Language,
-    // Entry-only guest: gets the QR code by mail instead of being invited into the app.
-    bool EntryOnly = false,
-    bool SendQrEmail = false,
-    // Event context needed to build the QR e-mail (passed in so this module stays independent of Events).
-    string? EventName = null,
-    DateTimeOffset? EventStartsAt = null,
-    string? Location = null,
-    string? LinkBaseUrl = null,
-    EmailBrand? Brand = null) : IRequest<AddParticipantResult>;
-
-/// <summary>
-/// The created guest plus whether the QR e-mail actually went out. Sending is best-effort: a
-/// failing mail provider must never lose the guest, so the caller is told separately.
-/// </summary>
-public sealed record AddParticipantResult(ParticipantDto Participant, bool QrEmailSent);
+    /// <summary>
+    /// Entry-only guest: skipped by the bulk invitation send, because they are not meant to be
+    /// pushed at the app. It is only a marker — adding a guest never sends anything.
+    /// </summary>
+    bool EntryOnly = false) : IRequest<ParticipantDto>;
 
 public sealed class AddParticipantValidator : AbstractValidator<AddParticipantCommand>
 {
@@ -46,18 +34,18 @@ public sealed class AddParticipantValidator : AbstractValidator<AddParticipantCo
     }
 }
 
-public sealed class AddParticipantHandler : IRequestHandler<AddParticipantCommand, AddParticipantResult>
+/// <summary>
+/// Creates the guest and nothing more. Adding somebody deliberately sends no mail at all: mails go
+/// out only from an explicit "Wyślij zaproszenie" / "Wyślij kod QR" action, so that building the
+/// guest list never sprays messages at people while it is still being assembled.
+/// </summary>
+public sealed class AddParticipantHandler : IRequestHandler<AddParticipantCommand, ParticipantDto>
 {
     private readonly IAppDbContext _db;
-    private readonly IEmailSender _email;
 
-    public AddParticipantHandler(IAppDbContext db, IEmailSender email)
-    {
-        _db = db;
-        _email = email;
-    }
+    public AddParticipantHandler(IAppDbContext db) => _db = db;
 
-    public async Task<AddParticipantResult> Handle(AddParticipantCommand request, CancellationToken cancellationToken)
+    public async Task<ParticipantDto> Handle(AddParticipantCommand request, CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();
 
@@ -85,30 +73,6 @@ public sealed class AddParticipantHandler : IRequestHandler<AddParticipantComman
         _db.Set<Participant>().Add(participant);
         await _db.SaveChangesAsync(cancellationToken);
 
-        var qrEmailSent = false;
-        if (request.SendQrEmail && request.EventName is not null && request.EventStartsAt is not null
-            && request.LinkBaseUrl is not null)
-        {
-            var message = EntryQrEmail.Build(
-                participant,
-                request.EventName,
-                request.EventStartsAt.Value,
-                request.Location,
-                SendEntryQrHandler.BuildLink(request.LinkBaseUrl, participant.AccessToken),
-                request.Brand);
-
-            try
-            {
-                await _email.SendAsync(message, cancellationToken);
-                qrEmailSent = true;
-            }
-            catch
-            {
-                // Best-effort, like SendInvitationsCommand: the guest is already saved, and the
-                // organiser can resend from the participant detail panel.
-            }
-        }
-
-        return new AddParticipantResult(ParticipantDto.From(participant), qrEmailSent);
+        return ParticipantDto.From(participant);
     }
 }

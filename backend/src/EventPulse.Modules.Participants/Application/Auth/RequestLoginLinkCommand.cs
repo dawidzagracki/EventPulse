@@ -26,7 +26,12 @@ public sealed record RequestLoginLinkCommand(
     bool AllowSelfRegistration = false,
     Guid TenantId = default,
     string DefaultLanguage = "pl",
-    EmailBrand? Brand = null) : IRequest<Unit>;
+    EmailBrand? Brand = null,
+    // Event details the QR mail needs. Absent them the guest still gets their login link, just
+    // without the second mail — the login path must never break because of a missing date.
+    string? EventName = null,
+    DateTimeOffset? EventStartsAt = null,
+    string? Location = null) : IRequest<Unit>;
 
 public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email)
     : IRequestHandler<RequestLoginLinkCommand, Unit>
@@ -68,7 +73,17 @@ public sealed class RequestLoginLinkHandler(IAppDbContext db, IEmailSender email
         if (participant is not null)
         {
             var link = $"{request.LinkBaseUrl.TrimEnd('/')}/{participant.AccessToken}";
-            await email.SendAsync(LoginLinkEmail.Build(participant, link, request.Brand), ct);
+            var mails = new List<EmailMessage> { LoginLinkEmail.Build(participant, link, request.Brand) };
+
+            // Same pair the organiser's invitation sends: the link to get in, and separately the QR
+            // code, so the guest can find it in their inbox at the door.
+            if (request.EventName is not null && request.EventStartsAt is not null)
+            {
+                mails.Add(EntryQrEmail.Build(
+                    participant, request.EventName, request.EventStartsAt.Value, request.Location, link, request.Brand));
+            }
+
+            await email.SendManyAsync(mails, ct);
         }
 
         return Unit.Value; // generic success regardless — no account enumeration

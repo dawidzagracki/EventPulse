@@ -58,7 +58,8 @@ public sealed class PublicEventsController : ControllerBase
                     body.FirstName, body.LastName,
                     ctx.AllowSelfRegistration, ctx.TenantId, ctx.DefaultLanguage,
                     new EmailBrand(ctx.EmailAccentColor, ctx.EmailLogoUrl, ctx.EventName, ctx.EmailHeaderName,
-                        ctx.EmailFromName, ctx.EmailSubject)), ct);
+                        ctx.EmailFromName, ctx.EmailSubject),
+                    ctx.EventName, ctx.StartsAt, ctx.Location), ct);
             }
         }
 
@@ -197,7 +198,9 @@ public sealed record PublicEventDto(
 public sealed record SelfRegistrationContext(
     bool AllowSelfRegistration, Guid TenantId, string DefaultLanguage,
     string EventName, string? EmailAccentColor, string? EmailLogoUrl, string? EmailHeaderName,
-    string? EmailFromName, string? EmailSubject);
+    string? EmailFromName, string? EmailSubject,
+    // Needed by the QR mail that now accompanies the login link.
+    DateTimeOffset StartsAt, string? Location);
 
 public sealed record SelfRegistrationContextQuery(Guid EventId) : IRequest<SelfRegistrationContext?>;
 
@@ -210,7 +213,8 @@ public sealed class SelfRegistrationContextHandler(IAppDbContext db)
             .Select(e => new SelfRegistrationContext(
                 e.AllowSelfRegistration, e.TenantId, e.DefaultLanguage,
                 e.Name, e.EmailAccentColor, e.EmailLogoUrl, e.EmailHeaderName,
-                e.EmailFromName, e.EmailSubject))
+                e.EmailFromName, e.EmailSubject,
+                e.StartsAt, e.Location))
             .FirstOrDefaultAsync(ct);
 }
 

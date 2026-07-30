@@ -80,15 +80,28 @@ public sealed class ParticipantsController : ControllerBase
         return Ok(await _mediator.Send(new ListParticipantsQuery(eventId, status, search), ct));
     }
 
+    /// <summary>Adds a guest. Sends nothing — mails go out only from an explicit send action.</summary>
     [HttpPost]
-    public async Task<ActionResult<AddParticipantResult>> Add(Guid eventId, AddParticipantBody body, CancellationToken ct)
+    public async Task<ActionResult<ParticipantDto>> Add(Guid eventId, AddParticipantBody body, CancellationToken ct)
     {
-        var ev = await EnsureEventInTenantAsync(eventId, ct);
+        await EnsureEventInTenantAsync(eventId, ct);
         var command = new AddParticipantCommand(
             eventId, body.FirstName, body.LastName, body.Email, body.Phone, body.Company, body.Position, body.Language,
-            body.EntryOnly, body.SendQrEmail,
-            ev.Name, ev.StartsAt, ev.Location, ParticipantLinkBaseUrl, EmailBrandOf(ev));
+            body.EntryOnly);
         return Ok(await _mediator.Send(command, ct));
+    }
+
+    /// <summary>Sends ONE guest their invitation pair: the app link and, separately, their QR code.</summary>
+    [HttpPost("{id:guid}/invitation")]
+    public async Task<ActionResult<SendInvitationsResult>> SendInvitation(Guid eventId, Guid id, CancellationToken ct)
+    {
+        var ev = await EnsureEventInTenantAsync(eventId, ct);
+        var result = await _mediator.Send(
+            new SendInvitationsCommand(
+                eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, OnlyNotInvited: false,
+                EmailBrandOf(ev), ev.Location, ParticipantIds: [id]),
+            ct);
+        return Ok(result);
     }
 
     /// <summary>Mails this guest their entry QR code — the event-day fix for a lost or missing code.</summary>
@@ -134,7 +147,9 @@ public sealed class ParticipantsController : ControllerBase
     {
         var ev = await EnsureEventInTenantAsync(eventId, ct);
         var result = await _mediator.Send(
-            new SendInvitationsCommand(eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, onlyNotInvited, EmailBrandOf(ev)), ct);
+            new SendInvitationsCommand(
+                eventId, ev.Name, ev.StartsAt, ParticipantLinkBaseUrl, onlyNotInvited, EmailBrandOf(ev), ev.Location),
+            ct);
         return Ok(result);
     }
 
@@ -174,9 +189,8 @@ public sealed class ParticipantsController : ControllerBase
         string? Company,
         string? Position,
         string? Language,
-        // Entry-only guest (QR by mail, no app invitation) + whether to send that mail right away.
-        bool EntryOnly = false,
-        bool SendQrEmail = false);
+        // Entry-only guest: excluded from the bulk invitation send. Adding never sends anything.
+        bool EntryOnly = false);
 
     [HttpPost("{id:guid}/logistics")]
     public async Task<ActionResult<ParticipantDto>> Logistics(Guid eventId, Guid id, LogisticsBody body, CancellationToken ct)
