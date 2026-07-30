@@ -382,7 +382,10 @@
     "liveQuizJoin": "Dołącz",
     "pageTileTitle": "Strona wydarzenia",
     "hotelTitle": "Hotel",
-    "pageTileHint": "Zobacz publiczną stronę — agenda, informacje, mapa."
+    "pageTileHint": "Zobacz publiczną stronę — agenda, informacje, mapa.",
+    "qrEnlarge": "Powiększ kod",
+    "qrFullClose": "Dotknij, aby zamknąć",
+    "qrScreenshotHint": "Najlepiej pokaż kod z aplikacji. Jeśli masz zrzut ekranu — powiększ go na pełny ekran, wtedy zeskanuje się bez problemu."
   },
   "page": {
     "title": "Strona",

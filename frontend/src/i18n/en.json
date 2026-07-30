@@ -382,7 +382,10 @@
     "liveQuizJoin": "Join",
     "pageTileTitle": "Event page",
     "hotelTitle": "Hotel",
-    "pageTileHint": "See the public page — agenda, info, map."
+    "pageTileHint": "See the public page — agenda, info, map.",
+    "qrEnlarge": "Enlarge code",
+    "qrFullClose": "Tap to close",
+    "qrScreenshotHint": "Best to show the code from the app. If you only have a screenshot, zoom it to full screen — then it scans without trouble."
   },
   "page": {
     "title": "Page",

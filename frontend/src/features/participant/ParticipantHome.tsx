@@ -655,11 +655,34 @@ function RsvpRow({ profile }: { profile: MyProfileDto }) {
   )
 }
 
+/**
+ * The QR as large as the screen allows, on white, above the bottom nav (z-50 vs z-20).
+ * Two reasons this exists: a code shown small is at the decoder's limit once a camera has to read
+ * it off a glossy phone screen, and a screenshot taken here has no app chrome baked over it —
+ * the translucent bottom nav used to land on the lowest module rows.
+ */
+function QrFullScreen({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  const { t } = useTranslation()
+  const side = 'min(88vw, 66vh)'
+  return (
+    <button
+      type="button"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-white p-4"
+    >
+      <img src={url} alt="QR" style={{ width: side, height: side }} className="object-contain" />
+      <span className="text-base font-bold text-slate-900">{name}</span>
+      <span className="text-xs text-slate-500">{t('participant.qrFullClose')}</span>
+    </button>
+  )
+}
+
 // ===================== My QR screen =====================
 function MyQrScreen({ profile }: { profile: MyProfileDto }) {
   const { t } = useTranslation()
   const [url, setUrl] = useState<string | null>(null)
   const [bright, setBright] = useState(false)
+  const [full, setFull] = useState(false)
 
   useEffect(() => {
     let revoke: string | null = null
@@ -697,7 +720,9 @@ function MyQrScreen({ profile }: { profile: MyProfileDto }) {
         style={bright ? { boxShadow: '0 0 80px 20px rgba(255,255,255,0.35)' } : undefined}
       >
         {url ? (
-          <img src={url} alt="QR" className="h-60 w-60 object-contain sm:h-72 sm:w-72" />
+          <button type="button" onClick={() => setFull(true)} className="block">
+            <img src={url} alt="QR" className="h-60 w-60 object-contain sm:h-72 sm:w-72" />
+          </button>
         ) : (
           <div className="flex h-60 w-60 items-center justify-center sm:h-72 sm:w-72">
             <span className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -715,6 +740,25 @@ function MyQrScreen({ profile }: { profile: MyProfileDto }) {
       >
         ☀️ {bright ? t('participant.brightenOn') : t('participant.brighten')}
       </button>
+
+      {url && (
+        <button
+          onClick={() => setFull(true)}
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-violet-400/40"
+        >
+          🔍 {t('participant.qrEnlarge')}
+        </button>
+      )}
+
+      <p className="mt-4 max-w-xs text-xs leading-relaxed text-slate-500">{t('participant.qrScreenshotHint')}</p>
+
+      {full && url && (
+        <QrFullScreen
+          url={url}
+          name={`${profile.firstName} ${profile.lastName}`}
+          onClose={() => setFull(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1088,7 +1132,7 @@ function CompanionsSection() {
                 </button>
               </div>
             </div>
-            {qrId === c.id && <CompanionQr id={c.id} />}
+            {qrId === c.id && <CompanionQr id={c.id} name={`${c.firstName} ${c.lastName}`} />}
           </div>
         ))}
       </div>
@@ -1109,24 +1153,38 @@ function CompanionsSection() {
   )
 }
 
-function CompanionQr({ id }: { id: string }) {
+function CompanionQr({ id, name }: { id: string; name: string }) {
   const { t } = useTranslation()
   const [url, setUrl] = useState<string | null>(null)
+  const [full, setFull] = useState(false)
   useEffect(() => {
     let revoke: string | null = null
+    let active = true
     void fetchPhotoUrl(`/api/me/companions/${id}/qr`).then((u) => {
+      if (!active) {
+        URL.revokeObjectURL(u)
+        return
+      }
       revoke = u
       setUrl(u)
     })
     return () => {
+      active = false
       if (revoke) URL.revokeObjectURL(revoke)
     }
   }, [id])
 
   return (
     <div className="mt-3 flex flex-col items-center rounded-xl bg-white p-4">
-      {url ? <img src={url} alt="QR" className="h-44 w-44" /> : <div className="h-44 w-44 animate-pulse bg-slate-100" />}
+      {url ? (
+        <button type="button" onClick={() => setFull(true)} className="block">
+          <img src={url} alt="QR" className="h-44 w-44" />
+        </button>
+      ) : (
+        <div className="h-44 w-44 animate-pulse bg-slate-100" />
+      )}
       <p className="mt-2 text-xs font-medium text-slate-500">{t('companions.qrHint')}</p>
+      {full && url && <QrFullScreen url={url} name={name} onClose={() => setFull(false)} />}
     </div>
   )
 }
