@@ -39,6 +39,26 @@ export function useAddParticipant(eventId: string) {
   })
 }
 
+/** Skipped = asked for but not written to (companion, no address, declined). */
+export interface SendCustomMessageResult {
+  sentCount: number
+  failedCount: number
+  skippedCount: number
+}
+
+/** Mails the given guests a message the organiser wrote themselves. */
+export function useSendCustomMessage(eventId: string) {
+  return useMutation({
+    mutationFn: async (body: {
+      participantIds: string[]
+      subjectPl: string
+      bodyPl: string
+      subjectEn?: string | null
+      bodyEn?: string | null
+    }) => (await api.post<SendCustomMessageResult>(`/api/events/${eventId}/participants/message`, body)).data,
+  })
+}
+
 /** Sends ONE guest their invitation pair: the app link plus, separately, their QR code. */
 export function useSendInvitationToOne(eventId: string) {
   return useMutation({

@@ -141,6 +141,64 @@ public class ParticipantSelfServiceTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Custom_message_reaches_only_eligible_guests_the_server_accepts()
+    {
+        var admin = await AdminClientAsync();
+        var createEvent = await admin.PostAsJsonAsync("/api/events", new
+        {
+            name = $"Msg {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
+            startsAt = DateTimeOffset.UtcNow.AddDays(5),
+            endsAt = DateTimeOffset.UtcNow.AddDays(6),
+        });
+        var eventId = (await createEvent.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        async Task<Guid> AddAsync(string email, string first)
+        {
+            var r = await admin.PostAsJsonAsync($"/api/events/{eventId}/participants",
+                new { firstName = first, lastName = "Guest", email });
+            return (await r.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        }
+
+        var wantedEmail = $"msg-{Guid.NewGuid():N}@x.com";
+        var declinedEmail = $"msg-no-{Guid.NewGuid():N}@x.com";
+        var wanted = await AddAsync(wantedEmail, "Wanted");
+        var declined = await AddAsync(declinedEmail, "Declined");
+        await admin.PostAsJsonAsync($"/api/events/{eventId}/participants/{declined}/status", new { status = 3 });
+
+        // A id from a DIFFERENT event is asked for too — the browser decides who is on screen, but
+        // the server must never take that list on trust.
+        var otherEvent = await admin.PostAsJsonAsync("/api/events", new
+        {
+            name = $"Other {Guid.NewGuid():N}",
+            clientEmail = "klient@test.local",
+            startsAt = DateTimeOffset.UtcNow.AddDays(5),
+            endsAt = DateTimeOffset.UtcNow.AddDays(6),
+        });
+        var otherId = (await otherEvent.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var foreignEmail = $"msg-foreign-{Guid.NewGuid():N}@x.com";
+        var foreignResp = await admin.PostAsJsonAsync($"/api/events/{otherId}/participants",
+            new { firstName = "Foreign", lastName = "Guest", email = foreignEmail });
+        var foreign = (await foreignResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var resp = await admin.PostAsJsonAsync($"/api/events/{eventId}/participants/message", new
+        {
+            participantIds = new[] { wanted, declined, foreign },
+            subjectPl = "Autokar podstawiony",
+            bodyPl = "Autokar czeka przed wejściem.",
+        });
+        resp.EnsureSuccessStatusCode();
+        var result = await resp.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(1, result.GetProperty("sentCount").GetInt32());
+        Assert.Equal(2, result.GetProperty("skippedCount").GetInt32()); // declined + foreign event
+
+        var mail = Assert.Single(_factory.SentEmails, m => m.ToEmail == wantedEmail && m.Subject == "Autokar podstawiony");
+        Assert.Contains("Autokar czeka przed wejściem.", mail.HtmlBody);
+        Assert.DoesNotContain(_factory.SentEmails, m => m.ToEmail == declinedEmail || m.ToEmail == foreignEmail);
+    }
+
+    [Fact]
     public async Task Adding_a_participant_sends_nothing()
     {
         var admin = await AdminClientAsync();

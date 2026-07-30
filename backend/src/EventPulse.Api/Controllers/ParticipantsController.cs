@@ -14,6 +14,7 @@ using EventPulse.Shared.Notifications;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventPulse.Api.Controllers;
 
@@ -103,6 +104,28 @@ public sealed class ParticipantsController : ControllerBase
             ct);
         return Ok(result);
     }
+
+    /// <summary>Mails the given guests a message the organiser wrote themselves.</summary>
+    [HttpPost("message")]
+    [EnableRateLimiting("send")]
+    public async Task<ActionResult<SendCustomMessageResult>> SendMessage(
+        Guid eventId, SendMessageBody body, CancellationToken ct)
+    {
+        var ev = await EnsureEventInTenantAsync(eventId, ct);
+        var result = await _mediator.Send(
+            new SendCustomMessageCommand(
+                eventId, body.ParticipantIds, body.SubjectPl, body.BodyPl, body.SubjectEn, body.BodyEn,
+                ParticipantLinkBaseUrl, EmailBrandOf(ev)),
+            ct);
+        return Ok(result);
+    }
+
+    public sealed record SendMessageBody(
+        IReadOnlyList<Guid> ParticipantIds,
+        string SubjectPl,
+        string BodyPl,
+        string? SubjectEn = null,
+        string? BodyEn = null);
 
     /// <summary>Mails this guest their entry QR code — the event-day fix for a lost or missing code.</summary>
     [HttpPost("{id:guid}/qr-email")]

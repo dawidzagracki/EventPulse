@@ -9,6 +9,7 @@ import {
   useImportParticipants,
   useParticipants,
   useSendClientLinks,
+  useSendCustomMessage,
   useSendEntryQr,
   useSendInvitationToOne,
   useSendInvitations,
@@ -49,7 +50,11 @@ function formatCustomFieldAnswer(field: CustomFieldDto, raw: string | undefined,
   return raw
 }
 
-type View = { kind: 'empty' } | { kind: 'new' } | { kind: 'detail'; participant: ParticipantDto }
+type View =
+  | { kind: 'empty' }
+  | { kind: 'new' }
+  | { kind: 'detail'; participant: ParticipantDto }
+  | { kind: 'message'; recipients: ParticipantDto[] }
 type StatusFilter = 'all' | 'invited' | 'confirmed' | 'checkedIn' | 'noShow'
 
 function statusMeta(status: number): { label: string; chip: string; dot: string } {
@@ -185,6 +190,14 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
         <Button variant="ghost" onClick={() => void exportParticipants(eventId)} disabled={stats.total === 0}>
           <Icon name="document" className="h-3.5 w-3.5" />
           {t('participants.export')}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => setView({ kind: 'message', recipients: filtered })}
+          disabled={filtered.length === 0}
+        >
+          <Icon name="mail" className="h-3.5 w-3.5" />
+          {t('participants.messageSend', { count: filtered.length })}
         </Button>
         <Button className="ml-auto" onClick={() => setView({ kind: 'new' })}>
           <Icon name="plus" className="h-4 w-4" />
@@ -343,6 +356,14 @@ export function ParticipantsTab({ eventId }: { eventId: string }) {
               eventId={eventId}
               participant={view.participant}
               onDeleted={() => setView({ kind: 'empty' })}
+              onMessage={() => setView({ kind: 'message', recipients: [view.participant] })}
+            />
+          )}
+          {view.kind === 'message' && (
+            <MessageComposer
+              eventId={eventId}
+              recipients={view.recipients}
+              onClose={() => setView({ kind: 'empty' })}
             />
           )}
         </div>
@@ -666,15 +687,157 @@ function NewParticipantForm({
   )
 }
 
+// ============ Custom message ============
+/**
+ * Writes one message to whoever the list is currently showing (or to a single guest). The recipient
+ * ids are taken from the filtered view, so narrowing the list to "Na miejscu" really does mean the
+ * coach announcement only reaches people who are here.
+ */
+function MessageComposer({
+  eventId,
+  recipients,
+  onClose,
+}: {
+  eventId: string
+  recipients: ParticipantDto[]
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const send = useSendCustomMessage(eventId)
+  const [subjectPl, setSubjectPl] = useState('')
+  const [bodyPl, setBodyPl] = useState('')
+  const [showEn, setShowEn] = useState(false)
+  const [subjectEn, setSubjectEn] = useState('')
+  const [bodyEn, setBodyEn] = useState('')
+  const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+
+  const single = recipients.length === 1 ? recipients[0] : null
+  const canSend = subjectPl.trim().length > 0 && bodyPl.trim().length > 0 && recipients.length > 0
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!window.confirm(t('participants.messageConfirm', { count: recipients.length }))) return
+    setNotice(null)
+    try {
+      const result = await send.mutateAsync({
+        participantIds: recipients.map((p) => p.id),
+        subjectPl: subjectPl.trim(),
+        bodyPl: bodyPl.trim(),
+        subjectEn: subjectEn.trim() || null,
+        bodyEn: bodyEn.trim() || null,
+      })
+      const parts = [t('participants.messageSent', { count: result.sentCount })]
+      if (result.skippedCount > 0) parts.push(t('participants.messageSkipped', { count: result.skippedCount }))
+      if (result.failedCount > 0) parts.push(t('participants.messageFailed', { count: result.failedCount }))
+      setNotice({ tone: 'ok', text: parts.join(' · ') })
+    } catch (err) {
+      setNotice({ tone: 'error', text: apiErrorMessage(err, t('participants.messageError')) })
+    }
+  }
+
+  return (
+    <Card>
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-violet-500/30">
+          <Icon name="mail" className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-white">{t('participants.messageTitle')}</h3>
+          <p className="truncate text-xs text-slate-400">
+            {single
+              ? t('participants.messageToOne', { name: `${single.firstName} ${single.lastName}` })
+              : t('participants.messageToList', { count: recipients.length })}
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={submit} className="space-y-3">
+        <Field label={t('participants.messageSubjectPl')}>
+          <Input
+            value={subjectPl}
+            onChange={(e) => setSubjectPl(e.target.value)}
+            maxLength={200}
+            placeholder={t('participants.messageSubjectPlaceholder')}
+            required
+            autoFocus
+          />
+        </Field>
+        <Field label={t('participants.messageBodyPl')}>
+          <textarea
+            value={bodyPl}
+            onChange={(e) => setBodyPl(e.target.value)}
+            rows={5}
+            maxLength={5000}
+            placeholder={t('participants.messageBodyPlaceholder')}
+            required
+            className="w-full rounded-lg border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+          />
+        </Field>
+
+        {!showEn ? (
+          <button
+            type="button"
+            onClick={() => setShowEn(true)}
+            className="text-xs font-medium text-indigo-300 hover:text-indigo-200"
+          >
+            + {t('participants.messageEnToggle')}
+          </button>
+        ) : (
+          <div className="space-y-3 rounded-xl border border-slate-800/80 bg-slate-950/40 p-3">
+            <p className="text-[11px] text-slate-500">{t('participants.messageEnHint')}</p>
+            <Field label={t('participants.messageSubjectEn')}>
+              <Input value={subjectEn} onChange={(e) => setSubjectEn(e.target.value)} maxLength={200} />
+            </Field>
+            <Field label={t('participants.messageBodyEn')}>
+              <textarea
+                value={bodyEn}
+                onChange={(e) => setBodyEn(e.target.value)}
+                rows={4}
+                maxLength={5000}
+                className="w-full rounded-lg border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </Field>
+          </div>
+        )}
+
+        {notice && (
+          <p
+            role="alert"
+            className={`rounded-lg border px-3 py-2 text-xs ${
+              notice.tone === 'ok'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+            }`}
+          >
+            {notice.tone === 'ok' ? `✓ ${notice.text}` : notice.text}
+          </p>
+        )}
+
+        <div className="flex gap-2 border-t border-slate-800/80 pt-3">
+          <Button type="submit" disabled={!canSend || send.isPending}>
+            <Icon name="mail" className="h-3.5 w-3.5" />
+            {send.isPending ? '…' : t('participants.messageSubmit', { count: recipients.length })}
+          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  )
+}
+
 // ============ Participant detail ============
 function ParticipantDetail({
   eventId,
   participant,
   onDeleted,
+  onMessage,
 }: {
   eventId: string
   participant: ParticipantDto
   onDeleted: () => void
+  onMessage: () => void
 }) {
   const { t, i18n } = useTranslation()
   const en = i18n.resolvedLanguage === 'en'
@@ -789,6 +952,14 @@ function ParticipantDetail({
           >
             <Icon name="qr" className="h-3.5 w-3.5" />
             {qrMailState === 'sending' ? '…' : t('participants.sendQr')}
+          </button>
+          <button
+            type="button"
+            onClick={onMessage}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:bg-slate-800 hover:text-white"
+          >
+            <Icon name="mail" className="h-3.5 w-3.5" />
+            {t('participants.message')}
           </button>
           {qrMailState === 'sent' && (
             <span className="text-xs font-medium text-emerald-300">✓ {qrMail?.message ?? t('participants.qrSent')}</span>

@@ -144,6 +144,13 @@ builder.Services.AddRateLimiter(options =>
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1) }));
 
+    // Guest-facing broadcast: one press mails free text to the whole list and can be repeated, so
+    // a stuck button or a double click cannot turn into two waves at 59 people.
+    options.AddPolicy("send", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+
     // Stricter limiter for auth endpoints (anti brute-force).
     options.AddPolicy("auth", context =>
         RateLimitPartition.GetFixedWindowLimiter(
