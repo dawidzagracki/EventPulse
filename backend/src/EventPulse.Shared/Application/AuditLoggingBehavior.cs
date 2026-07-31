@@ -39,22 +39,10 @@ public sealed class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavio
             PrincipalType = _user.PrincipalType,
             ActorEmail = _user.Email,
             Action = typeName,
-            Payload = TrySerialize(request),
+            Payload = AuditRedactor.Serialize(request, JsonOptions),
         });
 
         await _db.SaveChangesAsync(cancellationToken);
         return response;
-    }
-
-    private static string? TrySerialize(TRequest request)
-    {
-        try
-        {
-            return JsonSerializer.Serialize(request, JsonOptions);
-        }
-        catch
-        {
-            return null;
-        }
     }
 }
