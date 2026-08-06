@@ -22,7 +22,7 @@ export function TeamPage() {
     { id: 'team', label: t('team.title'), icon: 'users', to: '/team', active: true },
   ]
   return (
-    <AppShell nav={nav} title={t('team.title')} subtitle={t('team.subtitle')}>
+    <AppShell nav={nav} title={t('team.title')} subtitle={t('team.subtitle')} help="zespol">
       <div className="grid gap-5 lg:grid-cols-2">
         <AdminsCard />
         <ClientsCard />

@@ -29,6 +29,20 @@ public sealed class ReportPalette
     /// <summary>Text colour that stays legible on a Primary-filled panel.</summary>
     public string OnPrimary { get; }
 
+    /// <summary>Deepened primary — the far end of the cover gradient and the fill of dark panels.</summary>
+    public string Deep { get; }
+
+    /// <summary>Readable-on-dark version of the brand colour, for figures printed on Deep.</summary>
+    public string OnDeep { get; }
+
+    /// <summary>
+    /// A colour safe to set type in on white paper. Brand palettes routinely include a near-white
+    /// accent — Kermi's is #e2e8f0 — which is perfectly good as a border and invisible as a number,
+    /// so anything too pale is darkened until it reads while keeping its hue.
+    /// </summary>
+    public string Readable(string color) =>
+        Luminance(color) > 0.7 ? Mix(color, Ink, 0.55) : color;
+
     public ReportPalette(string? primary, string? secondary, string? accent)
     {
         Primary = Normalize(primary, "#4f46e5");
@@ -39,6 +53,10 @@ public sealed class ReportPalette
         Wash = Mix(Primary, "#ffffff", 0.955);
         Tint = Mix(Primary, "#ffffff", 0.78);
         OnPrimary = Luminance(Primary) > 0.55 ? Ink : "#ffffff";
+        Deep = Mix(Primary, "#141018", 0.55);
+        // A bright brand colour keeps its identity on a dark panel; a dark one would vanish into it,
+        // so it is lifted toward white until it reads.
+        OnDeep = Luminance(Primary) > 0.42 ? Primary : Mix(Primary, "#ffffff", 0.55);
     }
 
     /// <summary>Blends toward <paramref name="towards"/>; 0 keeps the colour, 1 replaces it.</summary>

@@ -12,6 +12,7 @@ import { OperatorLandingPage } from './features/operator/OperatorLandingPage'
 import { TeamPage } from './features/team/TeamPage'
 import { LandingPage } from './features/public/LandingPage'
 import { PrivacyPage } from './features/public/PrivacyPage'
+import { DocsPage } from './features/docs/DocsPage'
 
 const adminGuard = (element: React.ReactNode) => (
   <ProtectedRoute allow={['Agency', 'Client']}>{element}</ProtectedRoute>
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
   { path: '/events/:eventId', element: adminGuard(<EventDetailPage />) },
   { path: '/events', element: adminGuard(<EventsListPage />) },
   { path: '/privacy', element: <PrivacyPage /> },
+  // Public: the people who most need the handbook are the ones who cannot log in yet —
+  // a client waiting for their account, a hostess an hour before the doors open.
+  { path: '/docs', element: <DocsPage /> },
+  { path: '/docs/:slug', element: <DocsPage /> },
   // Public homepage — logged-in users are redirected to their panel inside the component.
   { path: '/', element: <LandingPage /> },
   { path: '*', element: <Navigate to="/" replace /> },

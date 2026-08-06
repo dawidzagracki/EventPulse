@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { Icon, type IconName } from './Icon'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { Logo } from './Logo'
+import { HelpLink } from './HelpLink'
 
 export interface NavItem {
   id: string
@@ -21,6 +22,8 @@ interface AppShellProps {
   back?: { to: string; label: string }
   title: string
   subtitle?: string
+  /** Handbook article for THIS screen — renders the question mark beside the title. */
+  help?: string
   /** Top-right area in the main header (e.g. status pill, action buttons). */
   actions?: ReactNode
   children: ReactNode
@@ -37,7 +40,7 @@ function principalBadge(type: string | null) {
   }
 }
 
-export function AppShell({ nav, back, title, subtitle, actions, children }: AppShellProps) {
+export function AppShell({ nav, back, title, subtitle, help, actions, children }: AppShellProps) {
   // Compact mode: a sidebar with a single self-referential link is just
   // wasted real estate, so we collapse the shell to a top-bar layout.
   // Triggered when there are no nav items or only one "active" item without
@@ -45,21 +48,23 @@ export function AppShell({ nav, back, title, subtitle, actions, children }: AppS
   const compact = !back && (nav.length === 0 || (nav.length === 1 && nav[0]?.active))
 
   if (compact) {
-    return <TopBarShell title={title} subtitle={subtitle} actions={actions}>{children}</TopBarShell>
+    return <TopBarShell title={title} subtitle={subtitle} help={help} actions={actions}>{children}</TopBarShell>
   }
 
-  return <SidebarShell nav={nav} back={back} title={title} subtitle={subtitle} actions={actions}>{children}</SidebarShell>
+  return <SidebarShell nav={nav} back={back} title={title} subtitle={subtitle} help={help} actions={actions}>{children}</SidebarShell>
 }
 
 // ============== Compact "top bar" shell ==============
 function TopBarShell({
   title,
   subtitle,
+  help,
   actions,
   children,
 }: {
   title: string
   subtitle?: string
+  help?: string
   actions?: ReactNode
   children: ReactNode
 }) {
@@ -112,7 +117,10 @@ function TopBarShell({
         {/* Row 2: page title + actions */}
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-end justify-between gap-4 border-t border-slate-800/40 px-6 py-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
+              {help && <HelpLink article={help} />}
+            </div>
             {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-2">{actions}</div>
@@ -245,6 +253,7 @@ function SidebarShell({
   back,
   title,
   subtitle,
+  help,
   actions,
   children,
 }: AppShellProps) {
@@ -307,6 +316,17 @@ function SidebarShell({
         </nav>
 
         <div className="border-t border-slate-800/80 p-3">
+          {/* The whole handbook, for browsing rather than answering one question. */}
+          <a
+            href="/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-900 hover:text-slate-100"
+          >
+            <Icon name="document" className="h-4 w-4" />
+            Pomoc i instrukcje
+          </a>
+
           <div className="flex items-center gap-3 rounded-lg bg-slate-900/60 p-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-semibold text-white">
               {(displayName ?? '?').slice(0, 1).toUpperCase()}
@@ -333,7 +353,10 @@ function SidebarShell({
       <main className="flex-1">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800/60 px-6 py-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">{title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white">{title}</h1>
+              {help && <HelpLink article={help} />}
+            </div>
             {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-2">{actions}</div>

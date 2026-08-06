@@ -8,6 +8,7 @@ import { startQrScanner, type QrScanHandle } from '../../lib/qrScanner'
 import { ScanGuard } from './scanGuard'
 import { Button, Card, Input } from '../../components/ui'
 import { Icon } from '../../components/Icon'
+import { HelpLink } from '../../components/HelpLink'
 import { ScanKind, type ScanResultItem, type StationDto } from '../../types/api'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -327,6 +328,7 @@ export function ScannerPage() {
                 {t('scanner.pending')}: {pending}
               </span>
             )}
+            <HelpLink article="skaner" />
           </div>
         </div>
 

@@ -270,6 +270,7 @@ export function EventsListPage() {
       nav={nav}
       title={t('events.title')}
       subtitle={t('events.subtitle')}
+      help="start"
       actions={
         <div className="flex items-center gap-2">
           {principalType === 'Agency' && (

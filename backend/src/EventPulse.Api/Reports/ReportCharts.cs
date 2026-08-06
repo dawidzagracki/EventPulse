@@ -62,6 +62,41 @@ public static class ReportCharts
     }
 
     /// <summary>
+    /// Full-bleed brand panel for the cover and closing pages: a diagonal blend from the primary
+    /// colour into a deepened version of itself, so a single-hue page still has movement.
+    /// </summary>
+    public static string Panel(string from, string to)
+    {
+        return $"""
+            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 560' preserveAspectRatio='none'>
+              <defs>
+                <linearGradient id='p' x1='0' y1='0' x2='1' y2='1'>
+                  <stop offset='0' stop-color='{from}' />
+                  <stop offset='1' stop-color='{to}' />
+                </linearGradient>
+                <radialGradient id='g' cx='0.8' cy='0.12' r='0.75'>
+                  <stop offset='0' stop-color='#ffffff' stop-opacity='0.3' />
+                  <stop offset='1' stop-color='#ffffff' stop-opacity='0' />
+                </radialGradient>
+              </defs>
+              <rect width='1000' height='560' fill='url(#p)' />
+              <rect width='1000' height='560' fill='url(#g)' />
+            </svg>
+            """;
+    }
+
+    /// <summary>A rounded, brand-tinted card back. Cheaper than a border and reads as a surface.</summary>
+    public static string CardBack(string fill, string edge)
+    {
+        return $"""
+            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200' preserveAspectRatio='none'>
+              <rect x='1' y='1' width='298' height='198' rx='14' fill='{fill}' />
+              <rect x='1' y='1' width='7' height='198' rx='3.5' fill='{edge}' />
+            </svg>
+            """;
+    }
+
+    /// <summary>
     /// The arrival curve: one bar per quarter of an hour, drawn as a single SVG so the bars keep
     /// their proportions no matter how many slots the day produced.
     /// </summary>

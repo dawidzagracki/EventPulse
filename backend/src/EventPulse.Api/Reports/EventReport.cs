@@ -72,27 +72,27 @@ public static class EventReport
     private static void Cover(IDocumentContainer doc, ReportPalette p, EventDto ev, EventReportStatsDto stats)
         => doc.Page(page =>
         {
-            Splash(page, p);
+            Panel(page, p);
 
             page.Content().AlignMiddle().Column(col =>
             {
                 col.Item().Text("RAPORT POWYDARZENIOWY")
-                    .FontSize(8).Bold().LetterSpacing(0.28f).FontColor(p.Primary);
+                    .FontSize(8).Bold().LetterSpacing(0.28f).FontColor(p.OnDeep);
 
                 col.Item().PaddingTop(34).MaxWidth(620).Text(ev.Name)
-                    .FontSize(46).Bold().LineHeight(1.05f).FontColor(p.Ink);
+                    .FontSize(46).Bold().LineHeight(1.05f).FontColor("#ffffff");
 
                 col.Item().PaddingTop(16).MaxWidth(430).Text(Headline(stats))
-                    .FontSize(11.5f).LineHeight(1.55f).FontColor(p.Muted);
+                    .FontSize(11.5f).LineHeight(1.55f).FontColor(Soft(p, 0.22));
 
                 // Constrained so the four labels read as one tight block, the way a title page
                 // groups its credits — spread across the full 958 pt they stop being a group.
                 col.Item().PaddingTop(50).MaxWidth(660).Row(row =>
                 {
-                    Meta(row, p, "TERMIN", Local(ev.StartsAt).ToString("d MMMM yyyy", Pl));
-                    Meta(row, p, "MIEJSCE", string.IsNullOrWhiteSpace(ev.Location) ? "—" : ev.Location);
-                    Meta(row, p, "GOŚCI", stats.Guests.ToString(Pl));
-                    Meta(row, p, "FREKWENCJA", $"{stats.AttendancePct.ToString("0.#", Pl)}%");
+                    MetaOnPanel(row, p, "TERMIN", Local(ev.StartsAt).ToString("d MMMM yyyy", Pl));
+                    MetaOnPanel(row, p, "MIEJSCE", string.IsNullOrWhiteSpace(ev.Location) ? "—" : ev.Location);
+                    MetaOnPanel(row, p, "GOŚCI", stats.Guests.ToString(Pl));
+                    MetaOnPanel(row, p, "FREKWENCJA", $"{stats.AttendancePct.ToString("0.#", Pl)}%");
                 });
             });
         });
@@ -112,21 +112,21 @@ public static class EventReport
             {
                 Title(col, p, "Wydarzenie w liczbach");
 
-                col.Item().PaddingTop(30).Row(row =>
+                col.Item().PaddingTop(26).Row(row =>
                 {
-                    Big(row, p, stats.CheckedIn.ToString(Pl), "gości na miejscu");
-                    Big(row, p, $"{stats.AttendancePct.ToString("0.#", Pl)}%", "frekwencji");
-                    Big(row, p, agenda.Count.ToString(Pl), "punktów programu");
+                    row.Spacing(16);
+                    Tile(row, p, stats.CheckedIn.ToString(Pl), "gości na miejscu", p.Primary);
+                    Tile(row, p, $"{stats.AttendancePct.ToString("0.#", Pl)}%", "frekwencji", p.Secondary);
+                    Tile(row, p, agenda.Count.ToString(Pl), "punktów programu", p.Accent);
                 });
 
-                col.Item().PaddingTop(26).LineHorizontal(0.7f).LineColor(p.Hairline);
-
-                col.Item().PaddingTop(24).Row(row =>
+                col.Item().PaddingTop(16).Row(row =>
                 {
-                    Big(row, p, stats.TotalScans.ToString(Pl), "skanów kodów QR", small: true);
-                    Big(row, p, Duration(stats), "średni czas na miejscu", small: true);
-                    Big(row, p, feedback.Count > 0 ? feedback.Average.ToString("0.0", Pl) : "—", "średnia ocena", small: true);
-                    Big(row, p, stats.Companions > 0 ? stats.Companions.ToString(Pl) : "—", "osób towarzyszących", small: true);
+                    row.Spacing(16);
+                    Tile(row, p, stats.TotalScans.ToString(Pl), "skanów kodów QR", p.Secondary, small: true);
+                    Tile(row, p, Duration(stats), "średni czas na miejscu", p.Primary, small: true);
+                    Tile(row, p, feedback.Count > 0 ? feedback.Average.ToString("0.0", Pl) : "—", "średnia ocena", p.Accent, small: true);
+                    Tile(row, p, stats.Companions > 0 ? stats.Companions.ToString(Pl) : "—", "osób towarzyszących", p.Secondary, small: true);
                 });
 
                 col.Item().PaddingTop(30).Text(Window(ev, stats))
@@ -201,12 +201,13 @@ public static class EventReport
                         .Text(Time(stats.Arrivals[^1].At)).FontSize(8).FontColor(p.Muted);
                 });
 
-                col.Item().PaddingTop(30).Row(row =>
+                col.Item().PaddingTop(26).Row(row =>
                 {
-                    Big(row, p, Time(stats.FirstCheckIn), "pierwszy gość", small: true);
-                    Big(row, p, Time(stats.PeakAt), $"szczyt — {stats.PeakArrivals.ToString(Pl)} os. w 15 min", small: true);
-                    Big(row, p, Time(stats.LastCheckIn), "ostatni gość", small: true);
-                    Big(row, p, Spread(stats), "trwało zameldowanie", small: true);
+                    row.Spacing(16);
+                    Tile(row, p, Time(stats.FirstCheckIn), "pierwszy gość", p.Secondary, small: true);
+                    Tile(row, p, Time(stats.PeakAt), $"szczyt — {stats.PeakArrivals.ToString(Pl)} os. w 15 min", p.Accent, small: true);
+                    Tile(row, p, Time(stats.LastCheckIn), "ostatni gość", p.Secondary, small: true);
+                    Tile(row, p, Spread(stats), "trwało zameldowanie", p.Primary, small: true);
                 });
             });
         });
@@ -403,24 +404,24 @@ public static class EventReport
     private static void Closing(IDocumentContainer doc, ReportPalette p, EventDto ev)
         => doc.Page(page =>
         {
-            Splash(page, p);
+            Panel(page, p);
 
             page.Content().AlignMiddle().Column(col =>
             {
                 col.Item().AlignCenter().Width(54).Height(54)
-                    .Svg(ReportCharts.Ring(100, p.Tint, p.Primary, thickness: 46));
+                    .Svg(ReportCharts.Ring(100, Soft(p, 0.72), p.OnDeep, thickness: 9));
 
                 col.Item().PaddingTop(28).AlignCenter().Text("Dziękujemy za wspólne wydarzenie")
-                    .FontSize(28).Bold().FontColor(p.Ink);
+                    .FontSize(28).Bold().FontColor("#ffffff");
 
                 col.Item().PaddingTop(12).AlignCenter().MaxWidth(430).Text(
                         $"Raport przygotowany na podstawie danych zebranych podczas „{ev.Name}”. "
                         + "Wszystkie liczby pochodzą z odbić kodów QR i odpowiedzi gości.")
-                    .FontSize(10).LineHeight(1.55f).FontColor(p.Muted);
+                    .FontSize(10).LineHeight(1.55f).FontColor(Soft(p, 0.24));
 
                 col.Item().PaddingTop(30).AlignCenter()
                     .Text($"EventPulse · {DateTimeOffset.UtcNow.ToString("d MMMM yyyy", Pl)}")
-                    .FontSize(8.5f).LetterSpacing(0.12f).FontColor(p.Muted);
+                    .FontSize(8.5f).LetterSpacing(0.12f).FontColor(Soft(p, 0.42));
             });
         });
 
@@ -445,8 +446,24 @@ public static class EventReport
         });
     }
 
-    /// <summary>Full-bleed page with no running furniture — cover and closing.</summary>
-    private static void Splash(PageDescriptor page, ReportPalette p) => Base(page, p, washed: true);
+    /// <summary>
+    /// Full-bleed brand panel — the cover and the closing page. These two carry the colour the rest
+    /// of the document only accents with, so the report is recognisably the client's from the
+    /// moment it opens rather than a white deck with a coloured chart in it.
+    /// </summary>
+    private static void Panel(PageDescriptor page, ReportPalette p)
+    {
+        page.Size(Deck);
+        page.MarginHorizontal(64);
+        page.MarginVertical(44);
+        page.DefaultTextStyle(t => t.FontSize(10).FontColor("#ffffff").FontFamily(Fonts.Lato));
+        page.Background().Background(p.Deep)
+            .Element(e => e.Svg(ReportCharts.Panel(p.Deep, ReportPalette.Mix(p.Deep, "#000000", 0.45))));
+    }
+
+    /// <summary>Foreground text softened into the panel behind it — a secondary tone on colour.</summary>
+    private static string Soft(ReportPalette p, double amount) =>
+        ReportPalette.Mix("#ffffff", p.Deep, amount);
 
     /// <summary>
     /// A numbered content page. The section marker is pinned to the top and the footer to the
@@ -496,6 +513,34 @@ public static class EventReport
             c.Item().Text(value).FontSize(small ? 26 : 52).Bold().LineHeight(1f).FontColor(p.Primary);
             c.Item().PaddingTop(small ? 4 : 8).Text(label)
                 .FontSize(small ? 8.5f : 10).FontColor(p.Muted);
+        });
+
+    /// <summary>
+    /// A headline figure on a tinted card with a coloured edge — the same left accent bar the app's
+    /// own cards use, so the report and the screen feel like one product. Cycling the edge colour
+    /// through primary, secondary and accent is what stops a page of numbers reading as a table.
+    /// </summary>
+    private static void Tile(RowDescriptor row, ReportPalette p, string value, string label, string edge, bool small = false)
+        => row.RelativeItem()
+            .Background(p.Wash).CornerRadius(14)
+            // Readable() on the edge too: a near-white accent draws an invisible bar, which reads as
+            // a card that failed to render rather than a deliberate colour.
+            .BorderLeft(5).BorderColor(p.Readable(edge))
+            .PaddingVertical(small ? 14 : 20).PaddingLeft(18).PaddingRight(14)
+            .Column(c =>
+            {
+                c.Item().Text(value)
+                    .FontSize(small ? 22 : 40).Bold().LineHeight(1f).FontColor(p.Readable(edge));
+                c.Item().PaddingTop(small ? 4 : 8).Text(label)
+                    .FontSize(small ? 8 : 9.5f).FontColor(p.Muted);
+            });
+
+    /// <summary>The cover's credit block, printed on the brand panel rather than on paper.</summary>
+    private static void MetaOnPanel(RowDescriptor row, ReportPalette p, string label, string value)
+        => row.RelativeItem().Column(c =>
+        {
+            c.Item().Text(label).FontSize(7).Bold().LetterSpacing(0.2f).FontColor(p.OnDeep);
+            c.Item().PaddingTop(6).Text(value).FontSize(10.5f).Bold().FontColor("#ffffff");
         });
 
     private static void Meta(RowDescriptor row, ReportPalette p, string label, string value)

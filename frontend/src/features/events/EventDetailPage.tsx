@@ -23,6 +23,26 @@ import { EventStatus, EventStatusName } from '../../types/api'
 
 // Clients get a focused subset — the tabs they actually care about when
 // reviewing their event. Agency staff see everything.
+/**
+ * Which handbook article the question mark beside the title opens. Keyed by tab so help always
+ * lands on the screen the person is actually looking at, rather than a table of contents.
+ */
+const HELP_BY_TAB: Record<string, string> = {
+  dashboard: 'dashboard',
+  overview: 'wydarzenia',
+  participants: 'uczestnicy',
+  agenda: 'agenda',
+  page: 'strona',
+  logistics: 'ustawienia',
+  engagement: 'ustawienia',
+  gallery: 'ustawienia',
+  stations: 'stanowiska',
+  form: 'formularz',
+  settings: 'ustawienia',
+  email: 'maile',
+  audit: 'audyt',
+}
+
 const CLIENT_TABS: Tab[] = ['dashboard', 'overview', 'agenda', 'page', 'participants', 'gallery', 'form', 'settings', 'email']
 
 type Tab =
@@ -163,6 +183,7 @@ export function EventDetailPage() {
           : t('common.loading')
       }
       subtitle={event ? `/${event.slug}` : undefined}
+      help={HELP_BY_TAB[activeTab]}
       actions={actions}
     >
       {isLoading || !event ? (

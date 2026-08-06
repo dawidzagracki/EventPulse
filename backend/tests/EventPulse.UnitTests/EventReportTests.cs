@@ -33,8 +33,8 @@ public class EventReportTests
         Location = "wyspa Słodowa 7, Wrocław",
     });
 
-    private static BrandingDto Branding(string primary = "#adce28") =>
-        new(primary, "#0ea5e9", "#f59e0b", "Inter", null, null, null);
+    private static BrandingDto Branding(string primary = "#84cc16") =>
+        new(primary, "#0ea5e9", "#e2e8f0", "Inter", null, null, null);
 
     private static EventReportStatsDto Stats(int checkedIn = 47, int arrivals = 9) => new(
         Guests: 59,
