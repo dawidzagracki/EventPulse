@@ -23,9 +23,12 @@ public static class AuditRedactor
         "currentPassword",
         "confirmPassword",
         // A participant's access token IS the QR payload: whoever reads it can sign in as that guest.
+        // "participantToken" is what BatchScanCommand calls it, so every scan logged one — the first
+        // pass matched on exact names and sailed straight past it.
         "token",
         "accessToken",
         "refreshToken",
+        "participantToken",
         "secret",
         "clientSecret",
         "apiKey",

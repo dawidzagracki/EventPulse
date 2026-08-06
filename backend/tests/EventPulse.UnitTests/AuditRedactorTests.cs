@@ -53,6 +53,22 @@ public class AuditRedactorTests
         Assert.Contains("\"Token\":\"***\"", json);
     }
 
+    private sealed record ScanItem(Guid ClientId, Guid ParticipantToken, int Kind);
+
+    [Fact]
+    public void Masks_the_token_under_the_name_the_scanner_uses()
+    {
+        // BatchScanCommand calls it ParticipantToken, so matching only "token" left every scan
+        // ever recorded holding a guest's QR payload in clear text.
+        var token = Guid.NewGuid();
+        var json = Serialize(new ScanItem(Guid.NewGuid(), token, 2));
+
+        Assert.DoesNotContain(token.ToString(), json);
+        Assert.Contains("\"ParticipantToken\":\"***\"", json);
+        // The client id is the idempotency key, not a credential — it has to survive.
+        Assert.Contains("ClientId", json);
+    }
+
     private sealed record Item(string ClientId, string AccessToken);
     private sealed record Batch(Guid EventId, IReadOnlyList<Item> Items, Nested Meta);
     private sealed record Nested(string Secret, string Note);

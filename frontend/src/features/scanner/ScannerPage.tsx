@@ -5,6 +5,7 @@ import { extractToken, fetchActiveStations, flushQueue } from './api'
 import { feedback } from './feedback'
 import { enqueueScan, queueCount } from '../../lib/scanQueue'
 import { startQrScanner, type QrScanHandle } from '../../lib/qrScanner'
+import { ScanGuard } from './scanGuard'
 import { Button, Card, Input } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { ScanKind, type ScanResultItem, type StationDto } from '../../types/api'
@@ -86,7 +87,7 @@ export function ScannerPage() {
   const kindRef = useRef(kind)
   const stationRef = useRef(station)
   const stationsRef = useRef(stations)
-  const lastScan = useRef<{ token: string; at: number }>({ token: '', at: 0 })
+  const guard = useRef(new ScanGuard())
 
   // Load the event's defined stations once (used for the picker, scan kind, and limits).
   useEffect(() => {
@@ -120,15 +121,17 @@ export function ScannerPage() {
   }
   const backgroundSyncRef = useRef(backgroundSync)
 
-  async function handleScan(raw: string) {
+  /** `deliberate` marks manual entry — a typed token is an explicit request for a fresh answer. */
+  async function handleScan(raw: string, deliberate = false) {
     const token = extractToken(raw)
     if (!token) {
       showFeedback({ kind: 'error', reason: 'badcode' })
       return
     }
-    // Debounce repeated reads of the same code.
-    if (token === lastScan.current.token && nowMs() - lastScan.current.at < 2500) return
-    lastScan.current = { token, at: nowMs() }
+    // One code held up to the camera is ONE scan, however many frames decode it. Record the
+    // sighting either way so a manual re-check doesn't reopen the gate for the camera behind it.
+    const fresh = guard.current.accept(token, nowMs())
+    if (!fresh && !deliberate) return
 
     const clientId = crypto.randomUUID()
     // Presence stations (no check-in) record a Station scan so they don't flip status.
@@ -421,7 +424,7 @@ export function ScannerPage() {
             <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="token / link" />
             <Button
               onClick={async () => {
-                await handleScan(manual)
+                await handleScan(manual, true)
                 setManual('')
               }}
             >
