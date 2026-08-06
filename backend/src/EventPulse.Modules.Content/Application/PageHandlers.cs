@@ -51,6 +51,29 @@ public sealed class GetParticipantBrandingHandler(IAppDbContext db)
     }
 }
 
+/// <summary>
+/// Full branding for the post-event report. Read-only on purpose: <see cref="GetDraftQuery"/> creates
+/// a page row when none exists, and generating a report must not write anything.
+/// </summary>
+public sealed record GetReportBrandingQuery(Guid EventId) : IRequest<BrandingDto>;
+
+public sealed class GetReportBrandingHandler(IAppDbContext db) : IRequestHandler<GetReportBrandingQuery, BrandingDto>
+{
+    public async Task<BrandingDto> Handle(GetReportBrandingQuery request, CancellationToken ct)
+    {
+        var page = await db.Set<EventPage>().AsNoTracking()
+            .FirstOrDefaultAsync(p => p.EventId == request.EventId, ct);
+
+        // An event whose organiser never opened the page builder still gets a report — in the
+        // product's own palette, which is exactly what those defaults are.
+        return page is null
+            ? new BrandingDto("#4f46e5", "#0ea5e9", "#f59e0b", "Inter", null, null, null)
+            : new BrandingDto(
+                page.PrimaryColor, page.SecondaryColor, page.AccentColor, page.FontFamily,
+                page.LogoUrl, page.FaviconUrl, page.BackgroundColor);
+    }
+}
+
 public sealed record SaveDraftCommand(Guid EventId, string ContentJson) : IRequest<PageDto>;
 
 public sealed class SaveDraftHandler(IAppDbContext db) : IRequestHandler<SaveDraftCommand, PageDto>
